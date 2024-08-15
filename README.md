@@ -1,3 +1,3 @@
-# welcome to my notes. :>
+# welcome to my notes :>
 
 ## 

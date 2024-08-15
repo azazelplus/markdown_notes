@@ -1,0 +1,598 @@
+"方法"是面向对象编程中的专有名词,特指<a>.<b>()风格中的函数b().(a是一个变量) 事实上,这种风格是面向对象的使用风格.其中<a>是对象,<b>是方法.比如:
+8个常用字符串处理方法;ls.append(a)(.append是组合数据类型方法,作用是插入一个新元素.)
+
+
+py中允许同时给多个变量赋值,用逗号分割.syntax:   a,b,c,d=10,20,30,40
+故在py中可以通过,分隔的输入方式一次输入多个数据存入变量:
+a,b,c=eval(input("请输入a,b,c的值,用逗号隔开"))
+
+一行中不得不写多个语句时,用分号间隔.(你可以向C一样每个语句之后都;,虽然没有任何作用.)
+一个语句不得不多行时,末尾打上\即可换行
+
+
+
+
+
+
+exit()
+
+
+
+
+
+数据类型
+	数字数据类型
+		int 整数类型，无大小限制，有符号
+		float 浮点数类型 用53位二进制表示.有大小精度限制(-1e308~1e308,精度为1e-16),有符号
+		complex复数类型 a+bj
+
+		数字运算符+ - * /(返回浮点数) //(返回整数) %(mod运算) **(幂运算.x**y即为pow(x,y))
+		*混合运算后,(除了类似/,**有特殊规则(int/int返回float;float**float返回complex等))输出(int->float->complex)中"最宽"的数据类型
+		*不确定尾数问题:因为[加法]发生时,计算机内部涉及十进制和二进制之间的转换,产生无限小数,在截取无限小数时产生尾数误差.(不确定尾数一般出现在尾数16位数量级)
+			>>>0.1+0.2==0.3↵   False            #0.1+0.2运算等与0.3000000000004
+			在比较浮点数运算时可以使用四舍五入函数round(x[,n]),输入要修正的浮点数x和n小数截取位数,返回四舍五入后的浮点小数,默认为0(取整数)
+			>>>round(0.1+0.2,1)==0.3↵  True
+		常用数值运算函数:  abs(x)取绝对值;  divmod(x,y)返回值为(商,余数); max(x1,x2,...); min(x1,x2,...);  int(x)(将float或int字符串强制转化为int);  float(x)(将int或float字符串强制转化为float); complex(x)(将int或float强制转化为复数)
+
+
+		4种进制表示形式
+			1 十进制（默认）
+			2 二进制,以0b或0B开头  0B1101 ,-0B110
+			3 八进制,以0O或0o开头  0O177,-0O545
+			4 二进制,以0X或0x开头  0X1ae1f ,-0Xabcdef(>>> -0Xabcdef
+								-11259375)
+
+		pow(x,y[,z])  输入  返回值为(x^y)%z的
+
+
+
+
+
+	字符串
+	""和''之间都是字符串.但是在""内部出现的'作为字符来看待,同理在'  '内部出现的"作为字符来看待,从而减少转义字符的使用.
+		example:
+		#我想定义一个字符串my_str,其值为I'm a student
+		#法一:
+		my_str='I\'m a student'
+		#法二:
+		my_str="I'm a student"
+		三个单引号/双引号'''xxxx'''和"""xxxx"""是可以换行的长字符串,同时内部出现的单引号/双引号自动当作字符的一部分.(单独以字符串为语句时,没有任何输入输出,实际上可以当作注释使用.)
+
+
+	字符串的格式化：
+			即对字符串进行格式表达的方式。
+		格式化字符串的函数<str>.format().    :.2f两位小数浮点数格式;它通过{}和:来代替%。 "槽":在字符串中,相当于一个占位信息符,用{<参数序号>:<格式控制符>}来表示.(参数序号可以不写,默认为0,1,2,...)其中格式控制符有6个:
+			1<填充字符>
+			2<对齐方式(<左对齐;>右对齐;^居中对齐)>
+			3<width(槽设定的输出宽度)>
+
+			4<,(是否自动为数字加上千位符)>
+			5<.精度(float的小数精度,或字符串的最大输出长度)>
+			6<类型(||整数类型||b二进制;c当作Unicode打印出对应字符;d十进制;o八进制;x十六进制小写;X十六进制大写;||浮点数类型||e/E科学计数法类型;f浮点数类型%百分数类型)>
+
+		example1:"{0:*^50,.5f}".format(114514.191918)  输出为'******************114,514.19192*******************'
+		example2:	"字符串字符串字符串{1:.2f}{0:.2f}字符串".format(5.777,6.333)   输出为'字符串字符串字符串6.335.78字符串'
+		EXAMPLE3：
+			num=5
+			print('我需要{:}元钱' .format(num))
+			>>>我需要5元钱
+
+		<str>.format()整个函数的返回值是一个字符串.即可以print(str.format())
+		
+		除了使用{}和.format()对字符串格式化,还可以用老版本%.
+		syntax:   print('我需要%元钱' % num)
+
+		当需要格式化里套格式化(格式化参数,比如width需要用参数表示)时,
+		错误示范:直接把参数写进去:print('{:-^width}'.format(char))#会报错说格式化写法错误
+		正确示范:print('{:-^width}'.format(char,width=width))   #format(字符串[,参数说明])
+		也可以用一行先把'{:-^width}'按照width当前的值给打印出来存成一个字符.
+		
+
+
+		
+		
+	
+	字符串操作符:
+		str1+str2  将两个字符串连接起来.  
+		n*str或str*n  将str复制n次.  
+		str1 in str2  判断字符串str1是否是str2的子串.
+	
+	字符串处理函数:
+		len(str)    返回字符串长度(int)
+		str(x)       使内部的语句加上引号变成字符串.
+		eval(str)  和str()相反:解析字符串内部的语句.
+		hex(int)  oct(int)  返回整数x的(小写x,o)十六进制/八进制表示字符串.
+		chr(unicode_int)  返回对应的字符char                         即character字符
+		ord(char)             返回对应的unicode编码整数            即Unicode ordinal编码序数
+		
+
+
+	*索引(返回字符串中的单个字符)
+		syntax:<字符串>[M],M可以为正向递增序号(0,1,2,...)或反向递减序号(-1,-2,...)
+		example:
+		#欲取得字符串test,即"请输入带有符号的温度值"中的"度"这个字符并赋给字符串str.
+			 	 0 1 2  3 4  5 6  7 8 9 10
+				-11-10-9-8-7-6-5-4-3-2-1
+		#法一:
+		str=test[9]
+		#法二:
+		str=test[-2]
+
+	*切片slice(返回序列对象中的一段子序列)当然,这个序列可以是字符串.
+		syntax:<字符串>[first:end:step],即从first索引开始截取到end(共end-first个,不含end),步长step可以不写默认为1,不能为0,前面添-则先翻转序列再
+		example:
+		str='abcdefg',则:
+		str[:]==str[0:]==str[:999]==str[0:999]==str[]'abcdefg'
+		当(用正向递增序号表示时)first大于end时,切片为空.
+		str[::4]=='ae'   str[::-1]=='gfedcba'
+
+
+	input()的返回值类型为字符串.故常搭配eval来得到用户输入的数字:   a=eval(input())
+	
+
+	字符串处理方法(8种)
+			str.lower()和str.upper()  返回字符串的副本,且全部替换为大写/小写
+			str.split(sep=",")  返回一个列表,由str根据,分割而成的子串形成.
+			str.count(char)  返回str中字符char出现的个数(整数)
+			str.replace(old_string,new_string)  将字符串中所有的old_string 字串替换为new_string子串.
+				example:  "python".replace("thon","charm")结果为"pycharm"
+			str.center(width,fillchar)    字符串根据宽度width居中,填充字符为fillchar.
+				example:  "python".center(20,"=")结果为"=======python======="
+			str.strip("char1char2char3...")从两侧对该字符串往中心方向进行删除,直到遇到不在strip()其中的字符为止.
+				example:  "123456789".strip("1289")  结果为"34567".
+			str.join(iter) 在iter字符串中每隔一个字符插入一个str字符串.
+				example:  "***".join("fuck")结果为'f***u***c***k'
+
+
+
+
+
+
+	四种组合数据类型
+	*序列类型是一种基本数据类型,他的衍生有1字符串,2元组,3列表,他们的处理方法是相通的.
+	*对于列表,元组,集合,单独的"赋值"即b=a并没有创建一个新容器,而是等价于C++中的引用auto b=& a,b只是a的别名而已.'
+	*只有用[],(),{}进行定义或者使用函数list(),tuple(),set()才是真正创建了一个容器(得到了内存).
+	组合数据类型(或者说数据容器)的相通处理方法:	
+		a in A		#元素a是否在容器A中.
+		a not in A 	#元素a是否不在容器A中.	
+		len(A)		#返回容器长度.
+
+
+	列表list
+		创建方式:a=[1,2,3]或a=1,2,3或a=list(待添加的元素(按照从左到右的顺序))
+		序列操作符:
+		a+b		#两个序列受外拼接
+		a*n或 n*a 	#将序列a复制n次
+		#将元素x添加到序列a中的三种方法:
+		a.append(x)	a=a+[x]		a.extend([x])
+		#extend函数可以接受一个容器(不一定是列表),然后把容器里的元素加入到列表a的末尾中去.	
+		a[i]		#索引,访问序号为i的元素(正向递增或反向递减序号皆可)
+		a[i:j[:k]]		#切片,返回序号i到j步长为k的子序列.
+		len(a)
+		max(a)	min(a)	#返回列表最大/小元素.(若序列元素不同类型/不可比较,则报错;对字符(串)则为字典序.)
+		a.count(x)		#返回列表a中x元素出现的个数.
+		list(x)		#将其它类型(如集合类型)的变量转变为列表类型.
+		a.index(x[,i,j])	#返回在区间[i,j]中(默认为[0,-1])第一次出现元素x的正向递增序号
+		a.clear()		#删除列表a中所有元素
+		a.copy()
+		*浅拷贝，指的是重新分配一块内存，创建一个新的对象，但里面的元素是原对象中各个子对象的引用。
+		*深拷贝，是指重新分配一块内存，创建一个新的对象，并且将原对象中的元素，以递归的方式，通过创建新的子对象拷贝到新对象中。因此，新对象和原对象没有任何关联。
+
+
+	元组tuple	#即不可改变的列表.
+		创建方式:
+		a=(1,2,3)或a=tuple(待添加的元素(按照从左到右的顺序))
+		继承了序列的处理方法(当然,不包括改变内部元素的方法发)
+		*在python中,不加小括号也是元组.诸如a=1,2,3;诸如一个函数return 1,2这种也是元组.该函数的返回值是一个元组.
+	集合set
+		创建方式1:a={'fuck',114514,(1,2,3)}
+		创建方式2:a=set('fuck',114514,(1,2,3))#set()可以创建空集合,而a={}生成的是空字典.
+		集合操作符：
+		四种运算 交并差补(这些表达式的返回值都是一个集合)：
+		a={1,2,3}		b={3,4,5}
+		交:a&b>>>{3}
+		并:a|b>>>{1,2,3,4,5}
+		差:a-b>>>{1,2}
+		补:a^b>>>{1,2,4,5}
+		a<=b	#a包含于b
+		a<b	#a真包含于b		
+	集合的方法:   '设集合a';a={1,2,3,4}
+		a.add(5)		# 加入元素
+		a.update([1,2,3])	#一次加入多个元素
+		a.discard(4)	#移除元素
+		a.remove(4)#移除元素,若元素不存在则报KeyError异常
+		a.clear()  #清除a中的所有元素
+		a.pop()  #随机取出(即从集合中删除)一个集合中的元素返回,对空集合会异常.
+		a.copy()  #返回一个相同的集合
+		a in A;a not in A  #判断子集包含关系,返回布尔值
+		set(x)  #将其它类型(如列表类型)的变量转变为集合类型.利用set(list1)	list(list1)可以达到给list列表去重的效果.
+
+
+
+	字典dict(键值对的集合,无序map)	#是对数据索引的拓展.
+	键值对:用a:b表示键值对(键:值).
+	字典的创建:用{}(因为字典就是集合的一种)dict()创建:
+	mydict={"中国":"北京","美国":"华盛顿","法国":"巴黎"}	#创建了一个字典.
+	访问:mydict[键]-->输出对应的值,如mydict["中国"]返回"北京".		#类似用序号+方括号来访问list,只不过在字典中我们可以"自定义序号".
+	操作方法:
+	del mydict[键]	#删除键对应的键值对.
+	键 in mydict	#判断键是否在字典中
+	mydict.keys()	#返回字典中所有的键,
+    	        >>>a=mydict.keys()
+        	        >>>a
+		dict_keys(['中国', '美国', '法国'])
+		返回值是一个<class 'dict_keys'>类型变量.
+	mydict.values()	#返回字典中所有的值,
+	mydict.items()	#返回字典中所有键值对信息
+
+
+
+
+
+
+
+
+eval()函数评估函数
+	函数接受一个表达式字符串,去掉字符串的引号并执行表达式,输出表达式的值.
+	example
+	eval('1+2')==3
+	eval('"1+2"')=="1+2"   ;  print(eval('"1+2"'))
+	eval('print('ohmygosh'))->执行该语句即执行打印'ohmygosh'
+	（常有inta=eval(input())或inta=int(input))即input()和eval()或int()搭配使用来获得输入的数字类型.
+
+
+
+
+
+
+
+逻辑运算
+	C/C++/JAVA中的逻辑符号  python中的逻辑符号   
+		&&		  and
+		  ||		   or
+		  !		  not
+	
+	逻辑运算表达式example:
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+输入
+	input("promt")该函数接受一个字符串输入,输出str.
+	syntax:str=input("prompt")
+
+	print函数
+		print(a,b)同时输出两个变量a b(中间有空格)
+		print(a[,end=""])     ,end=可选参数可以用来控制print单词打印后是否要换行.(,end=""即不换行,默认换行)
+		print()函数的格式化
+		print("xxxxxxxx{:.2f}a".format(a))
+		{:.2f}表示将变量a填充到该位置时保留两位小数
+
+
+
+
+RGB颜色表示法(color) 其中color可以是：
+	颜色字符串    "purple" "red" 
+	RGB向量(小数)       (0.63,0.13,0.94)
+	RGB元组值            ((0.63,0.13,0.94))
+
+"iterable"在python中,"iterable的对象(数据类型)"是指"适合迭代的对象",意思是这样的对象:这类对象能够一次返回它的一个成员(元素),可以被遍历,有_iter_()或_getitem_()方法,例如list,str,tuple,dict,file,xrang
+
+
+
+保留字(关键字)33个:
+	and
+	
+	as 重命名算符.
+		如在使用import引入库函数时,希望给库一个别名来简化编程:
+		symtax:   import<库名>as<alias>
+	
+	assert
+	class
+	continue
+	def
+	if&elif&else
+	syntax:
+	if<>:
+	elif<>:
+	else:
+	except
+	finally
+	for循环语句
+		for i in range(5):
+			print(i)
+
+		这语句等价于C中的
+		for(i=0;i<5;i++)
+			{printf("%d",i);}
+		打印出来的效果为一次打印出
+		0
+		1
+		2
+		3
+		4
+	range(m,n,k)函数:产生循环计数序列.(默认步长k=1,默认起始m=0)
+	a=range(5)  声明变量a,它的值是
+
+	from
+		可以配合from完成对库函数的引用，好处是将symtax"<库名>.<函数名>()"改造为直接调用<函数名>()
+		syntax:
+			from<库名>import<函数名>
+			form<库名>import*	
+		但是可能发生重载...
+	in 判断一个元素是否在序列中.
+		example:
+		str='abc',则:
+		'a' in str  ==True
+	is
+	lambda
+	not
+	or
+	pass
+	raise
+	return
+	try
+	while
+	with
+	yield
+
+	del
+	golbal
+	nonlocal
+	True
+	False
+	None
+
+
+
+
+
+
+
+程序结构
+	分支结构
+	1.普通的if结构.syntax:  if<条件>:
+				语句
+			 elif<条件>
+				语句
+			 elif<条件>
+				语句
+			else
+				语句
+	2.紧凑形式<语句1>if<条件>else<语句2>    #当两个语句是表达式(变量)时,该语句本身可以看作一个随条件变化的变量.如猜字游戏:
+		          >>>guess=eval(input())    
+			1919810
+		          >>>print("猜{}辣".format("对" if guess==114514 else "错"))
+			猜错辣
+
+	
+
+	异常处理(一种特殊的分支结构)
+	try:
+		语句1    #先会被执行.
+	except:       #(或指定特定的异常类型:except <异常类型>:)
+		语句2    #特定错误出现后会被执行.
+	else:
+		语句3    #语句1没有错误时才执行.(语句1正常执行的奖励)
+	finally:
+		语句4    #在最后一定会被执行.
+
+
+	example:
+	try:
+		num=eval(input(" 请输入一个整数"))
+		print(num**2)
+	except NameRrror:                   #用户可能输入abc->导致出现NameError: name 'abc' is not defined错误.
+		print("这不是一整数,rnm")
+
+	
+	循环结构(py提供两种循环结构:遍历循环for,无限循环while)  在C中for,while可以起到同时设计无限和遍历循环.在py中用while加上i++语句也可以实现.
+		遍历循环syntax: for <循环遍历> in <遍历结构>:
+				语句
+		计数遍历循环:for i in range(m,n,k):
+				语句
+		字符串遍历循环:for c in str:        #c代表字符串中的每个字符.
+				语句
+		列表遍历循环:for item in ls        #ls是一个列表,从而item是遍历列表中的每一个字符. 
+				语句
+		文件遍历循环:for line in fi        #fi是一个文件标识符.遍历每行产生循环.
+				语句
+		元组/字典遍历循环:for item in a  #a是一个集合.注意此时利用的是系统保存集合的顺序.
+
+
+		无限循环(根据条件进行循环.)syntax: while <bool值表达式>: 
+						语句
+
+		循环结构中,可以搭配使用break和else:当循环体没有触发break时,循环体下方的else作为正常循环的奖励.
+			syntax: for i in range()
+				语句
+			
+
+
+
+
+
+
+
+自定义函数 
+	syntax:  def <函数名>(<非可选参数1,非可选参数2,...>,<可选参数1=默认值1,可选参数2=默认值2,...>,<*可变参数(是一个组合数据列表)>)：
+			<函数体>
+			return <返回值>(可以没有返回值,也可以返回多个(用,隔开)从而返回了一个包含多个数据的[元组类]返回值.)
+	参数传递:function(10,20)#按照位置传递;
+	              function(b=20,a=10)#按照名称传递;
+	注意当全局变量和函数体内的局部变量重名时,函数体里默认为局部变量.若希望在函数体内使用全局变量,使用关键字global <变量名>,达到在函数体内部操作全局变量的效果.(这可以说是按址传递).特例:对于[组合数据类型],如果在函数体内直接使用(前提为全局变量中存在一个同名[组合数据类型]),则认为按址传递(或者说等同于自动加上了global.).但是如果先在函数体内声明了该组合数据类型(如加了一行ls=[]),那么函数体里接下来出现的ls是该局部变量而不再是全局变量ls了.
+
+
+
+
+
+
+
+
+
+
+
+lambda函数(是一种匿名函数,使用关键字lambda定义,返回函数名,用于定义简单的、能够在一行内表示的,且为表达式类型的简单函数.(这类比)
+	syntax:
+	 <函数名>=lambda<参数> : <表达式>
+	example:
+	>>>f=lambda x,y : x+y           #(返回值的数据类型type为class 'function')
+	>>>f(1,1)
+	       2
+	>>>f=lambda : "寄了寄了寄了"
+	>>>f
+	        寄了寄了寄了
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+time库 #import time   包含三类函数.
+
+	1时间获取函数
+		.time() 获取当前时间戳(float)
+			time.time()  结果为1656510756.3405151
+		.ctime()获取当前时间并以易读的方式表示(字符串)
+			time.ctime() 结果为'Wed Jun 29 21:54:18 2022'
+		.gmtime() 获取当前时间,表示为计算机可处理的时间格式(type为struct_time)
+			time.gmtime() 结果为time.struct_time(tm_year=2022, tm_mon=6, tm_mday=29, tm_hour=14, tm_min=2, tm_sec=20, tm_wday=2, tm_yday=180, tm_isdst=0)
+
+	2时间格式化函数time.strftime(tpl,t)  (其中tpl是格式化的模板字符串,t为struct_time格式的时间)
+		example:
+		#先获得当前时间
+		t=time.gmtime()
+		#用strftime函数格式化输出字符串时间(string format time)
+		#格式化控制符:%＋字母:Y年;m月;B月份名称;b月份简称;d日期;A星期;a星期缩写;H小时(24小时制;I小时(12小时制);p上下午标识符;M分钟;S秒)
+		time.strftime("%Y-%m %H:%M:%S",t)
+		得到结果字符串'2022-06 15:24:21'
+		
+		相反,time.strptime(str,tpl)(其中str为字符串,tpl)将一段字符串变成时间变量(struct_time0)
+		example:
+		str='2022-06 15:24:21'
+		tpl="%Y-%m %H:%M:%S"
+		time.strptime(str,tpl) 输出了一个struct_time类型的时间变量,解析成功了.(注意当给定的参数不足以唯一地确定时间时,会自动补齐(1900年1月1日0点0分0秒))
+		
+	3程序计时函数
+		.sleep(s)  让程序休眠s秒(s可以是浮点数)
+		.perf_counter()  返回一个精确的浮点数时间,单位是秒.开始时间不确定,一般都是利用两个perf_counter的差值.(原则上和.time的效果相同)
+
+
+
+
+
+
+random库#包含两个基本随机数函数.seed()和.random();一些扩展随机数函数.
+	.random()  #返回用seed(默认则以第一次使用.random()当前系统时间为seed)创建的0~1之间的随机浮点数.(对于确定的种子,.random()创建的随机数序列是确定的.(若先设置random.seed(10),则第一次执行的random.random()输出的浮点数一定是0.5714025946899135)
+	.seed(seed)设置当前种子为seed(一个float或int)
+	.randint(a,b)生成一个[a,b]之间的随机整数
+	.randrange(m,n,k)生成一个rang(m,n,k)之间的随机整数
+	.getrandbits(k)生成一个k比特长的随机整数  random.getrandbits(16) 结果为37885
+	.uniform(a,b)生成一个[a,b]之间的随机小数
+	.choice(seq)从序列seq中随机选择一个元素
+	.shuffle(seq)将序列seq中的元素随机排列,返回打乱后的序列.
+	
+
+
+
+turtle库
+	turtle.home() 	#将画笔瞬移到(0,0)
+	turtle.goto(x,y)	#画笔移动到(x,y)--->turtle.penup() turtle.goto(x,y)#画笔瞬移到(x,y)
+	turtle.write('要写的字符串'[,move=True],font='字体',字号,'')
+	turtle.turtlehide()	#藏起箭头
+
+
+
+
+PyInstaller库
+	cmd中用语句:  pip install PyInstaller进行安装.
+	使用方法为cmd中输入pyinstaller -F <文件名.py>
+	得到三个文件夹,取dist文件夹中的exe即为所求.
+	pyinstaller -h	显示帮助
+	pyinstaller -F 存在在当前目录中的py文件名     即为进行封装.
+	example:
+	#1.先前往对应的文件夹地址:
+	cd desktop
+	cd py脚本
+	#2.输入命令
+	pyinstaller -F 爬虫.py
+
+
+
+
+
+
+
+
+
+
+id(x) 获得变量x的内存地址.（一个长整数）
+
+
+
+sha-bang:
+在多种语言中出现,一般出现在第一行,作用是指定解释器.
+#![位置]
+如#!\D:\aza\python
+
+
+
+
+正则表达式:
+
+
+
+
+
+
+
+
+
+
+
+
+
+字节
+b'  /x/x/x/x/x/xs8f98u    '    b''里面就是字节.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

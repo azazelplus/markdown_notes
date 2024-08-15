@@ -1,0 +1,55 @@
+clc 清理命令窗口command window。（cls是cmd里的清理窗口）
+clear all清楚右侧所有变量。
+数字 字符与字符串 矩阵 元胞数组 结构体
+
+字符串在matlab里面用单引号‘darn it！’表示。
+
+矩阵的表示方法：
+A=[] 里面的元素用；换行，用空格或者，换列。
+B=A'  转置。
+C=A(:) 把A按列拉成一个大列。
+D=inv（A）求逆。
+
+三维矩阵：（a,b,c）
+a为行数，b为列数，c为层数。
+
+zeros（）是0矩阵。
+
+load(filename)      %将文件变量加载到工作区中.
+load filename      %其他格式
+
+
+
+
+随机数
+rand()	%产生均匀分布的随机矩阵(空则返回0~1随机值)
+randn()	%产生正态分布的随机矩阵(空则返回0~1随机值)
+%每次启动MATLAB时rand与randn的初始状态都会被自动重置，从而产生完全相同的伪随机序列。重启MATLAB后再次运行rand和randn，会得到完全一样的结果。(第一次运行rand()得到0.8147).
+如果想得到不同的伪随机序列，可以重置随机数发生函数的状态，相应语句为 rand(method,s)和randn(method,s)。
+参数method是一个字符串，指明伪随机数的生成算法，rand函数中method有三种选择：‘twister’、‘state’、‘seed’，其中最新的‘twister’方法产生的伪随机序列重复周期最长，是MATALB 7.4 以上版本的默认方法。randn函数中只包括‘state’和‘seed’,默认方法是‘state’。
+可以用rand(method)和randn(method)查看method方法当前的状态.
+
+
+
+
+
+
+导入数据
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
