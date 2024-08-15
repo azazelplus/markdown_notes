@@ -545,11 +545,48 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 # 一些实例   
 
 # git
-想要提交更改的时候一般输入
+
+* 将一个文件夹myfile初始化为仓库并导入azazelplus账号的git在线仓库：
+首先在在该目录下运行git bash.
 ```bash
-git add .
-git commit --allow-empty
+git init  #初始化仓库, 生成.git目录.
+
+git add . #将目录下所有文件放入暂存区, 等待commit.
+
+git commit -m "first commit"  #第一次提交到本地仓库.
+
+#如果还没有设定身份,需要先设定身份(我的github.com网站的用户名和邮箱.)
+git config user.name "azazelplus"
+git config user.email "azazelplusplusplus@gmail.com"
+
+#commit成功运行时, 会显示create mode xxxxx (yourFileName)
+
+git log #查看一下提交日志, 应该是只有一条刚刚的第一次提交.
+
+git remote add origin <url>
+#git remote add命令用于为 当前本地git仓库 添加一个名为origin的新的远程仓库. (惯例取名origin) 
+#远程仓库的url可以使用http协议, 也可以使用ssh协议. 要先在github.com中新建一个仓库, 然后复制新仓库的url, 粘贴在这里.
+#在github.com创建远程仓库时取的别名可能和这里的名字不同, 这没有影响, 在git bash中继续使用惯例origin来引用这个仓库.
+#不同的本地仓库完全可以都这么干, 都叫origin是允许的, git是以一个仓库为单位管理的, 不会混淆.
+
+git push -u origin> master #将本地仓库的分支`master`推送到
+# -u选项会设定远程仓库`origin`为本地仓库分支`master`的该本地仓库将会和该远程仓库默认绑定, 默认push和pull的时候就是他俩之间的交互.
+
+#到此成功创建本地仓库, 并创建对应远程仓库.
 ```
+
+* 每次修改完本地文件, 存档到本地仓库和远程仓库:
+```bash
+git add . #把所有文件放到暂存区
+
+git commit -n "i did something-2024-08-15"  #提交快照到本地仓库
+
+git push  #将本地提交推送到 本地仓库所默认的 远程仓库.
+# 即可完成一次存档.
+```
+
+
+
 ## 查看历史 git log
 ```bash
 git log #显示当前仓库所有提交历史
@@ -607,6 +644,32 @@ git push -u origin master #-u选项会将本地分支与远程分支关联起来
 git push --force  #强制推送,覆盖远程分支上的内容, 谨慎使用.
 
 ```
+## git reflog
+这个指令显示最近在**当前本地仓库**中对`head`(当前分支的指针)所做的操作记录.
+这些记录仅存在于本地仓库, 不会被推送到远程仓库.
+
+当你进行`commit`, `checkout`, `pull` 时, git系统会记录下这些操作.
+
+![alt text](image-3.png)
+这些输出的意思:
+```git
+49d4be5 (HEAD -> master, origin/master) HEAD@{0}: pull origin master: Fast-forward
+```
+>`49d4be5`: 这是一个提交 ID，标识了当前 `HEAD` 指向的提交，也就是 git pull 操作后指向的提交。
+>`HEAD -> master`: 表示当前 HEAD 指向的是 `master` 分支。
+>`origin/master`: 说明这个提交同时也是远程仓库 `origin` 的 `master` 分支的最新提交。
+>`HEAD@{0}`: 表示这是你最近的一次操作，索引值为 `0`。
+>`pull origin master: Fast-forward`: 说明最近的一次操作是 `git pull`，并且通过 “Fast-forward” 模式合并了远程 `master` 分支的更改到本地 `master` 分支。
+
+```git
+9bf2b3c (testbranch) HEAD@{1}: checkout: moving from testbranch to master
+```
+>这是倒数第二次操作, 操作为`checkout`,将分支从`testbranch`切换到了`master`.
+
+## 从远程仓库合并到本地 git pull
+```bash
+git pull  #将默认远程仓库的
+```
 
 ## 将文件加入跟踪列表 git add
 ```bash
@@ -618,12 +681,20 @@ git add -A #将所有未被跟踪文件加入跟踪列表. 这可能会跟踪一
 git add . #将当前目录中所有的文件加入跟踪列表. 效果即和`git add -A`相同.
 ```
 ## 回档 git reset
-
+`git rest`用于改变`HEAD`指针及其相关引用, 达到回退版本的效果.
 发生意外后的chronos.
 ```bash
-git reset --hard b87c #其中`b87c`是欲返回的存档的hash code的前缀(前四位).
+git reset --选项 <commit> 
+#其中`<commit>`可以是是欲返回的存档的hash code的前缀(前几位或更多,只要他们在仓库中唯一就被允许, git会自动匹配); 可以是相对引用: `HEAD~1`(表示上一次提交), `HEAD~2~(上上次提交), `HEAD^`(当前提交的父提交); 可以是分支名,如`master`
+
+#hard模式下, 移动`HEAD`指针, 重置暂存区和工作目录.
+#soft模式下, 移动`HEAD`指针, 但不改变暂存区和工作目录.
+#mix(默认)模式下, 移动`HEAD`指针, 重置工作目录, 但不重置暂存区.
 
 ```
+
+
+
 ## branch管理
 
 ### 使用branch的标准流程:
@@ -640,8 +711,15 @@ git checkout master #切换到master分支.
 ```
 
 
-#
-#
+## 从网上clong仓库
+```bash
+git clone <url>
+```
+## others
+```bash
+git ls-files  #列出暂存区的文件.
+ 
+```
 
 	
 
