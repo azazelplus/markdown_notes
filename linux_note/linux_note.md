@@ -569,7 +569,7 @@ git remote add origin <url>
 #在github.com创建远程仓库时取的别名可能和这里的名字不同, 这没有影响, 在git bash中继续使用惯例origin来引用这个仓库.
 #不同的本地仓库完全可以都这么干, 都叫origin是允许的, git是以一个仓库为单位管理的, 不会混淆.
 
-git push -u origin> master #将本地仓库的分支`master`推送到
+git push -u origin master #将本地仓库的分支`master`推送到
 # -u选项会设定远程仓库`origin`为本地仓库分支`master`的该本地仓库将会和该远程仓库默认绑定, 默认push和pull的时候就是他俩之间的交互.
 
 #到此成功创建本地仓库, 并创建对应远程仓库.
