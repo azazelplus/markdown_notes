@@ -714,11 +714,20 @@ git checkout master #切换到master分支.
 ## 从网上clong仓库
 ```bash
 git clone <url>
+#请使用ssh_url而不是http_url. 后者已经不支持了.
+```
+## 远程仓库管理 git remote
+```bash
+git remote -v #查看当前本地仓库的默认推送远程仓库.
+
+git push --set-upstream <remote_name> <branch_name> #更改当前本地仓库的默认推送远程仓库和分支.
+
 ```
 ## others
 ```bash
 git ls-files  #列出暂存区的文件.
- 
+
+
 ```
 
 	
