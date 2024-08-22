@@ -1,12 +1,23 @@
-
+## 基础语法
 ### 头文件
 ```cpp
 #include <iostream>
 using namespace std;//如果不声明使用的函数命名空间,则需要在使用std内的函数和保留字时格式为:std::cin >>n    std::endl(类似于python中的是否import 某函数  from 某module一样.)
 ```
+####　常用头文件：
+```cpp
+#include<bits/stlc++.h>	//万能头文件
+#include<iostream>
+#include<string>
+#include<stdio.h>
+#include<string.h>
+#include<queue>
+#include<algorithm>
+using namespace std
+```
 * 在C中.h去掉前面加上c即可,如:<string.h>在c++中换成<cstring>
 
-### 符号解释
+### 符号和关键字
 #### 条件运算符:
 (条件表达式)?(为真时表达式的值):(为假时表达式的值)
 如x==3?0:1
@@ -17,7 +28,16 @@ using namespace std;//如果不声明使用的函数命名空间,则需要在使
 
 杂项
 - C++定义常量`const int a=3.14`和C中的预处理`#define a 3.14`不同:后者在编译预处理时把整个程序的a全部替换成3.14,a不存在了,不是一个只读变量名.(不过实际使用区别不体现.)
+#### operator 关键字
+`operator`用于定义或重载**运算符函数**.
+基本形式:
+`return_type operator symbol (parameters){//实现}
+例子: 我们来重载`+`, 使得两个复数类`complex`可以相加运算
+```cpp
+//这是我们的complex类定义
 
+
+```
 ### 函数
 #### 一些函数介绍
 ##### typeid 察看变量类型:
@@ -82,7 +102,24 @@ typedef int INT,integer;//这样就可以用INT或者integer来代替int啦
 C++ 中的一种特性，它允许你编写一个**对数据类型**通用的函数，而不必针对不同的数据类型编写多个函数版本。定义函数模板时，使用 template 关键字。
 STL中提供的的多种类都是函数模板.
 
-
+#### 形式参数和实际参数
+在一个函数中, 参数分为形式参数(函数接收的参数)和实际参数(函数体内定义的参数).
+```cpp
+int myfun(int a, int b){
+	int c = a + b;
+	return c;
+	//在这个简单的例子里, a, b是myfun的形式参数, c是myfun的实际参数.
+}
+```
+##### const形式参数
+可以在形式参数前面加上关键字`const`, 表达这个传进来的参数在该函数体内部不可被改变. 
+```cpp
+int myfun(const int a)//在函数体内的变量a作为一个常数不可被修改.
+{
+	//函数实现
+}
+```
+这是一个常见的功能, 在传入某个真实数据时一般传入const 形式参数, 防止函数体内不小心把这个参数改变了.
 ### I/O流控制    	
 流,即输入或输出的那一系列字节.
 ```cpp
@@ -220,7 +257,7 @@ class GraduatStudent:public Student//继承了父类的结构和函数
 在指针定义中,一个*只能表示一个指针.即``int * ptr1,ptr2;``
 该语句声明了一个整形指针ptr1和一个整形ptr2.
 
-### 数据结构
+## 数据结构
 #### 堆heap
 C++程序的内存格局通常分为四个区:
 >**全局数据区data area**		存放全局变量,静态数据,常量
@@ -236,7 +273,7 @@ C++程序的内存格局通常分为四个区:
 
 
 
-### 注意事项
+## 注意事项
 对于数组,结构体(数组)等(连续的一段内存空间)当作形参传入函数时,使用其开头指针(一个结构体名字就是他的第一个成员变量的地址,一个结构体数组的名字就是它第一个结构体的第一个成员变量的地址.)就可以了.
 例:
 ```cpp
@@ -267,7 +304,7 @@ mike 150
 ```
 
 
-### STL C++标准模板库
+## STL C++标准模板库
 #### 容器
 通用的方法:
 容器.size()返回容器的大小.
@@ -278,7 +315,6 @@ mike 150
 在头文件#include<iostream>中.
 创建:pair<数据类型first,数据类型second> mypair[50];//创建了一个全是(0,0)的pair数组.
 访问:mypair[i].first或second;//表达式返回的是相应的第一个元素或者第二个元素.一般为了方便可以#define x first;#define y second;
-
 
 #### vector(动态数组,可变长数组)
 在头文件#include<vector>中.
@@ -335,19 +371,30 @@ for(char& i : str)	//在声明时使用的&为[引用运算符],任何其他&的
 
 迭代器:		//提供一个对任何容器统一的遍历方式.
 
-###　常用头文件：
+
+## 参数传递
+分为pass by value(按值传递)和pass by reference(按引用传递).
 ```cpp
-#include<bits/stlc++.h>	//万能头文件
-#include<iostream>
-#include<string>
-#include<stdio.h>
-#include<string.h>
-#include<queue>
-#include<algorithm>
-using namespace std
+void NotModifyValue(int a){
+	a =10;
+}//修改的是传入的变量的一个副本.
+
+void ModifyValue(int &a){
+	a =10;
+}//修改了传入的变量的值.
+
 ```
+编写程序时, 应该尽量选择pass by reference.
+#### 引用类型
+引用是一种类型，它为变量创建了一个别名。使用引用可以让函数参数或变量像指针那样操作，但语法更简洁且更安全。
+```cpp
+int a = 10;
+int 
+```
+pass by referebce to const既想要速度快, 又不希望原变量数值被改动.
 
-
+##
+##
 ## 算法
 ### 贪心算法
 为什么贪心是正确的？
