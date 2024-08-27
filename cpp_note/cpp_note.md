@@ -1,5 +1,21 @@
 ## 基础语法
 
+### 数据类型
+
+#### char* 字符串/字符指针/字符数组名
+- char* 字符串一般为**C风格的字符串**, 即以`\0`作为结尾标志. 使用cout时, 编译器若识别到**C风格的字符串**, 不会打印出指针地址, 而是打印这个字符串. 如果你希望编译器把这个**字符数组名**当作指针看待, 打印出指针地址, 那你需要把他显示转化为void*再打印.
+  ![alt text](image-3.png)
+  ![alt text](image-2.png)
+由于字符串作为特殊的指针的特殊地址属性, 两个**同样的字符串**, 其地址并不相等.
+```cpp
+if("azazel"=="azazel")
+cout<<"相等"<<endl;
+else
+cout<<"不相等"<<endl;
+//输出不相等.
+```
+- 没错, 一个字符串`"hello"`其实是一个地址. 完全可以`char* ptr="hello"`
+
 ### 头文件
 ```cpp
 #include <iostream>
@@ -45,7 +61,25 @@ class Complex
 ####
 
 ### 函数
+
+#### 函数的声明
+C++允许隐式声明, 即还没有写函数体{}, 先声明函数. 你甚至可以先声明一个函数, 不给形参起名字, 如`void print(char*[]);`表示一个需要传递一个字符串数组的的函数. 在后面完整的定义里, 你还是要声明形参名字的:
+```cpp
+void print(char*[]);
+int main(){
+	char* name[]={"azazel", "chronos", "tasvidus", NULL}
+
+	myprint(name);
+
+	void myprint(char* arr[]){
+		for(;*arr!=NULL;arr++)	//输出各个字符串和其地址数字
+			cout<<(int)*arr<<" "<<*arr<<endl;
+	}
+}
+```
+
 #### 一些函数介绍
+
 ##### typeid 察看变量类型:
 `typeid(d).name()`返回值是一个`char const *`
 当d为int/double/char时打印出来是int/double/char
@@ -306,12 +340,40 @@ int main(){
 
 ```
 
-### 指针和引用
+### 指针
+
+#### 概述
 - 在指针定义中,一个*只能表示一个指针.即``int * ptr1,ptr2;``
 该语句声明了一个整形指针ptr1和一个整形ptr2.
 - 在执行语句中, *在指针变量前为**间接引用符**, 如`*iptr=5;`表示将该指针所指变量的值赋值为5.
 - 在定义语句中, *在数据类型后为**指针定义符**, 如`int* iptr;`表示声明一个悬空指针.
-- **void\*** 称为**通用指针**或空类型指针. 它可以指向任何类型的数据. 函数malloc()就返回通用指针.
+- **void\*** 称为**通用指针**或空类型指针. 
+  - 它可以指向任何类型的数据. 函数malloc()就返回通用指针. 
+    - 显然, 空指针**不可**进行间接引用`*nulptr`, 也**不可**进行指针运算`nulptr++`.
+    - 空指针可以显式转换.`ptr=(int*)nulptr`. 不可被隐式转换(右值):`int *ptr=nulptr	 //error`
+    - 空指针的一个应用:**mecpy()函数**
+      - 这函数**从源数组中拷贝n个字节到目标数组中**. 或者说, **从一个内存位置(指针source_arr)复制指定数量(n)的字节到另一个内存位置(指针destination_arr)**。返回空指针destination_arr.
+      - 原型:`void* memcpy(void* destination_arr, const void* source_arr, int n)`
+```cpp
+#include <iostream>
+#include <string.h>//memcpy()在该头文件内.
+using namespace std;
+////////////////////////////////////////////
+int main(){
+	char source_string[11]="azazelplus";
+    //字符串字面量会自动在末尾添加一个空字符 `\0`, 也称为 null-terminator, 用于标识字符串的结束.
+	char destination_string[10];
+    destination_string[6]='\0'; //手动添加终止符
+	memcpy(destination_string,source_string, 6);
+    cout<< destination_string <<endl;
+	//输出为'azazel'
+	//也可以利用memcpy的返回值:
+	ptr=(char*)memcpy(destination_string,source_string, 6);
+	cout<< ptr <<endl;
+    return 0;
+    
+}
+```
 - 不同数据类型的变量, 在内存中(即使使用相同的字节如`int`和`float`)读取方式是不同的. 不同数据类型指针之间可以强制转换, 但这是危险而不寻常的. 用不同类型的指针读取同一块内存, 会解析出不同的结果. 下面是一个危险的例子.
 ```cpp
 int a=5;
@@ -354,39 +416,119 @@ ptr++; 		//此时ptr==&a[1]
 ptr-2; 		//此时ptr==&a[-1], 发生越界访问, 危险.
 *ptr=666;	//越界改写, 危险!!!
 ```
-#### 堆内存分配
 
-##### 堆(heap)
-是一个较大的内存区域, 用于动态内存分配. 速度比栈慢. 
+#### 堆内存分配
+**堆(heap)**是一个较大的内存区域, 用于动态内存分配. 速度比栈慢. 
 - 用`new`, `malloc`等函数请求内存.
 - 用`delete`, `free`等函数释放内存.
-- malloc函数
+##### malloc函数
   - 原型:`void* malloc(size_t size)`
+
 ```cpp
-# include <cstdlilb>//malloc（）函数中在c-std-lib头文件中。
+//例子:从堆中获取一个整数数组, 然后赋值打印.
+
+# include <iostream>
+# include <cstdlib>	//malloc（）函数中在c-std-lib头文件中。
 using namespace std;
 int main(){
 	cout<<"输入数组大小"<<endl;
 	int aSize;//数组大小
 	cin>>aSize;
-
 	int* aptr=(int*)malloc(aSize*sizeof(int));	//申请动态内存空间, 开辟数组.
 	//malloc()的返回类型是void*, 需要进行一次隐式转换, 故开头加上(int*).
 	//malloc()函数输入要开辟的字节数量(int或unsigned). sizeof()函数输出一个int, 即某种数据据类型占用内存字节数量.
 
 	//如果malloc分配失败了, 会返回一个NULL指针(新版本多了数据类型nullptr, 它和NULL是一样的). 而指针作为布尔判断时, NULL为0, 其他指针为1.
-	if(apter){
-		cout<<"分配成功"<<endl;
-		return 0;
+	if(!aptr){
+		cout<<"无法分配更多内存了. 程序终止.\n"<<endl;
+		return 1;
 	}
 	else{
-			cout<"无法分配更多内存了. 程序终止.\n"
+			cout << "分配成功"<<endl;
 		}
-		return 1;
+		
+	//得到了数组, 赋值打印出来看看.
+	for(int cnt=0; cnt<aSize; cnt++)
+		aptr[cnt]=cnt*2;
+	for(int cnt=0; cnt<aSize; cnt++)
+		cout<<aptr[cnt]<<" "<<endl;
+	free(aptr);	//释放堆内存, 该动态分配的数组将不复存在了.
+	return 0;
 }
-
-
+// 效果:
+// 输入数组大小
+// 8
+// 分配成功
+// 0
+// 2
+// 4
+// 6
+// 8
+// 10
+// 12
+// 14
 ```
+##### new()和delete()
+C++专有的操作符, 不需要头文件声明, 比malloc更简练. 它直接返回你想要的指针类型, 这显然靠函数模板实现. 只需给new指明什麽数据类型和要按多少元素即可, 形如`new int[5]`. 
+```cpp
+int aSize;
+cin >> aSize;
+
+//malloc()实现开辟数组
+int* aptr = (int*)malloc(sizeof(int)*aSize);
+//free实现内存释放
+free(aptr);
+
+//new()实现开辟数组
+int* aptr = new int[aSize];
+//delete()实现内存释放
+delete[] aptr;
+```
+
+#### 指针和函数
+
+##### 传递一个指针(数组)给函数
+-  格式: 
+   -  `Sum(int array[])` 
+   -  `Sum(int* array)` 
+     
+	是完全等价的. 前者可读性似乎好一些.
+- 一旦把数组作为参数传递到了函数中, 则**在栈上定义了指针**.
+  
+- 传递一个指针(或者说数组)给函数, 实际上是传递了一个原指针的副本, 而原数组的数据仍然在原来的地方存放着. 这个指针副本可以访问原数组, 也可以在函数体内被更改, 不影响原指针.
+![alt text](image.png)
+```cpp
+//下面的函数, 传递一个数组然后求和.
+
+int Sum(int array[], int aSize){
+	int sum = 0;
+	for(int i=0; i<aSize, i++){
+		sum+ = *array;
+		array++;
+	}
+	return sum;
+}
+```
+
+下一个例子.
+```cpp
+//写一个实现两个int的swap函数
+void swap(int* x,int* y){
+	int temp = *x;
+	*x=*y;
+	*y=temp;
+}
+```
+![alt text](image-1.png)
+* 指针的灵活是以破坏函数的黑盒特性为代价.
+  * **调试难度和安全.**<br>它使函数可以访问函数的栈空间以外的的内存区域, 范围扩大, 跟踪错误也更复杂. 同时错误现象从简单的不能得到相应返回结果, 扩展到系统破坏甚至死机.
+  * **重用性破坏.** <br>调用接收指针的函数, 依赖于整个外部内存空间的环境.  这样的函数难以作为公共的函数模块来使用.
+
+##### 指针函数
+即返回值为指针.
+* 当然, 你**不应该**返回一个在该函数内部声明的一个地址(这个地址作为局部作用域, 指向**栈STACK**中的内存.). 这样的指针在该函数作用结束后会被自动栈管理而释放内存. 总之,可以返回堆地址, 全局或静态变量地址, 但不要返回局部变量的地址.
+
+
 - 区分程序何时使用堆分配内存,何时使用栈分配.
   - 堆分配:
     - 全局变量;
@@ -394,9 +536,17 @@ int main(){
   - 栈分配:
     - 函数内的局部变量.
     - 形参.
-##### 栈(stack)
-程序运行时自动管理的内存区域, 比堆要小. 用于存储函数调用的局部变量, 返回地址, 一些中间结果.
-- 系统自动管理栈的分配和释放, 不需要也无法手动管理栈内存.
+
+#### 指针数组
+- 即一个数组中每个元素都是一个指针. 其数组名是指针的指针, 二级指针.
+- 最简单的, 一个**字符串数组**,或者说**字符指针数组**,就是一个**指针数组**.
+下面的代码定义一个字符指针数组并初始化.
+```cpp
+char* name[]=
+```
+
+#### NULL指针
+是一个指针值, 任何类型的指针都可以赋予.
 
 #### 函数指针
 **程序运行时**, 
@@ -584,9 +734,6 @@ int
 ```
 pass by referebce to const既想要速度快, 又不希望原变量数值被改动.
 
-##
-
-##
 
 ## 算法
 ### 贪心算法
@@ -723,6 +870,16 @@ class A {
 
 ```
 
+### 命令行参数
+一个C++编译exe程序是操作系统调用的函数.
+在CLI中, 我们输入字符串, 作为参数传递给特定的系统内置(bin里)函数的主函数.
+因此, 这些main的形式为:
+```cpp
+int main(int argc, char* argv[]){
+	//...
+}
+```
+其中, argc(arg count)是参数个数, argv(arg vector)
 ## 好习惯
 - 对于不期望改变变量值的函数(如类中的显示函数), 应在()和{}之间加上关键字const.
 ```cpp
@@ -740,6 +897,8 @@ class A{
 const A a1(5);	//使用者要求创建一个const的A类
 cout << a1.disp();	//此处会报错, 编译器认为非const函数disp()有可能改变a1的属性, 故不允许这样做.
 ```
+
+##
 
 ##
 
