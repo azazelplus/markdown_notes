@@ -16,6 +16,9 @@ cout<<"不相等"<<endl;
 ```
 - 没错, 一个字符串`"hello"`其实是一个地址. 完全可以`char* ptr="hello"`
 
+#### double 双精度浮点数
+在C中, 形如`2.56`的小数是double类型. 语句`float a = 2.55`是不恰当的, 实际上进行了一次double类型`2.55`到float类型的隐式转换. 恰当的方式是写为`float a = 2.55f`.
+
 ### 头文件
 ```cpp
 #include <iostream>
@@ -33,6 +36,89 @@ using namespace std;//如果不声明使用的函数命名空间,则需要在使
 using namespace std
 ```
 * 在C中.h去掉前面加上c即可,如:<string.h>在c++中换成<cstring>
+
+### STL C++标准模板库
+#### 容器
+通用的方法:
+容器.size()返回容器的大小.
+#### list(链表)
+
+####　pair()
+当想要将两个元素绑在一起作为一个合成元素,又不想要因此定义结构体时,使用 pair 可以很方便地作为一个代替品.
+在头文件#include<iostream>中.
+创建:pair<数据类型first,数据类型second> mypair[50];//创建了一个全是(0,0)的pair数组.
+访问:mypair[i].first或second;//表达式返回的是相应的第一个元素或者第二个元素.一般为了方便可以#define x first;#define y second;
+
+#### vector(动态数组,可变长数组)
+在头文件`#include <vector>`中.
+
+其结构类似于:
+```cpp
+template <typename T>
+class Vector{
+private:
+
+
+}
+
+
+```
+
+```cpp
+vector <type> name;		//声明. 得到一个空的`type`类型可变数组`name`, `此时name.size()=0
+
+vector <int> a(n[,x0])		//建立一个size为n的都为x0(默认为0)的数组.
+a[1]=5;//动态数组的访问和数组一样.
+vector的方法:
+a.size()			//返回vector的大小
+a.resize(n);		//重新分配数组大小,此时a.size()=n
+a.push_back(新元素值);	//压入一个新元素，size也+1
+```
+*二维vector，即vector<vector<int>>erweiv;
+*vector的传递：直接传递vector的名字即可实现按值传递.如果用const vector<int>& myvec则为常引用,在函数体内参数变量是只可读的(适用于写类似void show()的函数.)
+
+
+#### map(地图,键值对)
+在头文件#include<map>中;map内部有序(自动排序，单词时按照字母序排序),查找时间复杂度为O(logn)。
+创建: map<键数据类型,值数据类型> mymap;//该语句创建一个键值对数据类型确定的空的map.
+操作方法:
+mymap.insert(key,value);//往mymap中加入一个(key,value)的键值对.
+mymap.find(key);//该表达式返回mymap中键key对应的value.
+
+
+
+#### priority_queue(优先序列,也称为堆,一个容器.本质是用一个数组去模拟的完全二叉树.可以拿出优先级最大的元素.)
+头文件为#include<queue>
+定义:priority_queue <数据类型,容器类型,比较方法>,默认容器类型为vector<数据类型>,默认比较方法为less<数据类型>
+greater<数据类型>则为小顶堆.
+priority_queue <int> myque;	//生成了一个int类型大顶堆,即值越大优先级越高.
+priority_queue <int,vector<int>,greater<int>> myque;	//生成了一个小顶堆.
+操作方法:
+myque.size()	//返回长度
+myque.push(x)	//插入元素x
+myque.pop()	//删除优先级最高的元素(称为堆顶.)
+myque.top()	//访问堆顶(返回堆顶元素)
+myque.empty()	//判断是否为空.
+
+#### 容器的for加强循环：
+C++提供类似python的容器迭代方式,即for(循环变量:容器)
+```cpp
+//字符串的遍历:
+string str="DieScatten";
+for(char i : str)	//类似python中的for char in str:
+{
+	cout<<i<<" ";
+	i="a"	//不能修改,没有用的语句
+}
+for(char& i : str)	//在声明时使用的&为[引用运算符],任何其他&的使用是地址操作符.在这里实际上是每次遍历都声明了str内一个字符的引用i,并操作i.
+{
+	cout<<i<<" ";
+	i="a"	//将字符串str变成aaaaaaaaaa
+}
+```
+同理,vector的遍历也类似.
+
+迭代器:		//提供一个对任何容器统一的遍历方式.
 
 ### 符号和关键字
 #### 条件运算符:
@@ -138,9 +224,10 @@ else
 ```cpp
 typedef int INT,integer;//这样就可以用INT或者integer来代替int啦
 ```
+
 #### 函数模板
-C++ 中的一种特性，它允许你编写一个**对数据类型**通用的函数，而不必针对不同的数据类型编写多个函数版本。定义函数模板时，使用 template 关键字。
-STL中提供的的多种类都是函数模板.
+C++ 中的一种特性，它允许你编写一个**对数据类型**通用的函数，而不必针对不同的数据类型编写多个函数版本。定义函数模板时，使用 `template` 关键字。
+STL中提供的的多种类都是函数模板, 如`vector`.
 
 #### 形式参数和实际参数
 在一个函数中, 参数分为形式参数(函数接收的参数)和实际参数(函数体内定义的参数).
@@ -160,6 +247,7 @@ int myfun(const int a)//在函数体内的变量a作为一个常数不可被修�
 }
 ```
 这是一个常见的功能, 在传入某个真实数据时一般传入const 形式参数, 防止函数体内不小心把这个参数改变了.
+
 #### cin cout I/O流控制    	
 流,即输入或输出的那一系列字节.
 ```cpp
@@ -307,6 +395,7 @@ class Rectangle{
 - 析构函数也是类的一种特殊函数, 函数名为类名前加`~`.
 - 也没有返回值, 不接受参数, 作用是进行清理工作. 
 - 不带指针的类, 多半不需要写析构函数.
+
 #### 继承
 即可以从一个已存在的类(称为**基类/父类/超类/base class**)中继承属性和方法,创建一个子类(**derived class**).
 - 用`:`符号表示继承, 即`class Derived_Class_name : [访问控制修饰符] Base_Class_name{...}` . <br> 其中可选**访问控制修饰符**用来决定子类对基类的成员的访问权限. 可以为:
@@ -528,7 +617,7 @@ void swap(int* x,int* y){
 即返回值为指针.
 * 当然, 你**不应该**返回一个在该函数内部声明的一个地址(这个地址作为局部作用域, 指向**栈STACK**中的内存.). 这样的指针在该函数作用结束后会被自动栈管理而释放内存. 总之,可以返回堆地址, 全局或静态变量地址, 但不要返回局部变量的地址.
 
-
+##### 堆和栈
 - 区分程序何时使用堆分配内存,何时使用栈分配.
   - 堆分配:
     - 全局变量;
@@ -536,6 +625,18 @@ void swap(int* x,int* y){
   - 栈分配:
     - 函数内的局部变量.
     - 形参.
+
+##### 用指针使用堆分配
+写程序时，如果想声明一个对象（无论他是结构体/数组/整数等等），可以:
+
+* 直接声明一个对象, 比如`struct Your_struct new_struct`; 这样实际上是在栈中自动管理其内存。
+
+这个对象是在栈中分配的。栈内存是自动管理的，意味着当函数返回时，这些变量会自动销毁，不需要你手动管理。栈的优点是分配和释放都非常快，但它的缺点是存储空间有限，不能用来存储大型数据或需要在多个函数间共享的数据。
+
+* 声明一个对象指针, 比如`struct Your_struct* newstruct = new(struct Your_struct)`; 这样实际上是在堆上手动分配内存.
+
+这个对象是在堆中分配的。堆内存允许你手动控制对象的生命周期，但你需要自己负责释放它 (`delete` 或 `free`)。堆的优点是可以分配大量内存，但代价是分配和释放较慢，而且如果你忘记释放，就可能造成内存泄漏。
+
 
 #### 指针数组
 - 即一个数组中每个元素都是一个指针. 其数组名是指针的指针, 二级指针.
@@ -549,11 +650,15 @@ char* name[]=
 是一个指针值, 任何类型的指针都可以赋予.
 
 #### 函数指针
-**程序运行时**, 
-  - 局部变量存放在**栈区**
-  - 申请的动态空间, 全局变量存放在**堆区**
-  - 函数代码存放在**代码区(code)**
+程序运行时, 
+  - 局部变量存放在**栈区**。
+  - 申请的动态空间, 全局变量存放在**堆区**。
+  - 函数代码存放在**代码区(code)**。
+
 每个函数都有地址. 指向函数地址的指针就是函数指针. 通过函数指针可以调用相应的函数.
+
+
+
 
 - 函数指针的定义语句:
 ```cpp
@@ -598,12 +703,150 @@ double b = static_cast<double>(a);
 
 
 
+
+
+
+
+
+
+
+
+
+
+### 文件读取
+C使用`FILE`结构体(在标准库stdio.h中)实现管理文件的读写.
+
+常用函数:
+#####  `fopen` 
+用于打开一个文件夹. 返回一个`FILE`指针. 
+
+在c中, 需要先使用 fopen 函数打开文件，得到一个文件指针（FILE *），然后才能用这个指针来调用 fread 读取文件内容。
+
+- 在使用 `fopen` 函数时，需要指定文件的打开模式。常见的模式包括：
+
+  - "r": 只读模式。如果文件名不存在，则返回`NULL`指针.
+  - "w": **覆写**模式。如果文件存在，**会被截断为零长度**；如果文件名不存在，则创建新文件。
+  - "a": 追加模式。传回的文件指针此时是文件的末尾处, 写入的数据会追加到文件末尾。如果文件不存在，则创建新文件。
+  - "r+": 读写模式。文件必须存在。
+  - "w+": 读写模式。如果文件存在，会被截断为零长度；如果文件不存在，则创建新文件。
+  - "a+": 读写模式。写入的数据会追加到文件末尾。如果文件不存在，则创建新文件。
+```cpp
+FILE *file = fopen("example.txt", "r")
+```
+
+##### `fclose`
+用于关闭一个打开的文件夹.
+**刷新缓冲区**：当你用 `fwrite` 或其他方式向文件写入数据时，操作系统通常会使用缓冲机制，将数据先写入内存而不是立即写入磁盘。fclose 会确保这些缓冲区的数据被刷新（即写入磁盘），避免数据丢失。
+
+**释放资源**：文件指针是操作系统的一个资源。每打开一个文件，操作系统会分配一些资源，比如文件描述符。`fclose` 会将这些资源释放掉，确保不会发生资源泄漏。如果不关闭文件，系统的文件句柄可能会耗尽，导致无法打开新的文件。
+
+**断开文件与进程的关联**：`fclose` 不仅销毁fopen返回的那个指针，还会关闭文件流，断开该文件与程序的关联。在调用 `fclose` 之后，文件指针不再有效，试图再使用它会导致错误。
+
+
+##### `fseek`
+fseek函数用于在文件中移动文件指针的位置, 从而能从文件的任意位置开始读取或写入数据. 移动成功时返回`0`, 否则返回`-1`.
+原型:`int fseek(FILE *stream, long offset, int whence);`
+第一个参数是要操作的文件指针.
+第二个参数offset是偏移量, 表示要移动的字节数(正数表示向文件末尾移动.)
+第三个参数whence是起始位置, 有以下已定义常量可以直接使用:
+  * `SEEK_SET` 文件的开头.
+  * `SEEK_CUR` 文件的当前光标位置.
+  * `SEEK_END` 文件的末尾.
+
+##### `rewind`
+`rewind(file);`效果和`fseek(file, 0, SEEK_SET);`一样, 即将文件指针放到文件开头.
+
+
+##### `ftell`
+返回当前文件指针相对于文件开头的偏移量, 也就是当前位置. 以字节为单位. 
+显然可以配合fseek得到文件大小:
+```cpp
+FILE *file = fopen("filename","r");
+fseek(file, 0, SEEK_END);//指针移动到文件末尾
+long file_size = ftell(file);//得到文件字节大小.
+```
+
+##### `fread`
+这个函数将一个**文件指针**中的内容读取到一个**内存指针**中.
+原型为
+```cpp
+size_t fread(void *ptr, size_t size, size_t count, FILE *stream);
+```
+>第一个参数是要把读取的数据存到的位置指针.
+>第二个参数是要读取的每个元素的大小.
+>第三个参数是要读取的元素数.
+>第四个参数是要读取的文件的指针.
+
+>返回值为`count`, 即读取的元素数.
+
+
+例子:
+```cpp
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+//这个C程序从当前目录读取名为file的文件, 把其中存储的数字作为字符串打印出来.
+int main(int argc, char* argv[])
+{
+
+	//打开文件
+	FILE *file = fopen("file","r");
+	assert(file);
+	
+	//找到文件大小
+	fseek(file, 0, SEEK_END);//指针移动到文件末尾
+	long file_size = ftell(file);//ftell得到当前位置, 即文档的字节大小
+	rewind(file);//文件指针返回文件开头.
+
+	
+	//分配内存和
+	char *buffer = (char*)malloc(
+			(file_size + 1)*sizeof(char)
+				);//分配一个动态内存buffer来存读取的文件内容.这个动态内存快的大小比读取文件多一个字节, 用来装'\0', 将buffer组装为标准C风格字符串.
+	
+	//读取文件内容到buffer
+	size_t read_size = fread(buffer, sizeof(char), file_size, file);
+	if(read_size != file_size)//如果读取成功， fread函数返回值即为成功读取的元素个数file_size.
+		{
+			perror("Failed to read the COMPLETE file!!");
+			free(buffer);
+			fclose(file);
+			return 1;
+		}
+
+	//打印读取的内容
+	printf("File content: %s\n", buffer);
+	
+	//清理动态内存, 关闭打开的文件
+	free(buffer);
+	fclose(file);
+	
+	return 0;
+}
+
+```
+
+##### `fwright`
+参数结构和`fread`相同. 做相反的事, 将**内存指针**的内容写入**文件指针**.
+
+##### `fflush`
+用于刷新文件流的缓冲区, 将缓冲区的数据写入到文件中. 
+实际使用中一般是用于写入本地文件后加一句`fflush(file)`来保证更安全.
+函数原型为`int fflush(FILE *stream);`
+返回值为`0`(成功), `-1`(失败).
+
+
+
 ## 数据结构
+
 #### 堆heap
 C++程序的内存格局通常分为四个区:
 >**全局数据区data area**		存放全局变量,静态数据,常量
+
 >**代码区code area**		存放类成员函数,非成员函数
->**栈区stack area(弹夹	)**	存放运行函数分配的局部变量,函数参数,返回数据,返回地址
+
+>**栈区stack area(弹夹	)**		存放运行函数分配的局部变量,函数参数,返回数据,返回地址
+
 >**堆区(自由存储区)heap area(队列)**	
 
 
@@ -614,7 +857,7 @@ C++程序的内存格局通常分为四个区:
 
 
 
-## 注意事项
+
 对于数组,结构体(数组)等(连续的一段内存空间)当作形参传入函数时,使用其开头指针(一个结构体名字就是他的第一个成员变量的地址,一个结构体数组的名字就是它第一个结构体的第一个成员变量的地址.)就可以了.
 例:
 ```cpp
@@ -645,72 +888,7 @@ mike 150
 ```
 
 
-## STL C++标准模板库
-#### 容器
-通用的方法:
-容器.size()返回容器的大小.
-#### list(链表)
 
-####　pair()
-当想要将两个元素绑在一起作为一个合成元素,又不想要因此定义结构体时,使用 pair 可以很方便地作为一个代替品.
-在头文件#include<iostream>中.
-创建:pair<数据类型first,数据类型second> mypair[50];//创建了一个全是(0,0)的pair数组.
-访问:mypair[i].first或second;//表达式返回的是相应的第一个元素或者第二个元素.一般为了方便可以#define x first;#define y second;
-
-#### vector(动态数组,可变长数组)
-在头文件#include<vector>中.
-创建:vector <int> a;		//建立一个空的int可变数组a,此时a.size()=0
-vector <int> a(n[,x0])		//建立一个size为n的都为x0(默认为0)的数组.
-a[1]=5;//动态数组的访问和数组一样.
-vector的方法:
-a.size()			//返回vector的大小
-a.resize(n);		//重新分配数组大小,此时a.size()=n
-a.push_back(新元素值);	//压入一个新元素，size也+1
-*二维vector，即vector<vector<int>>erweiv;
-*vector的传递：直接传递vector的名字即可实现按值传递.如果用const vector<int>& myvec则为常引用,在函数体内参数变量是只可读的(适用于写类似void show()的函数.)
-
-
-#### map(地图,键值对)
-在头文件#include<map>中;map内部有序(自动排序，单词时按照字母序排序),查找时间复杂度为O(logn)。
-创建: map<键数据类型,值数据类型> mymap;//该语句创建一个键值对数据类型确定的空的map.
-操作方法:
-mymap.insert(key,value);//往mymap中加入一个(key,value)的键值对.
-mymap.find(key);//该表达式返回mymap中键key对应的value.
-
-
-
-#### priority_queue(优先序列,也称为堆,一个容器.本质是用一个数组去模拟的完全二叉树.可以拿出优先级最大的元素.)
-头文件为#include<queue>
-定义:priority_queue <数据类型,容器类型,比较方法>,默认容器类型为vector<数据类型>,默认比较方法为less<数据类型>
-greater<数据类型>则为小顶堆.
-priority_queue <int> myque;	//生成了一个int类型大顶堆,即值越大优先级越高.
-priority_queue <int,vector<int>,greater<int>> myque;	//生成了一个小顶堆.
-操作方法:
-myque.size()	//返回长度
-myque.push(x)	//插入元素x
-myque.pop()	//删除优先级最高的元素(称为堆顶.)
-myque.top()	//访问堆顶(返回堆顶元素)
-myque.empty()	//判断是否为空.
-
-#### 容器的for加强循环：
-C++提供类似python的容器迭代方式,即for(循环变量:容器)
-```cpp
-//字符串的遍历:
-string str="DieScatten";
-for(char i : str)	//类似python中的for char in str:
-{
-	cout<<i<<" ";
-	i="a"	//不能修改,没有用的语句
-}
-for(char& i : str)	//在声明时使用的&为[引用运算符],任何其他&的使用是地址操作符.在这里实际上是每次遍历都声明了str内一个字符的引用i,并操作i.
-{
-	cout<<i<<" ";
-	i="a"	//将字符串str变成aaaaaaaaaa
-}
-```
-同理,vector的遍历也类似.
-
-迭代器:		//提供一个对任何容器统一的遍历方式.
 
 
 ## 参数传递
@@ -879,7 +1057,20 @@ int main(int argc, char* argv[]){
 	//...
 }
 ```
-其中, argc(arg count)是参数个数, argv(arg vector)
+其中, argc(arg count)是参数个数, argv(arg vector)是具体的参数向量.
+假设你有一个名为 `myProgram` 的可执行文件，在命令行中运行如下命令：
+
+```bash
+myProgram arg1 arg2 arg3
+```
+此时，`argc` 的值为 `4`（程序名 `myProgram` 也算一个参数），`argv` 数组中的内容为：
+```
+argv[0] -> "myProgram"
+argv[1] -> "arg1"
+argv[2] -> "arg2"
+argv[3] -> "arg3"
+```
+
 ## 好习惯
 - 对于不期望改变变量值的函数(如类中的显示函数), 应在()和{}之间加上关键字const.
 ```cpp
@@ -898,8 +1089,49 @@ const A a1(5);	//使用者要求创建一个const的A类
 cout << a1.disp();	//此处会报错, 编译器认为非const函数disp()有可能改变a1的属性, 故不允许这样做.
 ```
 
-##
+## 杂项
 
-##
+#### else if写法
+在c++中, `else if` 本质上就是 `else { if } `的缩写。
+编译器会正确地解析 `else if`，并且理解 `else` 后面只影响**紧跟**着的 `if` 语句,而不是所有后续代码。
+```cpp
+if(/*judgement1*/)
+	{
+		/*command1*/;
+		/*command2*/;
+		/*...*/;
+	}else{
+		if(/*judgement2*/)
+		{
+			/*command3*/
+			/*command4*/
+		}
+	}
+
+//上面的代码和下面的等价.
+
+if(/*judgement1*/)
+	{
+		/*command1*/;
+		/*command2*/;
+		/*...*/;
+	}else if(/*judgement2*/)
+		{
+			/*command3*/
+			/*command4*/
+		}
+```
+
+#### `char arg[]`, `char* arg`, `char* arg[]`的区别
+
+* `char arg[]`和`char* arg`均表示声明了一个名称为arg的字符指针, 也可以理解为名称为arg的字符串.
+
+* `char* arg[]`表示声明了一个字符串数组. 它和`char** arg`效果一样.
+
+
+
+### 注意事项
+
+## 
 
 ##
