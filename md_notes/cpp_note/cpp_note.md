@@ -56,9 +56,20 @@ using namespace std
 ```cpp
 template <typename T>
 class Vector{
+
 private:
+	T* data;			//指向动态分配的数组. T是元素的数据类型.
+	size_t size;		//当前元素数量
+	size_t capacity;	//已分配内存的容量
 
+public:
+	Vector() : data(nullptr)
 
+	void reserve(size_t new_cap)
+	{
+		if(new_cap > capacity)	//如果需要分配的数量已经大于
+
+	}
 }
 
 
@@ -228,6 +239,26 @@ typedef int INT,integer;//这样就可以用INT或者integer来代替int啦
 #### 函数模板
 C++ 中的一种特性，它允许你编写一个**对数据类型**通用的函数，而不必针对不同的数据类型编写多个函数版本。定义函数模板时，使用 `template` 关键字。
 STL中提供的的多种类都是函数模板, 如`vector`.
+
+简单示例
+```cpp
+#include <iostream>
+using namespace std;
+//一个通用的add加法函数模板, 可以处理int和double数据.
+
+template <typename T>//T是一个数据类型占位符.
+T add(T a, T b)
+{
+	return a+b;
+}
+
+int main(int argc, char* argv)
+{
+	cout << add(5, 3) << endl;
+	return 0;
+}
+```
+
 
 #### 形式参数和实际参数
 在一个函数中, 参数分为形式参数(函数接收的参数)和实际参数(函数体内定义的参数).
@@ -1128,7 +1159,8 @@ if(/*judgement1*/)
 
 * `char* arg[]`表示声明了一个字符串数组. 它和`char** arg`效果一样.
 
-
+#### i++还是++i?
+对整数`i` 使用 `++i`，这是一个习惯性优化。虽然对简单的整数来说，`++i` 和 `i++` 的性能差异可以忽略不计，但在更复杂的类型上，后置递增`i++`会涉及创建一个临时对象（保存递增之前的状态），因此效率稍低。前置递增`++i`-则不会创建临时对象。
 
 ### 注意事项
 
