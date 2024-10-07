@@ -1,0 +1,9 @@
+DISM /Online /Cleanup-Image /RestoreHealth命令用于修复在线运行的Windows系统中的损坏文件或问题。
+
+命令详解：
+DISM：这是Deployment Imaging Service and Management Tool的缩写。
+/Online：表示对正在运行的Windows操作系统进行操作，而不是离线映像。
+/Cleanup-Image：这是DISM中的一个功能，用于清理和修复Windows映像。
+/RestoreHealth：这个参数会扫描映像中的组件存储损坏并自动进行修复。
+
+运行 sfc /scannow 命令，SFC（系统文件检查器）会扫描所有受保护的系统文件，并替换损坏的文件。
