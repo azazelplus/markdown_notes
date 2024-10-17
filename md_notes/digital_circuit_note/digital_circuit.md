@@ -57,7 +57,30 @@
 
   ### 1.3.2 可靠性编码
 即缀在某个编码后面用来确保编码传输后顺序仍然正确.
+   #### 格雷码
+   <a name="grey_code"></a>
+
 ![alt text](image-7.png)
+格雷码转换规则:
+保留二进制数的最高位，作为格雷码的最高位。
+接下来的每一位，都等于它与前一位二进制数的异或（XOR）结果。
+步骤示例:假设我们要将 `01010 `转换为格雷码：
+
+转换步骤：
+
+* 保留最高位 0。
+* 第二位：0 XOR 1 = 1
+* 第三位：1 XOR 0 = 1
+* 第四位：0 XOR 1 = 1
+* 第五位：1 XOR 0 = 1
+得到的格雷码：`01111`
+
+另一个直观的转换方法就是:
+![alt text](image-125.png)
+比如考虑四位二进制码的转换, 参考上图, 比如`1000`转换为格雷码即为`1100`.
+
+
+   #### 奇偶校验码
 ![alt text](image-8.png)
 ![alt text](image-9.png)
 
@@ -840,6 +863,78 @@ T6的导通把T7基极拉到低电位, 从而**T7截止**.
    
 ## 3.1 组合逻辑电路的分析
 
+  ### 例1 一致判断电路
+  ![例1(1)](image-117.png)
+  ![例1(2)](image-118.png)
+
+  ### 例2 奇校验电路
+  ![例2(1)](image-119.png)
+  ![例2(2)](image-120.png)
+  ![例2(3)](image-121.png)
+
+  ### 例3 设计投票电路(2/3通过)
+  ![alt text](image-122.png)
+  ![alt text](image-123.png)
+  ![alt text](image-124.png)
+
+  ### 例4 设计码制变换电路
+[跳转到格雷码介绍](#grey_code)
+
+## 3.2 加法器
+
+  ### 3.2.1半加器
+
+接受两个`0`或`1`的输入`A`,`B`, 输出它们相加的本位和`S`和进位数`C`. 例如`1+1`得到本位上为`0`, 进位`1`.
+
+显然有**逻辑表达式**:
+$$
+S=A\oplus B=A\overline{B}+B\overline{A}\\
+C=AB
+$$
+**逻辑电路:**
+![alt text](image-126.png)
+
+**真值表**:
+| 输入1 | 输入2 | 输出1 | 输出2 |
+|:----:|:----:|:----:|:----:|
+| **A** | **B** | **S** | **C** |
+| 0    | 0    | 0    | 0    |
+| 0    | 1    | 1    | 0    |
+| 1    | 0    | 1    | 0    |
+| 1    | 1    | 0    | 1    |
+
+  ### 3.2.2全加器FA(full adder)
+
+输入为`A` ,`B` , `CI`(carry in) , 输出为`S`(sum), `CO`(carry out).
+
+![全加器](image-127.png)
+
+显然, 使用`n`块`全加器`即可搭建`n`位加法器.
+
+![n位加法器](image-129.png)
+
+  ### 3.2.3 利用全加器实现`二进制乘法`(二位为例)
+
+
+
+
+
+
+  ### *3.2.4集成全加器芯片
+![双全加器](image-128.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -999,3 +1094,52 @@ T6的导通把T7基极拉到低电位, 从而**T7截止**.
 
 
 # 6.脉冲产生与整形电路
+
+
+
+# 7.杂项
+
+## 7.1 `74`、`74HC`、 `74LS` 系列芯片资料
+
+* 单词解释:
+  * (1) QUAD(ruplet): 4 组←
+  * (2) TRIPLE: 3组←
+  * (3) HEX(agon): 6角←
+
+
+| **Part Number**                  | **Description (English)**                | **Description (Chinese)**       |
+|----------------------------------|-------------------------------------------|---------------------------------|
+| 7400 QUAD 2-INPUT NAND GATES     | Quad 2-input NAND gates                   | 与非门                          |
+| 7401 QUAD 2-INPUT NAND GATES OC  | Quad 2-input NAND gates with open collector | 与非门                          |
+| 7402 QUAD 2-INPUT NOR GATES      | Quad 2-input NOR gates                    | 或非门                          |
+| 7403 QUAD 2-INPUT NAND GATES     | Quad 2-input NAND gates                   | 与非门                          |
+| 7404 HEX INVERTING GATES         | Hex inverting gates                       | 反向器                          |
+| 7406 HEX INVERTING GATES HV      | Hex inverting gates, high voltage         | 高输出反向器                    |
+| 7408 QUAD 2-INPUT AND GATES      | Quad 2-input AND gates                    | 与门                            |
+| 7409 QUAD 2-INPUT AND GATES OC   | Quad 2-input AND gates with open collector | 与门                            |
+| 7410 TRIPLE 3-INPUT NAND GATES   | Triple 3-input NAND gates                 | 与非门                          |
+| 7411 TRIPLE 3-INPUT AND GATES    | Triple 3-input AND gates                  | 与门                            |
+| 74121 ONE-SHOT WITH CLEAR        | One-shot with clear                       | 单稳态                          |
+| 74132 SCHMITT TRIGGER NAND GATES | Schmitt trigger NAND gates                | 触发器与非门                    |
+| 7414 SCHMITT TRIGGER INVERTERS   | Schmitt trigger inverters                 | 触发器反向器                    |
+| 74153 4-LINE TO 1 LINE SELECTOR  | 4-line to 1-line selector                 | 四选一                          |
+| 74155 2-LINE TO 4-LINE DECODER   | 2-line to 4-line decoder                  | 译码器                          |
+| 74180 PARITY GENERATOR/CHECKER   | Parity generator/checker                  | 奇偶发生检验                    |
+| 74191 4-BIT BINARY COUNTER UP/DOWN | 4-bit binary up/down counter             | 计数器                          |
+| 7420 DUAL 4-INPUT NAND GATES     | Dual 4-input NAND gates                   | 双四输入与非门                  |
+| 7426 QUAD 2-INPUT NAND GATES     | Quad 2-input NAND gates                   | 与非门                          |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 
