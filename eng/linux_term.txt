@@ -21,7 +21,7 @@ assembler(汇编器)	An assembler is a computer program that translates assembly
 
 phony		假的. =phoney.
 emulate		仿真, 效仿.
-
+obsoleted		过时的
 
 
 

@@ -30,6 +30,16 @@ auxiliary				辅助的。
 Affiliation				附属(所属的组织、机构或单位), 填写Xi'an Jiaotong University.
 infrared				红外线的
 Preview (Nightly)			这个版本通常指的是软件开发过程中的一种预览版，这种版本几乎每夜都会更新，以包含最新的代码更改。"Nightly" 版本让开发者和早期测试者可以尝试最前沿的功能和改进，但这些更新可能未经充分测试，因此可能包含错误或稳定性问题。
+asterisk				星号`*`
+
+
+
+
+
+
+
+
+
 
 
 
