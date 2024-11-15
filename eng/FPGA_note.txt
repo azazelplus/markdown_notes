@@ -24,6 +24,8 @@ SDA_LS 		(Serial Data_low speed)：SDA指的是I2C通信中的串行数据线，
 
 DDC		显示数据通道（Display Data Channel）。例如，HDMI_SCL_LS 和 HDMI_SDA_LS 是 HDMI 接口的DDC, 用于 HDMI 发送端和接收端之间交换一些配置信息，通过 I2C 协议通信.
 
+DUT     device under test, 待测(仿真)器件.
+
 
 
 
