@@ -1097,7 +1097,7 @@ module top_module(
 endmodule
 ```
 有两种方法实现切片:
-方法1: `+=[步长]`
+方法1: `[<start> +: <步长>]`
 ```verilog
 module top_module( 
     input [1023:0] in,
@@ -1105,7 +1105,7 @@ module top_module(
     output [3:0] out ); 
     
     always @(*)begin
-    	out = in[sel*4 +: 4]; // +:[步长]是verilog提供的动态切片语法.
+    	out = in[sel*4 +: 4]; // +:[步长]是verilog提供的动态切片语法, 表示in[sel*4 +3 : sel*4]
     end   
 endmodule
 ```
@@ -1158,12 +1158,276 @@ module top_module (
 endmodule
 ```
   
-  #### 
+  ### 3.1.4 kmap卡诺图
+
+   #### 3.1.4.1 三变量卡诺图
+Implement the circuit described by the Karnaugh map below.
+实现下面卡诺图描述的电路。
+
+
+
+Try to simplify the k-map before coding it. Try both product-of-sums and sum-of-products forms. We can't check whether you have the optimal simplification of the k-map. But we can check if your reduction is equivalent, and we can check whether you can translate a k-map into a circuit.
+在编码之前尝试简化 k-map。尝试求和乘积和乘积求和形式。我们无法检查您是否拥有 k-map 的最佳简化。但我们可以检查您的简化是否等效，并且我们可以检查您是否可以将 k-map 转换为电路。
+```verilog
+//可以得到该卡诺图为Y=a+~ab+~a~bc.
+module top_module(
+    input a,
+    input b,
+    input c,
+    output out  ); 
+    assign out = a | (~a)&b | (~a)&(~b)&c;
+endmodule
+```
+
+   #### 3.1.4.2 4变量卡诺图
+Implement the circuit described by the Karnaugh map below.
+实现下面卡诺图描述的电路。
+
+![4变量卡诺图](image-11.png)
+
+```verilog
+//可以得到该卡诺图为Y = ~b&~c | ~a&b&~c&~d |~a&b&c&d | a&c&d | ~a&c&~d
+module top_module(
+    input a,
+    input b,
+    input c,
+    output out  ); 
+    assign out = ~b&~c | ~a&b&~c&~d |~a&b&c&d | a&c&d | ~a&c&~d;
+endmodule
+```
+
+
+
+
 
 
 
 
 ## 3.2 sequential logic
+
+  ### 3.2.1 latches and flip-flop 锁存器和触发器
+
+   #### 3.2.1.1 DFF D触发器
+A D flip-flop is a circuit that stores a bit and is updated periodically, at the (usually) positive edge of a clock signal.
+AD 触发器是一种存储位并在时钟信号（通常）正边沿定期更新的电路。
+![D flip-flop](image-13.png)
+
+D flip-flops are created by the logic synthesizer when a clocked always block is used (See alwaysblock2). A D flip-flop is the simplest form of "blob of combinational logic followed by a flip-flop" where the combinational logic portion is just a wire.
+当使用时钟always块时，D触发器由逻辑合成器创建（参见alwaysblock2 ）。 D触发器是“组合逻辑块后面跟着一个触发器”的最简单形式，其中组合逻辑部分只是一条电线。
+
+Create a single D flip-flop.
+创建单个 D 触发器。
+
+```verilog
+module top_module (
+    input clk,
+    input reset,            // Synchronous reset
+    input [7:0] d,
+    output reg [7:0] q
+);
+    always @(posedge clk or posedge reset)begin //此处为异步复位(reset高电平的同周期瞬间复位). 如果括号内去掉`or posedge reset`, 则为同步复位(synchronous reset)(reset高电平后, 在下个周期才复位.)
+        if(reset)begin
+            q <= 0;
+        end else begin
+       		q <= d; 
+        end
+    end
+
+endmodule
+
+endmodule
+```
+
+   #### 3.2.1.2 DFF with byte enable
+Create 16 D flip-flops. It's sometimes useful to only modify parts of a group of flip-flops. The byte-enable inputs control whether each byte of the 16 registers should be written to on that cycle. byteena[1] controls the upper byte d[15:8], while byteena[0] controls the lower byte d[7:0].
+创建 16 个 D 触发器。有时只修改一组触发器的一部分是有用的。字节使能输入控制是否应在该周期写入 16 个寄存器的每个字节。 byteena[1] 控制高字节 d[15:8] ， 尽管 byteena[0] 控制低字节 d[7:0] 。
+
+resetn is a synchronous, active-low reset.
+resetn 是同步、低电平有效复位。
+
+All DFFs should be triggered by the positive edge of clk.
+所有 DFF 应由上升沿触发 clk 。
+```verilog
+module top_module (
+    input clk,
+    input resetn,
+    input [1:0] byteena,
+    input [15:0] d,
+    output reg [15:0] q
+);
+    
+    always @(posedge clk)begin
+        if(!resetn)begin
+        	q<=0;
+        end else begin
+            for(int i=0;i<2;i++)begin
+                q[8*i +: 8]<=(byteena[i]) ? d[8*i +: 8] : q[8*i +: 8];
+            end
+        end       
+    end
+
+endmodule
+``` 
+
+   #### 3.2.1.3 D latch D锁存器
+Implement the following circuit:
+
+
+
+Note that this is a latch, so a Quartus warning about having inferred a latch is expected.
+![D latch](image-14.png)
+Hint...
+Latches are level-sensitive (not edge-sensitive) circuits, so in an always block, they use level-sensitive sensitivity lists.
+* 锁存器是电平敏感的电路（而非边沿敏感）：
+  * 电平敏感（level-sensitive）意味着锁存器根据控制信号（如 enable 或 clk）的电平状态工作，而不是对信号的边沿（如上升沿或下降沿）作出响应。
+  * 当控制信号为某个激活状态（例如高电平），锁存器的输出会随输入实时更新。
+  * 相反，边沿敏感（edge-sensitive）的电路（如触发器）只在控制信号发生边沿跳变时（如从 0→1 或 1→0）更新输出。
+
+
+However, they are still sequential elements, so should use non-blocking assignments.
+* 锁存器仍然是时序逻辑元件，因此应使用非阻塞赋值（<=）：
+  * 锁存器是一种 时序逻辑元件（sequential element），它可以存储状态，而不是简单地输出逻辑函数（组合逻辑）。
+  * 在时序电路设计中，为了避免竞争条件（race condition）和确保数据更新的正确性，非阻塞赋值 (<=) 是推荐使用的赋值方式。
+  * 非阻塞赋值会等到所有的逻辑运算都完成后，才在时钟周期结束时更新信号值。
+
+A D-latch acts like a wire (or non-inverting buffer) when enabled, and preserves the current value when disabled.
+* D 锁存器在使能时像一根导线（或非反相缓冲器）：
+
+  * 当锁存器的 enable 信号为高时，输出 Q 会直接跟随输入 D。这就好像 Q 是 D 直接通过一根导线或一个非反相缓冲器连接到一起，毫无延迟。
+
+
+```verilog
+module top_module (
+    input d, 
+    input ena,
+    output q);
+    always @(*)begin
+        if(ena)begin
+            q<=d;
+        end
+    end
+endmodule
+```
+
+   #### 3.2.1.13 dffs and gates
+   Given the **finite state machine** circuit as shown, assume that the D flip-flops are initially reset to zero before the machine begins.
+
+Build this circuit.
+   ```verilog
+   module top_module (
+    input clk,
+    input x,
+    output z
+); 
+    wire d1,d2,d3;
+    reg q1,q2,q3;
+    assign d1= x^q1;
+    assign d2= x&~q2;
+    assign d3= x|~q3;
+    assign z= ~(q1|q2|q3);
+    dff dff1(
+        .clk(clk),
+        .d(d1),
+        .q(q1)
+    );
+        dff dff2(
+        .clk(clk),
+        .d(d2),
+        .q(q2)
+    );
+        dff dff3(
+        .clk(clk),
+        .d(d3),
+        .q(q3)
+    );
+endmodule
+
+module dff(
+	input clk,d,
+    output q
+);
+    always @(posedge clk)begin
+       q<=d; 
+    end
+endmodule
+   ```
+
+   #### 3.2.1.14 JK flip flop JK触发器
+
+```verilog
+module top_module (
+    input clk,
+    input j,
+    input k,
+    output Q);
+    
+    always @(posedge clk or posedge reset)begin
+        if(reset)begin
+         	q<=0;
+        end else begin
+            case({j,k})
+                2'b00:Q<=Q;
+                2'b01:Q<=0;
+                2'b10:Q<=1;
+                2'b11:Q<=~Q;	//j=1,k=1时复位, 这实际上就是一次同步复位. 直接输入的reset则提供异步复位功能.
+            endcase
+        end
+    end
+endmodule
+```
+
+   #### 边缘检测
+For each bit in an 8-bit vector, detect when the input signal changes from 0 in one clock cycle to 1 the next (similar to positive edge detection). The output bit should be set the cycle after a 0 to 1 transition occurs.
+
+Here are some examples. For clarity, in[1] and pedge[1] are shown separately.
+![单bit边缘检测](image-15.png)
+```verilog
+module top_module (
+    input clk,
+    input [7:0] in,
+    output [7:0] pedge
+);
+    reg [7:0] prev_in;//存储之前的in状态.对每一位有 pedge=(prev_in==0&in==1) , 这等价于pedge=~prev_in*in 
+
+    //notice: 非阻塞赋值语句是parallel的. 顺序无关紧要.
+    always @(posedge clk)begin
+        pedge <= ~prev_in & in; // 检测从 0 -> 1 的跳变
+        prev_in <= in;         // 更新前一周期输入状态
+    end
+
+endmodule
+```
+###
+###
+###
+##
+
+
+
+##
+
+
+##
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## 3.3 building larger circuits
 
