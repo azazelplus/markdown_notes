@@ -1521,18 +1521,179 @@ module top_module (
 endmodule
 ```
  
-   #### 3.2.1.17边缘捕获
+   #### 3.2.1.17 边缘捕获(SR触发器)
 For each bit in a 32-bit vector, capture when the input signal changes from 1 in one clock cycle to 0 the next. "Capture" means that the output will remain 1 until the register is reset (synchronous reset).
 
 Each output bit behaves like a SR flip-flop: The output bit should be set (to 1) the cycle after a 1 to 0 transition occurs. The output bit should be reset (to 0) at the positive clock edge when reset is high. If both of the above events occur at the same time, reset has precedence. In the last 4 cycles of the example waveform below, the 'reset' event occurs one cycle earlier than the 'set' event, so there is no conflict here.
 
 In the example waveform below, reset, in[1] and out[1] are shown again separately for clarity.
+其实每一位的逻辑就是一个set-reset触发器(真值表为:R为1则重置; 否则, S=1则输出1), 本题对应R即reset, S即(prev_in[i] & ~in[i]).
+```verilog
+module sr_ff(
+    input clk,S,R,
+    output reg Q
+);
+    always @(posedge clk) begin
+        if(R)    //reset操作
+            Q<=0;
+        else if(S)//set操作
+            Q<=1;
+    end
+endmodule
+```
+
+本题代码:
+```verilog
+module top_module (
+   input clk,         // 时钟信号
+    input reset,       // 同步复位信号
+    input [31:0] in,   // 32 位输入信号
+    output reg [31:0] out // 32 位输出信号
+);
+
+    reg [31:0] prev_in;  // 32 位寄存器，用来保存上一个时钟周期的输入信号
+
+    always @(posedge clk) begin
+        if (reset) begin
+            // 同步复位，所有输出都被置为 0
+            out <= 32'b0;
+        end 
+        else begin
+            // 捕捉 1 到 0 的变化
+            for(int i=0;i<32;i++)begin:whatever
+                    if(prev_in[i] & ~in[i])begin
+                        out[i] <= 1; // 捕捉 1 到 0 的变化，`prev_in & ~in` 检测变化
+                    end
+                end
+
+            end
+            // 更新 prev_in 为当前输入
+            prev_in <= in;       
+    end
+endmodule
+```
+* 注意: 本题使用always内的for循环实现重复的代码. (这需要System_Verilog支持哦)注意generate块不能用在always块里哦. 而且如果你想用一个generate块生成32个always块,每个块里放一个赋值, 会报错(竞态条件), 我暂时不知道为何会这样. 还是最好把东西都写道一个always块里吧? 
+
+    #### 3.2.1.18 双边D触发器
+You're familiar with flip-flops that are triggered on the positive edge of the clock, or negative edge of the clock. A dual-edge triggered flip-flop is triggered on both edges of the clock. However, FPGAs don't have dual-edge triggered flip-flops, and always @(posedge clk or negedge clk) is not accepted as a legal sensitivity list. 会报错:
+`Error (10239): Verilog HDL Always Construct error at top_module.v(6): event control cannot test for both positive and negative edges of variable "clk" File: /home/h/work/hdlbits.1233204/top_module.v Line: 6`
+您熟悉在时钟的正边沿或负边沿触发的触发器。双边沿触发触发器在时钟的两个边沿上触发。然而，FPGA 没有双边沿触发触发器，并且 always @(posedge clk or negedge clk) 不被接受为合法的敏感列表。
+
+Build a circuit that functionally behaves like a dual-edge triggered flip-flop:
+构建一个在功能上类似于双边沿触发触发器的电路：    
+![双边触发器](image-17.png)
+
+(Note: It's not necessarily perfectly equivalent: The output of flip-flops have no glitches, but a larger combinational circuit that emulates this behaviour might. But we'll ignore this detail here.)
+（注意：这不一定完全等效：触发器的输出没有毛刺，但模拟这种行为的更大组合电路可能会出现毛刺。但我们在这里忽略这个细节。）
+
+```verilog
+//直接@(posedge clk or negdege clk)是不被允许的:error:不允许同时使用上升沿和下降沿. 我也不知道为何.
+//直接两个always块分别在posedge和negedge驱动q也是不允许的:error:多个源激励同一个信号.
+module top_module (
+    input clk,
+    input d,
+    output q
+);
+    reg q1, q2;
+
+    //实现一个上沿触发器
+    always @ (posedge clk)
+        begin
+            q1 <= d;
+        end
+
+    //实现一个下沿触发器
+    always @ (negedge clk)
+        begin
+           q2 <= d; 
+        end
+
+    //让两个触发器组合逻辑得到q
+    assign q = clk?q1:q2;
+endmodule
+```
+
+另一个思路是直接always@(clk), 但是可能出现意想不到的问题, 待研究. 总之最好不要这样写, 时序逻辑的敏感信号必须加上posedge或者negedge不然可能会被综合为组合电路.
+
+这样写问题很大. 在vivado里(默认的综合简化选项), 代码
+```verilog
+always@(clk)begin
+    a<=b;
+end
+```
+综合出的硬件就是![综合结果](image-19.png)
+等价于代码`a=b;`  忽略了always和clk了.
+有可能调整为更严格的综合简化设置后会解决, 总之暂时最好不要这样写.
+
+
+  ### 3.2.2 计数器
+
+   #### 3.2.2.1 16周期计数器
+Build a 4-bit binary counter that counts from 0 through 15, inclusive, with a period of 16. The reset input is synchronous, and should reset the counter to 0.
+构建一个 4 位二进制计数器，从 0 到 15（含）计数，周期为 16。复位输入是同步的，应将计数器复位为 0。
+![计数器](image-18.png)
+```verilog
+module top_module(
+	input clk,
+	input reset,
+	output reg [3:0] q);
+	
+	always @(posedge clk)
+		if (reset)
+			q <= 0;
+		else
+			q <= q+1;		// Because q is 4 bits, it rolls over from 15 -> 0.
+		// If you want a counter that counts a range different from 0 to (2^n)-1, 
+		// then you need to add another rule to reset q to 0 when roll-over should occur.
+	
+endmodule
+```
+
+   #### 3.2.2.2 10周期计数器
+```verilog
+module top_module(
+	input clk,
+	input reset,
+	output reg [3:0] q);
+	
+	always @(posedge clk)
+		if (reset || q == 9)	// Count to 10 requires rolling over 9->0 instead of the more natural 15->0
+			q <= 0;
+		else
+			q <= q+1;
+endmodule
+```
+
+   #### 3.2.2.3 10周期计数器,但是十进制(显示数字1~10)
+```verilog
+module top_module (
+    input clk,
+    input reset,
+    output [3:0] q);
+    always@(posedge clk)begin
+        if(reset||q==4'd10)
+            q<=4'd1;
+        else
+            q<=q+1;
+    end
+endmodule
+```
+   #### 3.2.2.4 十进制计数器0~9, 但是有播放/暂停按钮slowena
+Build a decade counter that counts from 0 through 9, inclusive, with a period of 10. The reset input is synchronous, and should reset the counter to 0. We want to be able to pause the counter rather than always incrementing every clock cycle, so the slowena input indicates when the counter should increment.
+
+
+
+
+####
+
 
 ###
 
-##
+###
 
+###
 
+###
 
 ##
 
