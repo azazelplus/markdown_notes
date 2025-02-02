@@ -924,7 +924,7 @@ mike 150
 
 
 ## 参数传递
-分为pass by value(按值传递)和pass by reference(按引用传递).
+分为**pass by value**(按值传递)和**pass by reference**(按引用传递).
 ```cpp
 void NotModifyValue(int a){
 	a =10;
@@ -934,8 +934,20 @@ void ModifyValue(int &a){
 	a =10;
 }//修改了传入的变量的值.
 
+
+//指针的情况:
+int Sum(int* array, int n){
+	
+}
+//此处传入的指针是形参(按值传递), 不会改变该函数外指针的值.
+
+
+
+//如果想要按指针传入一个指针呢?
+
 ```
 编写程序时, 如果需要修改变量的值, 尽量选择pass by reference.
+
 ![按引用传递](image-4.png)
 
 
