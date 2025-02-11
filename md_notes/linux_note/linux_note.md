@@ -157,6 +157,18 @@ curl -s $URL
 而>>表示把内容append到文件里而不是覆写.
 \>符号同理.
 
+`<<`符号和`>>`符号完全不同! 
+* `>>`是**追加重定向**加重**定向**(如`echo "hello">> file`)
+* 而`<<`是**多行输入重定向**.
+    ```bash
+      cat <<EOF
+      hello
+      world
+      EOF
+    ```
+`<<EOF`会让shell(bash(linux终端默认)也是一种shell)进入`多行输入模式`, 直到遇到`EOF`.
+
+
 ## 一些应用:
 - ```bash
   > newfile #创建一个新文档newfile. (即,将'空'重定向到newfile中) 它和touch newfile不同在于后者更安全: 如果存在名字为newfile的文件, > newfile删除了其全部文件, 而touch newfile不会进行任何操作.
