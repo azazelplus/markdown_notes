@@ -44,11 +44,27 @@
 	* 短期用 export（只在当前终端生效）。
 	* 长期用 ~/.bashrc 或 ~/.profile（开机自动加载）。
 	* 系统级变量放 /etc/environment（所有用户都能用）。
+	
+	* 注意, 在bash中$(command)是命令替换, 比如`$(pwd)`会被`/home/azazel`替换.  如果表示环境变量, 不加(), 即$NVBOARD_HOME, 会被这个环境变量值`/home/azazel/nvboard`替换. 
+	* 而在编写Makefile时环境变量要加括号, $(NVBOARD_HOME)会被`/home/azazel/nvboard`替换.
 
 
 
 ## 关于Makefile
-	奶奶的, Makefile的注释必须单独成行,,,,诸如`TOPNAME = top	 # 这句话的意思xxx`会导致#前面的空格也被读进去然后就完蛋了....
+	* 奶奶的, Makefile的注释必须单独成行,,,,诸如`TOPNAME = top	 # 这句话的意思xxx`会导致#前面的空格也被读进去然后就完蛋了....
+	
+	* **优先级**: Makefile中, 变量赋值加载顺序是语句先后. 后面覆盖前面. 可以用?=(最低优先级),  `override a=5`(最高优先级). 不过在bash里make命令行参数直接指定 `make a=5`无视Makefile有最高优先级
+	
+	* 关键词变量. Makefile有一些约定俗成的变量（常见的“内部变量”）. 这些变量虽然 不是 Makefile 的关键字，但 make 及编译工具默认会识别：
+		* CC：指定 C 编译器（默认为 gcc）
+		* CXX：指定 C++ 编译器（默认为 g++）
+		* CFLAGS：C 编译选项
+		* CXXFLAGS：C++ 编译选项
+		* LDFLAGS：链接选项（影响最终生成的可执行文件）.
+			* `LDFLAGS`是Makefile内部参数, 用于指定`链接器`linker. +=表示在已有值上append新选项. -l库名表示链接该库.
+		* CPPFLAGS：预处理选项（如 -I 头文件路径）
+		* LDLIBS：库文件（通常是 -l 选项，但和 LDFLAGS 不同，它出现在链接命令的 最后）
+			
 	* 下面是一些注释笔记.
 	```Makefile
 	# 那些在TARGET(:build)块外的等式, 意义是: 变量TOPNAME的值是"top", 可以用$(TOPNAME)得到字符串"top". 顺带, Makefile有严格的缩进要求, TARGET块内的命令必须缩进.
