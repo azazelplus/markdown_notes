@@ -1,0 +1,37 @@
+
+集成在cadence里. 安装cadence后, 打开Capture CIS, 选择启动模块为OrCAD Capture CIS.
+
+
+新建project来搭建电路. 常用的library有:
+bipolar(各种型号二极管)
+ANALOG
+SOURCE
+BREAKOUT
+SOURCSTM
+SPECIAL
+
+选择元件的几种方法:
+右侧菜单栏place part;
+顶部菜单栏place->part;
+顶部菜单栏place->Pspice part;
+
+
+
+
+找不到的型号可以通过在place part界面的search(选择path默认为所有本地library的目录).
+再找不到就自己做或者官网找.
+
+
+
+
+仿真:
+电路搭建后需要选择tools->create netlist(如果灰色, 说明没有在资源管理器处design resource->选中你的项目文件(./[你的项目名称].dsn))
+需要Create Netlist（生成网表）是一个关键的功能，主要用于将你的电路图转换为 PSpice 仿真所需的数据格式。
+
+
+
+
+
+
+
+
