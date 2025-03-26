@@ -1,5 +1,5 @@
 
-## 上版流程:
+## 0 上版流程:
 
 #### 安装usb转串口驱动
 即ch340. 驱动安装好后, 板子插`usb转串口`那个usb口. 上电后, 在电脑设备管理器-端口应当能看到ch340端口.不上电就没有. 废话!
@@ -26,31 +26,25 @@ keil里新建一个μvision project后, 在当前目录:
 	选择下载时的程序文件为生成的hex文件.(在项目文件夹的objects里)
 	选择DTR低电平复位; RTS高电平进bootloader.(这个的原理可以参考野火文档-isp一键下载原理分析.)
 
-## 引脚
+## 1 各种外设
 ![stm32f10系列引脚分类](image.png)
-### GPIO端口:
+### 1.1 GPIO端口:
 通用输入输出端口的简称. 也就是软件可以控制的引脚.
 这个外设在APB2总线连接. 使用时复位和时钟信号要去APB2总线的对应控制寄存器打开.
 一共有GPIOx, x=`ABCDE`五个端口, 每个端口有个16个引脚. 在板子上比如PB0即为GPIO的B端口0号引脚.
 
 操作它们主要靠这几个寄存器:
 
-### APB2 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
+#### 1.1.1 APB2总线 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
 在AHB总线上. 地址为`0x4002 1000 - 0x4002 13FF`
 首先是使能和复位信号. 如果想使用GPIO端口(在总线APB2连接), 则需要开启复位和时钟控制RCC. 外设的时钟和使能信号默认是关闭的.
 当外设时钟没有启用时，软件不能读出外设寄存器的数值，返回的数值始终是0x0。
 
 
-
-
-
-
-
-
-### GBIOx_ODR (output data reg)输出数据寄存器.
+#### 1.1.2 GBIOx_ODR (output data reg)输出数据寄存器.
 它是一个32bit寄存器. 高16位预留为0没用. 低16位控制端口0~端口15的输出电平, 0为低电平.
 
-### GBIOx_CRL (config reg low)端口配置低寄存器.
+#### 1.1.3 GBIOx_CRL (config reg low)端口配置低寄存器.
 负责Px0~Px7引脚的配置. 是32bit寄存器. 
 相对于GBIOx基地址偏移为0. 复位0x4444 4444.
 每个引脚占据4bit. 比如低4位为:
@@ -66,13 +60,8 @@ keil里新建一个μvision project后, 在当前目录:
     * `10`
     * `11`
 
-### GBIOx_CRL (config reg high)端口配置高寄存器.
+#### 1.1.4 GBIOx_CRL (config reg high)端口配置高寄存器.
 负责Px8~Px15引脚的配置.
-
-
-
-
-
 
 
 * 双重模式特质adc1, adc2一起使用.
@@ -83,33 +72,36 @@ keil里新建一个μvision project后, 在当前目录:
 
 
 
+### 1.2 时钟和RCC(reset and clock control)
+
+STM32F103 的时钟系统使用 时钟树 进行管理，所有外设（GPIO、USART、ADC 等）都需要时钟才能工作。
+
+**HSE(High-Speed External clock), 高速外部时钟**由外部晶振提供信号.
+可以通过 **PLL（锁相环）** 倍频，把 STM32 的主频提升到 72MHz.
 
 
-
-
-
-
-### 重映射
-![alt text](image-39.png)
-例如`USART2_TX`, 当控制重映射的寄存器USART2_REMAP=0时, 它被分配到默认物理引脚PA2.
-当USART2_REMAP=1时, 它被分配到物理引脚PD5.
-
-## 实验部分:
-
-### 指南者板子硬件设计:
-从原理图查到:
-![alt text](image-19.png)
-注意PC0实际上被SPI接口占用了. 别用.
-
-
-
-
-## RCC(reset and clock control)
-是stm32的一个外设,  负责系统复位和时钟管理.
+RCC是stm32的一个外设,  负责系统复位和时钟管理.
 它控制gpio, adc, usart, apb1, apb2灯外设的始终开关.
 比如，RCC->APB2ENR |= (1 << 9); 用于 开启 ADC1 时钟。
 
-## 中断
+时钟树:
+![时钟树](image-55.png)
+
+* `HSE_OSC`震荡模块配合OSC_IN, OSC_OUT引脚输入输出, 产生HSE震荡时钟信号. (stm32本身不包含一个晶振模块. `HSE_OSC`模块只是利用驱动电路来配合外部的晶振工作, 产生信号给内部模块用.)
+* 紧接着的`PLLXTPRE`(PLL extended pre-divider)预分频器模块.
+  * ENABLE: 将HSE信号1/2分频, 然后送入`PLL选择器`.
+  * UNENABLE: HSE直接送入`PLL选择器`.
+* `PLL选择器`通过PLLSRC使能, 选择(分频的)`HSE`信号或HSI信号, 传给`PLL`.
+* `HSI`是内部振荡器信号. 比较简洁, 不需要晶振和控制电路, 产生8MHZ的劣质信号...
+* 
+
+
+
+
+
+
+
+### 1.3 中断, NVIC模块, EXTI模块
 
 stm32使用模块`NVIC`(nested vectored interrupt controller,内嵌向量中断控制器)管理中断.
 ![中断系统](image-40.png)
@@ -130,16 +122,145 @@ stm32拥有19个`EXTI`模块, 比如EXTI0管理的i/o口为PA0,PB0,PC0,PD0,PE0.
 * 注意: stm32中, 相同编号的io口(如PA0和PB0两个引脚)使用相同的EXTI线. 不能同时设置为不同的外部中断, 会失效.
 
 
-中断向量: 即终端服务程序所在的位置.(这里的`向量`其实就是个指针)
-中断嵌套: 优先级更高的中断请求打断了正在进行的中断服务.
+**中断向量**: 即中断服务程序所在的位置.(这里的`向量`其实就是个**指针**)
+**中断嵌套**: 优先级更高的中断请求打断了正在进行的中断服务.
 
-优先级:
+**优先级**:
 对每一个中断请求, 需要配置其
 * 抢占式优先级(如果已经有正在处理的中断请求, 抢占优先级更高的中断可以打断它.)
 * 响应式优先级(用来判断cpu正常运行没有中断请求的时候的优先级.) 
 两种优先级都是一个数字, 数字越低(1)越高级.
 
-## ADC
+#### 中断函数的例子:
+```c
+//中断服务函数ISR应当写在`stm32f10x_it.c`中.
+
+//TIM6外设的中断函数. 其中有库函数和宏:
+//TIM_GetITStatus,...: stm32f10x_tim.c中的库函数.
+//定时器硬件模块选择
+//#define	BASIC_TIM		TIM6
+//...
+void  BASIC_TIM_IRQHandler (void)
+{
+	if ( TIM_GetITStatus( BASIC_TIM, TIM_IT_Update) != RESET ) 
+	{	
+		//一个全局变量.
+		time++;
+		//清除中断标志位
+		TIM_ClearITPendingBit(BASIC_TIM , TIM_FLAG_Update);  		 
+	}		 	
+}
+```
+
+### 1.4 接口的重映射
+![alt text](image-39.png)
+例如`USART2_TX`, 当控制重映射的寄存器USART2_REMAP=0时, 它被分配到默认物理引脚PA2.
+当USART2_REMAP=1时, 它被分配到物理引脚PD5.
+
+
+### 1.5 DMA (data memory access) 直接存储器访问
+
+功能: 在两处搬运数据, 不占用cpu.
+比如串口输入时, 我们把sram中的字符串数据arr先搬运到cpu暂存reg, 然后搬运到USART的DR, 然后发送.
+如果能使用DMA, 只需要cpu发个命令, 让数据arr自动搬运到目的地(USART_DR), cpu可以去做别的事.
+
+stm32f103大容量版本有两个DMA外设`DMA1`, `DMA2`.
+每个DMA有7个通道. 可以实现
+* P->M
+* M->P
+* M->M
+
+P:外设peripheral.  
+M:
+
+注意:ADC2没有DMA功能. 可以用ADC1或ADC3.
+
+### 1.6 TIM(timer)定时器
+
+![定时器分类](image-53.png)
+
+#### 1.6.1 基本定时器
+
+![基本定时器](image-54.png)
+
+##### 时基 time base
+![时基](image-56.png)
+![基本定时器框图](image-57.png)
+* 计时器 **CNT**
+* 预分频器 **PSC**(Prescaler)
+  * ![预分频器时序图](image-60.png)
+  * ![预分频器时序图2](image-61.png)
+* 自动重装载寄存器 **ARR** : 计数器到达该寄存器值后自动清零.
+
+* **影子寄存器**: 
+  * PSC和ARR都有`影子寄存器`(框图中, PSC和ARR矩形有一个影子图案). 其实就是打拍. 比如ARR的影子寄存器称为称为`自动重装载预装载`, 使能在TIMx_CR1寄存器的7位`ARPE`.
+    * ![影子寄存器](image-58.png)
+    * ![ARR的自动重装载的使能寄存器](image-59.png)
+
+计数器时钟`CK_CNT`频率: 
+$CK\_CNT=\frac{72M}{PSC+1}$
+于是计数器技术一轮需要的时间为$\frac{ARR}{CK\_CNT}$
+
+时基结构体的初始化:
+```c
+typedef struct{
+//PSC的分频因子
+uint16_t TIM_Prescaler;
+
+//计数模式. (基本计时器TIM7,TIM8不用配, 只能向上计数)
+uint16_t TIM_CounterMode;
+
+//ARR的值, 计数周期
+uint32_t TIM_Period;
+
+//外部输入的时钟分频因子.(基本计时器没有)
+
+//重复计时器(高级定时器专用)
+//如果开启相关功能, 可以在ARR满的时候不产生中断/DMA请求, 而是清零并且让重复计时器++. 感觉没啥用...你扩倍ARR设定不就好了.
+uint8_t TIM_ClockDivision;
+//
+
+} TIM_TimeBaseInitTypeDef
+```
+
+#### 1.6.2 高级定时器 TIM1, TIM8
+
+三个功能:
+* 定时
+* PWM
+* 捕获
+  * 脉冲宽度
+  * PWM
+
+![高级TIM的GPIO分配](image-62.png)
+
+
+![高级TIM功能框图](image-63.png)
+![功能框图划分](image-64.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 2 实验部分:
+
+### 指南者板子硬件设计:
+从原理图查到:
+![alt text](image-19.png)
+注意PC0实际上被SPI接口占用了. 别用.
+
+
+
+
+## 2.1 ADC实验
 整个原理图:
 ![ADC原理图](image-3.png)
 ### 理论部分 
