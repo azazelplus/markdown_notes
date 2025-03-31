@@ -609,9 +609,198 @@ $$
 
 
 
-### 5.7 DDPM, 去噪扩散概率模型, 扩散模型.
+# 6 DDPM, 去噪扩散概率模型, 扩散模型.
 
-**扩散模型（Denoising Diffusion Probabilistic Model, DDPM）属于隐变量概率建模的一种**。它的核心思想是引入**一个隐变量** \( z_t \)（可以看作是噪声注入的中间状态），并通过逐步去噪的方式恢复数据 \( x \)。
+## 数学过程:
+
+
+### 1.前向加噪
+
+取x0为输入图像. T为总步长, 一般设置为T=1000.
+
+我们进行T步加噪. 每一步采样一个正态噪声ε, 然后按照系数β_t累加到上一步给出的图像:
+$$
+
+x_t=\sqrt{β_t} ε_t + \sqrt{1-β_t} x_{t-1}
+
+$$
+
+其中β_t的选择一般是0<β_1<β_2<...<β_T<1. 即扩散速度越来越快了!
+
+上述递推公式不断展开, 得到: 
+
+* 注意到两个独立的随机变量相加, 可以卷积起来成为一个新的随机变量. 两个独立的正态随机变量有: $N(μ_1, σ^2_1) + N(μ_2, σ^2_2) = N(μ_1 + μ_2, σ^2_1 + σ^2_2)$
+
+$$
+
+\begin{aligned}
+
+x_t &= \sqrt{β_t} ε_t + \sqrt{1-β_t} x_{t-1}\\
+&= \sqrt{β_t} ε_t + \sqrt{1-β_t} (\sqrt{β_t} {ε_t-1} + \sqrt{1-β_{t-1}} x_{t-2})\\
+&= \dots\\
+&= \sqrt{1-\bar α_t}ε + \sqrt{\bar α_t}x_0\\
+
+\end{aligned}
+
+\\[10pt]
+
+其中α_t ≡ β_t,\\
+\bar α_t ≡ \prod_i^t a_i
+$$
+![alt text](image-6.png)
+
+
+### 2.反向去噪
+![alt text](image-7.png)
+
+上式为了严谨， 加上条件x0(x0相同的时候, 可以忽视x0)
+
+带入具体概率密度函数:
+
+![alt text](image-9.png)
+
+![alt text](image-10.png)
+
+![alt text](image-11.png)
+
+于是我们得到了给定xt时,xt-1的概率分布
+
+![alt text](image-8.png)
+
+![alt text](image-12.png)
+
+将x0用xt和一个正态分布随机变量ε替换:
+
+![alt text](image-5.png)
+
+最终得到不含x0的, 已知xt时xt-1的概率分布.
+
+$$
+P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+\sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
+\;+\;
+\sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
+\;-\;
+\sqrt{\frac{\,1 - \bar{\alpha}_t\,}{\,\bar{\alpha}_t\,}}\;\epsilon
+\;,\;
+\Bigl(\tfrac{\beta_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}\Bigr)^{2}
+\Biggr).
+$$
+
+
+
+有了上式, 我们得到了从已知x_t推测x_t-1的概率分布. 
+
+实际上, 有了`x_t`后, 只要我们知晓当初从`x_0`添加噪声变成`x_t`的那个噪声`ε`, 就可以确定出此时x-t=1的分布(注意还不能唯一确定).
+
+* 后向去噪中, 从x_T抽样到x_0的过程中,  这个正态分布:  
+  $$
+      P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+      \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
+      \;+\;
+      \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
+      \;-\;
+      \sqrt{\frac{\,1 - \bar{\alpha}_t\,}{\,\bar{\alpha}_t\,}}\;\epsilon
+      \;,\;
+      \Bigl(\tfrac{\beta_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}\Bigr)^{2}
+      \Biggr).
+    $$
+    的方差会越来越小, 直到接近`0`; 期望中心则从`原点0`渐渐偏移到`x_0`.
+
+### 3.构建神经网络
+现在有了:
+* 前向加噪: **用一个正态分布抽样噪声`ε`即可从`x_0`变为`x_t`;**
+  * $$
+    \begin{aligned}
+    x_t = \sqrt{1-\bar α_t}ε + \sqrt{\bar α_t}x_0\\
+    \end{aligned}
+    $$
+
+* 后向去噪: **只要知道`x_t`和让它从`x_0`变成`x_t`的噪声`ε`, 就可以得到`x_t-1`的概率分布;**
+  * $$
+      P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+      \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
+      \;+\;
+      \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
+      \;-\;
+      \sqrt{\frac{\,1 - \bar{\alpha}_t\,}{\,\bar{\alpha}_t\,}}\;\epsilon
+      \;,\;
+      \Bigl(\tfrac{\beta_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}\Bigr)^{2}
+      \Biggr).
+    $$
+  
+我们可以训练一个神经网络(一般选用UNET.)
+
+* 这个网络的输入输出:
+  * 输入$x_t$
+  * 输出预测噪声$ε_t$
+  * (内部拟合结构暂时黑箱)
+
+
+
+* **这个网络的`训练`过程:**
+  * 设定 `T=1000`，确定常数 $\{α_t\}$。
+
+  * **数据准备：**
+    - 取一个训练样本 $x_0$（如一张小猫图片）。
+    - 从均匀分布中随机采样 `t ∈ {1, 2, ..., T}`。
+    - 采样一个标准高斯噪声 $ε_t ∼ N(0, I)$，然后利用 **前向扩散公式**：
+      $$
+      x_t = \sqrt{\bar α_t} \, x_0 + \sqrt{1 - \bar α_t} \, ε
+      $$
+      生成 $x_t$（即 $x_0$ 的部分加噪版本）。
+
+  * **模型前向传播：**
+    - 输入 $x_t$ 和 $t$ 到模型 $ε_θ(x_t, t)$。
+    - 模型的目标是 **预测噪声** $ε_t$，即：
+      $$
+      ε_θ(x_t, t) \approx ε_t
+      $$
+
+  * **计算损失函数：**
+    - 采用 **均方误差（MSE）** 损失：
+      $$
+      L = \mathbb{E}_{x_0, t, ε} \left[ \| ε - ε_θ(x_t, t) \|^2 \right]
+      $$
+
+  * **反向传播更新模型中的参数.**
+  * **一轮训练结束**。
+
+
+* **这个网络的`使用`过程**
+  * 采样一个高斯噪声当作$x_T$.
+  * 开始对$x_T$逐步去噪: 将其作为输入给到模型. 模型输出$ε_T$. 
+    利用公式
+      $$
+        P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+        \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
+        \;+\;
+        \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
+        \;-\;
+        \sqrt{\frac{\,1 - \bar{\alpha}_t\,}{\,\bar{\alpha}_t\,}}\;\epsilon
+        \;,\;
+        \Bigl(\tfrac{\beta_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}\Bigr)^{2}
+        \Biggr)
+      $$
+    得到$P\bigl(x_{T} \mid x_{T-1}, x_0\bigr)$, 对其抽样得到一个$x_{T-1}$.
+  * 然后把得到的$x_{T-1}$输入给模型, 模型输出$ε_{T-1}$.
+  * 继续操作...直到抽样得到一个$x_0$.
+  * $x_0$就是生成的图片了.
+
+
+
+现在我们来看模型UNET具体的结构.
+
+### 4.UNET模型
+
+
+
+
+
+
+
+
+**扩散模型（Denoising Diffusion Probabilistic Model, DDPM）属于`隐变量概率建模`的一种**。它的核心思想是引入**一个隐变量** \( z_t \)（可以看作是噪声注入的中间状态），并通过逐步去噪的方式恢复数据 \( x \)。
 
 ---
 
@@ -640,6 +829,8 @@ $$
    - 这个过程可以理解为，我们在尝试**重建 \( x_0 \)**，类似于 VAE 的解码过程。
 
 最终，我们可以从一个随机噪声 \( z_T \sim \mathcal{N}(0, I) \) 开始，按照 \( p_{\phi}(z_{t-1} \mid z_t) \) 逐步去噪，最终生成一个样本 \( x_0 \)。
+
+
 
 ---
 
