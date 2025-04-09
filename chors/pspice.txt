@@ -1,5 +1,5 @@
 
-集成在cadence里. 安装cadence后, 打开Capture CIS, 选择启动模块为OrCAD Capture CIS.
+集成在cadence里. 安装cadence后, 打开`Capture CIS`, 选择启动模块为OrCAD Capture CIS.
 
 
 新建project来搭建电路. 常用的library有:
