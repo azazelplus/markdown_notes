@@ -213,7 +213,7 @@ print(next(iterator))  # 输出: 4
 
 # pytorch框架
 
-## 张量
+## 1.张量
 
 一个shape为[k1,k2,k3,k4]的4维(rank)张量
 数学意义上, 它们都是有4个下角标的四维张量:
@@ -335,7 +335,44 @@ class MyNet(nn.Module):
 
 * * *
 
-## 🐾 关键函数：`state_dict()`
+## 2.模型的保存和加载
+
+### 保存: `torch.save(my_model.state_dict(), 'model_weights.pt')`
+
+对于一个模型实例, 比如
+
+```python
+class UNet(nn.net)
+
+my_model = UNet(parameters...)
+```
+
+`my_model.state_dict()` 方法返回一个字典, 包含该模型中所有参数(权重w+偏置b).
+`torch.save`方法用于保存这个参数文件.
+
+```python
+torch.save(my_model.state_dict(), 'model_weights.pt')
+```
+该命令将你的模型的参数字典保存到磁盘上，保存在文件 model_weights.pt 中。
+
+### 加载: `my_model.load_state_dict(model_weights)`
+
+先使用.load方法:
+```python
+model_weights = torch.load('model_weights.pt', map_location=device)
+```
+先使用该命令, 将权重文件`model_weights.pt`中的内容加载到内存中的一个变量`model_weights`中，以便后续使用。 
+
+其中第二个参数map_location用来控制加载时将模型权重加载到哪个设备上。如果是GPU, 那麽这个变量`model_weights`的地址在显存上.
+
+
+然后使用.load_state_dict方法:
+```python
+my_model.load_state_dict(model_weights)
+```
+该命令将`my_model`模型的参数用`model_weights`加载. `.load_state_dict`会检查模型中每个参数名，并将对应的权重载入到正确的参数位置。如果模型的结构完全匹配，就会成功应用这些参数。如果有不匹配的参数（例如模型结构改变了），则会报错。
+
+
 
 ### ✅ `model.state_dict()`：
 
