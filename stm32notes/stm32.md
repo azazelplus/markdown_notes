@@ -99,59 +99,6 @@ RCC是stm32的一个外设,  负责系统复位和时钟管理.
 
 
 
-
-
-### 1.3 中断, NVIC模块, EXTI模块
-
-stm32使用模块`NVIC`(nested vectored interrupt controller,内嵌向量中断控制器)管理中断.
-![中断系统](image-40.png)
-右边的框图解释:
-`中断`的输入量:
-* 1.外设影响某个io口电平.
-  * 边沿检测电路检测到上升/下降(这个自己设置,也可以是双边)后, 会给`请求挂起寄存器`信号. 
-* 2.内部软件中断事件.
-  * 软件中断事件寄存器也可以给请求挂起寄存器发信号. 
-`请求挂起寄存器`用或门连接软件/io口信号, 即都可接收.
-然后:
-* 当`中断屏蔽寄存器`允许时, `请求挂起寄存器`信号发送给`EXTI`.
-
-**EXTI**(external interrupt controller,外部中断控制器). 管理外部中断, 然后给信号到NVIC. "秘书的秘书".
-
-stm32拥有19个`EXTI`模块, 比如EXTI0管理的i/o口为PA0,PB0,PC0,PD0,PE0.
-
-* 注意: stm32中, 相同编号的io口(如PA0和PB0两个引脚)使用相同的EXTI线. 不能同时设置为不同的外部中断, 会失效.
-
-
-**中断向量**: 即中断服务程序所在的位置.(这里的`向量`其实就是个**指针**)
-**中断嵌套**: 优先级更高的中断请求打断了正在进行的中断服务.
-
-**优先级**:
-对每一个中断请求, 需要配置其
-* 抢占式优先级(如果已经有正在处理的中断请求, 抢占优先级更高的中断可以打断它.)
-* 响应式优先级(用来判断cpu正常运行没有中断请求的时候的优先级.) 
-两种优先级都是一个数字, 数字越低(1)越高级.
-
-#### 中断函数的例子:
-```c
-//中断服务函数ISR应当写在`stm32f10x_it.c`中.
-
-//TIM6外设的中断函数. 其中有库函数和宏:
-//TIM_GetITStatus,...: stm32f10x_tim.c中的库函数.
-//定时器硬件模块选择
-//#define	BASIC_TIM		TIM6
-//...
-void  BASIC_TIM_IRQHandler (void)
-{
-	if ( TIM_GetITStatus( BASIC_TIM, TIM_IT_Update) != RESET ) 
-	{	
-		//一个全局变量.
-		time++;
-		//清除中断标志位
-		TIM_ClearITPendingBit(BASIC_TIM , TIM_FLAG_Update);  		 
-	}		 	
-}
-```
-
 ### 1.4 接口的重映射
 ![alt text](image-39.png)
 例如`USART2_TX`, 当控制重映射的寄存器USART2_REMAP=0时, 它被分配到默认物理引脚PA2.
@@ -260,7 +207,7 @@ uint8_t TIM_ClockDivision;
 
 
 
-## 2.1 ADC实验
+### 2.1 ADC实验
 整个原理图:
 ![ADC原理图](image-3.png)
 ### 理论部分 
@@ -545,7 +492,60 @@ void ADCx_Init(void){
 
 
 
-##
+
+
+
+
+## 3 中断, NVIC模块, EXTI模块
+
+stm32使用模块`NVIC`(nested vectored interrupt controller,内嵌向量中断控制器)管理中断.
+![中断系统](image-40.png)
+右边的框图解释:
+`中断`的输入量:
+* 1.外设影响某个io口电平.
+  * 边沿检测电路检测到上升/下降(这个自己设置,也可以是双边)后, 会给`请求挂起寄存器`信号. 
+* 2.内部软件中断事件.
+  * 软件中断事件寄存器也可以给请求挂起寄存器发信号. 
+`请求挂起寄存器`用或门连接软件/io口信号, 即都可接收.
+然后:
+* 当`中断屏蔽寄存器`允许时, `请求挂起寄存器`信号发送给`EXTI`.
+
+**EXTI**(external interrupt controller,外部中断控制器). 管理外部中断, 然后给信号到NVIC. "秘书的秘书".
+
+stm32拥有19个`EXTI`模块, 比如EXTI0管理的i/o口为PA0,PB0,PC0,PD0,PE0.
+
+* 注意: stm32中, 相同编号的io口(如PA0和PB0两个引脚)使用相同的EXTI线. 不能同时设置为不同的外部中断, 会失效.
+
+
+**中断向量**: 即中断服务程序所在的位置.(这里的`向量`其实就是个**指针**)
+**中断嵌套**: 优先级更高的中断请求打断了正在进行的中断服务.
+
+**优先级**:
+对每一个中断请求, 需要配置其
+* 抢占式优先级(如果已经有正在处理的中断请求, 抢占优先级更高的中断可以打断它.)
+* 响应式优先级(用来判断cpu正常运行没有中断请求的时候的优先级.) 
+两种优先级都是一个数字, 数字越低(1)越高级.
+
+#### 中断函数的例子:
+```c
+//中断服务函数ISR应当写在`stm32f10x_it.c`中.
+
+//TIM6外设的中断函数. 其中有库函数和宏:
+//TIM_GetITStatus,...: stm32f10x_tim.c中的库函数.
+//定时器硬件模块选择
+//#define	BASIC_TIM		TIM6
+//...
+void  BASIC_TIM_IRQHandler (void)
+{
+	if ( TIM_GetITStatus( BASIC_TIM, TIM_IT_Update) != RESET ) 
+	{	
+		//一个全局变量.
+		time++;
+		//清除中断标志位
+		TIM_ClearITPendingBit(BASIC_TIM , TIM_FLAG_Update);  		 
+	}		 	
+}
+```
 
 ## 串口通信(Serial Communication)
 **串口**（Serial Port），通常指的是 UART（Universal Asynchronous Receiver/Transmitter，通用异步收发器），它是一种数据传输协议。
@@ -684,8 +684,10 @@ LQFP144指的是144脚的芯片,
 ![alt text](image-48.png)
 
 ### USART编程
-学习stm32f10x_usart.h.
-**固件库编程经验**
+
+### 学习stm32f10x_usart.h.
+
+## 4.固件库编程经验**
 ---
 根据我们的经验, 头文件大致结构为:
 1. 定义初始化结构体;
@@ -803,7 +805,29 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 * 05-编写发送和接收函数
 * 06-编写中断服务函数
 
-## 杂项
+## 5.电源管理
+
+stm32芯片的电源模块:
+![alt text](image-65.png)
+
+特别的,stm13f103v6(指南者)型号的usb供电模块原理图:
+![alt text](image-66.png)
+
+### 1.睡眠模式
+
+通过调用_WFI()或_WFE()进入睡眠.
+
+睡眠有两个模式: 立即和退出时. 它们主要是通过WFI()睡眠时区分的. 通过配置内核寄存器`SLEEPONEXIT`设置.
+
+![alt text](image-67.png)
+
+### 2.停止模式
+
+![alt text](image-68.png)
+![alt text](image-69.png)
+
+
+## 7.杂项
 
 使用外设(如串口usart, ADC, i2c, spi)...引脚(绑定到哪个gpio口), 去`数据手册`里找(pinouts and pin descriptions). 注意`参考手册`里没有. 它主要是介绍外设的功能和原理图以及寄存器说明.
 
@@ -821,7 +845,28 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 出现flash download failed cortex-M3，然后将debug中setting中的debug中的connect设置为under reset， reset设为SYSRESETEQ后就可以了.
 
 
-编译出现4个错误20个警告的话，魔术棒target里右上选version5版本
+编译出现4个错误20个警告的话，魔术棒target里右上选version5版本.
+
+### 7.0 常用英文缩写说明
+
+-   **LDO**：Low Drop-Out regulator，低压差线性稳压器. 比DC-DC降压模块,比如buck低能, 就是纯电阻分压.
+    -   工作方式：在输入和输出之间串联一个“可变电阻”（通常是一个晶体管），通过调节它的导通度来丢弃多余电压。
+    -   优点：电路简单、响应快、输出噪声低。  
+    -   缺点：效率低——当输入电压高于输出很多时，剩余能量全以热量形式浪费掉；尤其 ΔV（输入−输出）越大，损耗越严重。
+
+
+    
+-   **MCU**：Microcontroller Unit，微控制器单元
+    
+-   **ADC**：Analog‑to‑Digital Converter，模数转换器
+    
+-   **VDDA**：Voltage Digital‑to‑Analog，模拟电源输入
+    
+-   **VSSA**：Voltage Serial Signal Analog，模拟地
+    
+-   **VBUS**：USB 总线供电电压
+
+
 
 
 
