@@ -1,19 +1,19 @@
-# bash命令 
+# 1 bash命令 
 linux中输入的命令行即为bash命令。每个bash命令是一个可执行程序(在/bin中储存). 创建一个可执行的bash命令行文件, 即为bash脚本script.
 
 
-## man 
+## 1.1 man 
 想要搜索的外部命令名可以跳转到该命令的man界面. 如果想查看bash内部命令, 比如cd, pwd, 使用help即可.
 man -k <keyword>可以输出所有简介中包含关键字的man条目供你选择, 而不是直接进入某个具体的man条目.
 
  
-## find
+## 1.2 find
 find /指定路径下 -type f -name "filename" 
 输出查找到的文件的路径. \
 其中选项-type的参数为: -f(regular file), -d(directory), -l(symbolic link)等. -name可以替换为-iname, 即不区分大小写.
 find经常和grep一起使用. find的结果|到grep中进行更细致的名称筛选. 比如find ~ -iname "my_first_program"和命令find ~ | grep -i "my_first_program"是等价的, 运行速度也几乎一样.
 
-## grep
+## 1.3 grep
 格式为**grep -E "chars"**， 输出-E选项开启扩展正则表达式(ERE), 若没有这个选项, 系统会用基本正则表达式(BRE)来识别""内的字符. 
 - 注意: BRE和ERE有不同: ERE支持 **|** 符号为"或", 而BRE需要用转义字符搭配 **/|** 为"或".
 
@@ -22,7 +22,7 @@ find经常和grep一起使用. find的结果|到grep中进行更细致的名称�
 cat /etc/centos-release	查看centos版本。即cat显示命令和centos的版本信息存储地址.
 
 
-## xargs (extended arguments, 扩展参数)
+## 1.4 xargs (extended arguments, 扩展参数)
 - UNIX/Linux 命令的设计原则：
 **命令行参数**：专门用于传递文件名或其他参数。
 **标准输入stdin**：用于传递数据流。
@@ -41,7 +41,7 @@ azazel@DESKTOP-NJKSK6O:~/test/test$ find . | grep ".c" | xargs wc -l
 ```
 
 
-## wc (word count,词数统计)
+## 1.5 wc (word count,词数统计)
 **wc -l file**  输出file文件的行数(对一行的一句话,即显示字母数).\
 -w：显示单词数。\
 -m：显示字符数（与 -c 类似，但在处理多字节字符时有所不同）。\
@@ -50,31 +50,39 @@ azazel@DESKTOP-NJKSK6O:~/test/test$ find . | grep ".c" | xargs wc -l
 
 
 
-## motion
+## 1.6 motion
+
+这应该是vim的内容好吧!
+
 [motion]包括 hjkl(四向), w(下一个word开头), e(下一个word ending), 0(当前line开头), ^(当前line不为空格的开头.), $(当前line ending), G(文档ending), gg(文档开头)等，即cursor移动操作。
 
 
-## ud (disk usage磁盘使用情况)
+## 1.7 磁盘管理
+
+### 1.7.1 du (disk usage磁盘使用情况)
+
+
+
 - 格式:
 **du -sc 路径**
 
 - 选项 -s(--summarize), 只显示每个参数的总和, 不显示每个子目录的用量. 
 - 选项 -c(--total), 最后加上一个总计.
 
-## df (disk free, 显示文件系统的磁盘空间占用情况)
+### 1.7.2 df (disk free, 显示文件系统的磁盘空间占用情况)
 - 选项 -h (human-readable) 将输出格式化为易于阅读的形式，如以 KB、MB、GB 等单位显示，而不是以字节数显示。
 - example
   ```bash
   df -h | tee disk_usage.txt    #将磁盘使用情况输出在终端上,并且存入文件disk_usage中
   ```
 
-## sort (数据排序工具)
+## 1.8 sort (数据排序工具)
 经常以pipe(|)接前一个函数的输出流, 以达到整理后使输出更加美观/易读的目的.
 - 格式: **sort -nr 文件(一般以某个路径下的全部(用通配符实现)子文件/.../*表示)**
 - 选项 -n(numerical), 按数值排序
 - 选项 -r(reverse), 降序. 
 
-## more & less
+## 1.9 more & less
 - more, 用于分页显示文件内容或输入。它一次显示一页内容，用户可以按空格键查看下一页，按 q 键退出。
 - 格式: **more filename**
 - 示例: 
@@ -92,7 +100,7 @@ more AVeryVeryLongDocument.txt
     - 按 / 键进入搜索模式，输入要搜索的字符串，按 Enter 键搜索。
     - 按 q 键退出。
 
-## gcc(GNU compiler Collection, GNU 编译器套装")
+## 1.10 gcc(GNU compiler Collection, GNU 编译器套装")
 - 格式:     
   <span style="color: red;"> 
   **gcc [选项] [源文件] -o [输出文件]**</span>,
@@ -105,7 +113,7 @@ more AVeryVeryLongDocument.txt
 - 选项-O:优化代码. 有-O1(一级优化), -O2(二级优化), -O3(三级优化)三个等级.
 - 选项 -g
 
-## tee(这个名字来自字母T, 一个三向接口, 寓意数据分流)
+## 1.11 tee(这个名字来自字母T, 一个三向接口, 寓意数据分流)
 这个命令读取标准输入, 并将数据输出到多个目标中.
 - 语法:
 ```bash
@@ -125,7 +133,7 @@ command | tee [options] [file...]
 
 
 
-## objdump(object dump, 对象转储)
+## 1.12 objdump(object dump, 对象转储)
 用于显示和分析二进制文件的内容。在软件开发和逆向工程中，objdump 常用于反编译和查看程序的汇编代码。
 格式为**objdump <选项> <file>**
 - 选项: 用于switch显示什麽信息(所以至少要填一个选项)
@@ -136,19 +144,29 @@ command | tee [options] [file...]
   objdump -d myprog > disassembly_of_myprog.txt #将可执行程序myprog反汇编,将反汇编内容存储在disassembly_of_myprog.txt中.
   ```
 
-## time 
+## 1.13 time 
 在命令前面加上time , 可以在执行命令后, 输出该命令的执行时间，包括 总耗时（real）、用户时间（user） 和 系统时间（sys）
 
 
 
-## curl
+## 1.14 网络和下载
+
+### 1.14.1 curl
 **curl**用来从网络上获取数据. -s选项是silence模式,级不显示进度信息.
 ```bash
 curl -s $URL
 ```
 
+### scp (secure copy protocol, 安全拷贝协议)
 
-# 重定向 (< , > , &, >>)
+它是基于ssh协议的命令, 用来在两台主机之间传输文件.
+
+拷贝一台服务器上的文件(夹)到本地: (-r表示recursive, 传输文件夹.)
+scp -r <username>@<ip>:<目标服务器的文件(夹)路径> <想要保存的本地文件夹路径>
+对于windows的powershell, 可以用""包裹表示windows风格路径名: "windows路径名"
+
+
+## 1.15 重定向 (< , > , &, >>)
 \>符号表示将左边的命令的标准输出stdin写入右边的文档中, 称为重定向.
 如果加上&, 即&> 这个符号表示将标准输出stdin和<span style="color: red">
 标准错误stderr
@@ -169,7 +187,7 @@ curl -s $URL
 `<<EOF`会让shell(bash(linux终端默认)也是一种shell)进入`多行输入模式`, 直到遇到`EOF`.
 
 
-## 一些应用:
+## 1.16 一些应用:
 - ```bash
   > newfile #创建一个新文档newfile. (即,将'空'重定向到newfile中) 它和touch newfile不同在于后者更安全: 如果存在名字为newfile的文件, > newfile删除了其全部文件, 而touch newfile不会进行任何操作.
   ```
@@ -189,7 +207,51 @@ curl -s $URL
 
 
 
-# make命令和Makefile 一个基础的编译方式
+## 1.17 程序和进程
+
+### 1.17.1 ps (process status)检查进程.
+
+```bash
+ps -p 1 -o comm=
+```
+`-p 1`表示查看pid=1的进程. 系统的第一个进程即为`init进程`.
+
+`-o comm=`表示指定输出格式为command(命令名), `=`表示去掉标题行(不显示列名)
+
+这条命令查看系统初始化进程(init进程)叫什麽.
+
+### 1.17.2 init进程
+
+
+初始化进程是系统开机时第一个被运行的程序!
+
+它管理:
+  * 启动服务;
+  * 日志;
+  * 启动流程;等等.
+
+
+不同的linux系统的init进程不一定一样.
+现在大多数主流 Linux 发行版（如 Ubuntu 16.04+、Debian 8+、CentOS 7+）都默认使用 **systemd**
+  常用命令:(`systemctl` 是 systemd 提供的命令行工具。)
+  任务                |              命令
+  查看 ssh 服务状态   | systemctl status sshd
+  启动 ssh 服务       | sudo systemctl start sshd
+  设置开机启动 ssh    | sudo systemctl enable sshd
+  重启 ssh 服务       | sudo systemctl restart sshd
+一些系统(特别是轻量级系统、嵌入式环境、HPC 环境, 容器) 可能有其他的init进程, 
+
+比如有些容器/非常轻量的虚拟环境等, 会使用**sh**, 即shell. 这意味着这个**系统**本质上只是个运行shell的环境罢了.
+
+
+
+##
+
+
+##
+
+
+# 2 make命令和Makefile 一个基础的编译方式
 
 ## 程序编译的四个步骤
 ### 1. 预处理（Preprocessing）
@@ -336,7 +398,7 @@ all:$(patsubst %.c, %, $(wildcard ex[0-9]*.c))
 ```
 
 
-# linux的用户(组)管理
+# 3 linux的用户(组)管理
 linux的权限管理包括用户和用户组, 两者权限系统互相独立, 一个用户可以存在在多个用户组中， 但必须至少存在在一个用户组中。
 
 ## 用户组管理
@@ -431,7 +493,7 @@ chown :sudo hello.txt #将hello.txt的所属用户组改为sudo
 chown -R root:root hello #将文件夹hello内所有文件所属用户和用户组改为root.
 ```
 
-# 杂项
+# 4 杂项
 
 ## 万用字符(REGEX)
 
