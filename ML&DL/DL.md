@@ -689,7 +689,7 @@ $$
 最终得到不含x0的, 已知xt时xt-1的概率分布.
 
 $$
-P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+P\bigl(x_{t-1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
 \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
 \;+\;
 \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
@@ -708,7 +708,7 @@ $$
 
 * 后向去噪中, 从x_T抽样到x_0的过程中,  这个正态分布:  
   $$
-      P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+      P\bigl(x_{t-1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
       \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
       \;+\;
       \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
@@ -731,7 +731,7 @@ $$
 
 * 后向去噪: **只要知道`x_t`和让它从`x_0`变成`x_t`的噪声`ε`, 就可以得到`x_t-1`的概率分布;**
   * $$
-      P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+      P\bigl(x_{t-1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
       \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
       \;+\;
       \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
@@ -785,7 +785,7 @@ $$
   * 开始对$x_T$逐步去噪: 将其作为输入给到模型. 模型输出$ε_T$. 
     利用公式
       $$
-        P\bigl(x_{t+1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+        P\bigl(x_{t-1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
         \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
         \;+\;
         \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
@@ -795,7 +795,7 @@ $$
         \Bigl(\tfrac{\beta_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}\Bigr)^{2}
         \Biggr)
       $$
-    得到$P\bigl(x_{T} \mid x_{T-1}, x_0\bigr)$, 对其抽样得到一个$x_{T-1}$.
+    得到$P\bigl(x_{T-1} \mid x_{T}, x_0\bigr)$, 对其抽样得到一个$x_{T-1}$.
   * 然后把得到的$x_{T-1}$输入给模型, 模型输出$ε_{T-1}$.
   * 继续操作...直到抽样得到一个$x_0$.
   * $x_0$就是生成的图片了.
@@ -805,6 +805,67 @@ $$
 现在我们来看模型UNET具体的结构.
 
 ### 4.UNET模型
+
+### 5. free-guidance的有条件扩散模型
+
+
+
+
+* **这个网络的`训练`过程:**
+  * 设定 `T=1000`，确定常数 $\{α_t\}$。(同DDPM)
+
+  * **数据准备：**
+    - 取一个训练样本 $x_0$(如一张小猫/小狗/小猪图片), 以及其对应标签$y$. 比如`y=1`代表小猫,`y=2`代表小狗.
+    - $p_{drop}$
+    - 从均匀分布中随机采样 `t ∈ {1, 2, ..., T}`。
+    - 采样一个标准高斯噪声 $ε_t ∼ N(0, I)$，然后利用 **前向扩散公式**：
+      $$
+      x_t = \sqrt{\bar α_t} \, x_0 + \sqrt{1 - \bar α_t} \, ε
+      $$
+      生成 $x_t$（即 $x_0$ 的部分加噪版本）。
+
+  * **模型前向传播：**
+    - 输入 $x_t$ 和 $t$ 到模型 $ε_θ(x_t, t)$。
+    - 模型的目标是 **预测噪声** $ε_t$，即：
+      $$
+      ε_θ(x_t, t) \approx ε_t
+      $$
+
+  * **计算损失函数：**
+    - 采用 **均方误差（MSE）** 损失：
+      $$
+      L = \mathbb{E}_{x_0, t, ε} \left[ \| ε - ε_θ(x_t, t) \|^2 \right]
+      $$
+
+  * **反向传播更新模型中的参数.**
+  * **一轮训练结束**。
+
+
+* **这个网络的`使用`过程**
+  * 采样一个高斯噪声当作$x_T$.
+  * 开始对$x_T$逐步去噪: 将其作为输入给到模型. 模型输出$ε_T$. 
+    利用公式
+      $$
+        P\bigl(x_{t-1} \mid x_t, x_0\bigr) \;\sim\; \mathcal{N}\!\Biggl(
+        \sqrt{\frac{\alpha_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_t
+        \;+\;
+        \sqrt{\frac{\bar{\alpha}_{t-1}\,\bigl(1 - \alpha_t\bigr)}{\,1 - \bar{\alpha}_t\,}}\;x_0
+        \;-\;
+        \sqrt{\frac{\,1 - \bar{\alpha}_t\,}{\,\bar{\alpha}_t\,}}\;\epsilon
+        \;,\;
+        \Bigl(\tfrac{\beta_t\,\bigl(1 - \bar{\alpha}_{t-1}\bigr)}{\,1 - \bar{\alpha}_t\,}\Bigr)^{2}
+        \Biggr)
+      $$
+    得到$P\bigl(x_{T-1} \mid x_{T}, x_0\bigr)$, 对其抽样得到一个$x_{T-1}$.
+
+    等等使用这个网络生成图片的时候(采样环节)我们没有x_0呀! 我们是想得到一个x_0呀.
+    此时我们只能用前向扩散公式给出x_0的估计值:
+    ![alt text](image-15.png)
+
+    然后把这个估计值x_0带入到上式分布, 然后采样.
+  * 然后把得到的$x_{T-1}$输入给模型, 模型输出$ε_{T-1}$.
+  * 继续操作...直到抽样得到一个$x_0$.
+  * $x_0$就是生成的图片了.
 
 
 
