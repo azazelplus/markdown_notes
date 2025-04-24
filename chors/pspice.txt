@@ -37,7 +37,7 @@
 - Logs(日志)
 
 
-新建project来搭建电路. 常用的library有:
+### 新建project来搭建电路. 常用的library有:
 bipolar(各种型号二极管)
 ANALOG
 SOURCE
