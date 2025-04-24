@@ -547,7 +547,7 @@ void  BASIC_TIM_IRQHandler (void)
 }
 ```
 
-## 串口通信(Serial Communication)
+## 4. 串口通信(Serial Communication)
 **串口**（Serial Port），通常指的是 UART（Universal Asynchronous Receiver/Transmitter，通用异步收发器），它是一种数据传输协议。
 ### 串口协议的硬件部分:
 
@@ -687,7 +687,7 @@ LQFP144指的是144脚的芯片,
 
 ### 学习stm32f10x_usart.h.
 
-## 4.固件库编程经验**
+## 5. 固件库编程经验**
 ---
 根据我们的经验, 头文件大致结构为:
 1. 定义初始化结构体;
@@ -805,7 +805,7 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 * 05-编写发送和接收函数
 * 06-编写中断服务函数
 
-## 5.电源管理
+## 6.电源管理
 
 stm32芯片的电源模块:
 ![alt text](image-65.png)
@@ -813,7 +813,17 @@ stm32芯片的电源模块:
 特别的,stm13f103v6(指南者)型号的usb供电模块原理图:
 ![alt text](image-66.png)
 
-### 1.睡眠模式
+
+### 6.1 三种模式
+
+模式名称	        | CPU状态	      | 时钟状态				 | 电流典型值（@72 MHz） | 说明
+|------------------|--------------|--------------------|-----------------------|------|
+运行模式（Run）     | 正常运行         | 所有开启（HSE、PLL） | 20～30 mA | CPU 主频全速运行，外设全开
+睡眠模式（Sleep）   | CPU停止，外设继续 | 外设时钟正常 | 6～12 mA | 用 __WFI()，中断可唤醒
+停止模式（Stop）    | CPU停止          | 主时钟关闭，仅低速时钟保留 | 10～100 µA | RAM 保持，唤醒稍慢，可通过 RTC 唤醒
+待机模式（Standby） | 全部停止         | 所有时钟关闭 | 1～10 µA | RAM丢失，需复位唤醒，功耗最低
+
+#### 1.睡眠模式(sleep)
 
 通过调用_WFI()或_WFE()进入睡眠.
 
@@ -821,10 +831,52 @@ stm32芯片的电源模块:
 
 ![alt text](image-67.png)
 
-### 2.停止模式
+#### 2.停止模式(stop)
 
 ![alt text](image-68.png)
 ![alt text](image-69.png)
+
+
+#### 3.待机模式(standby关机)
+
+![alt text](image-71.png)
+
+
+注意: 如果有备份供电(纽扣电池), `备份域`内的RTC都可以正常运行, 寄存器都可以被正常保存.
+
+### 6.2 电源控制的寄存器(PWR_CR)和库函数
+
+它们是arm cc编译器支持的一些指令, 是最底层的指令了. 我们不能再进一步跳转...
+![alt text](image-74.png)
+![alt text](image-72.png)
+
+我们可以去看`Cortex-M3 权威指南`:
+![alt text](image-75.png)
+
+
+
+
+#### WFI和WFE命令  
+
+![alt text](image-73.png)
+### 6.3 低功耗实验
+
+我们通过软件使寄存器:
+* SLEEPDEEP = 1
+* PWR_CR->PDDS = 1
+* PWR_CR->WUF = 0
+然后调用`__WFI()`/`__WFE`, 进入待机.
+
+唤醒: 给`WKUP`引脚上升沿信号.
+
+但是具体版上哪个引脚使`WKUP`引脚呢?
+
+我们看到`数据手册 Table 5. High-density STM32F103xx pin definitions (continued)`中, `WKUP`引脚被接在`PA0` 引脚.
+
+我们看到`指南者原理图`中, `K1`按键按下后, `PA0`引脚会通过电阻R15接入高电平.
+![alt text](image-70.png)
+
+
 
 
 ## 7.杂项
