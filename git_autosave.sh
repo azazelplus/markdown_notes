@@ -17,6 +17,6 @@ else
 	git add .
 	git commit -m "autosave"
 	git push
-	echo "✅ operation complete，quiting in 2s"
-	timeout /T 2 >nul
+	echo "✅ operation complete，quiting in 5s"
+	timeout /T 5 >nul
 fi
