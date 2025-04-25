@@ -31,11 +31,18 @@
 		-D:\Cadence\SPB_22.1\tools\capture\library\pspice\sourcestm.olb(电源?)
 		-D:\Cadence\SPB_22.1\tools\capture\library\pspice\special.olb(?)
 - layout
-- Outputs(仿真结果,波形文件)
+- Outputs(netlist, 仿真结果,波形文件)
+  - pstxnet.dat	(Netlist 数据文件	包含了电路的“网络连接”信息，哪些引脚和哪些线相连)
+  - pstxprt.dat	(元件属性文件	描述了你用的每一个元件的名字、属性（比如值、模型名）等)
+  - pstchip.dat	(封装/引脚映射文件	主要用于 PCB 布局，描述芯片的封装、引脚映射等数据)
+
 - PSpice Resources(仿真资源)
 	- Include Files(外部的.lib文件)
 	- Model Libraries(PSpice要用到的模型库, 比如三极管模型, OP-AMP模型)
 	- Simulation Profiles(仿真配置. 时间;分析类型(DC, Transient, AC Sweep等))
+    	- SCHEMATIC1-bias 这是默认生成的仿真文件.
+    	- SCHEMATIC1-<your_simuname> 你自己生成的仿真文件在这里.
+    	- ...
 	- Stimulus Files(激励文件, 即输入波形)
 - Logs(日志)
 
@@ -124,9 +131,18 @@ https://blog.csdn.net/impossible1224/article/details/81837955
 	AC | AC Magnitude | AC Sweep时的交流幅值 | 1 | 只对 AC 分析有用！瞬态不看这个喵！❌
 
 * Diode的属性:
-* `Implementation`即"改元建在仿真中绑定的模型名". value即为模型名. 比如, 如果value=`Dbreak` 表示用的是理想二极管模型, value=`D1N4148`表示用的是D1N4148 二极管. 如果你改的value模型名字在当前库找不到, 会在下方DRG界面warning.
+  * `Implementation`即"改元建在仿真中绑定的模型名". value即为模型名. 比如, 如果value=`Dbreak` 表示用的是理想二极管模型, value=`D1N4148`表示用的是D1N4148 二极管. 如果你改的value模型名字在当前库找不到, 会在下方DRG界面warning.
+
+* NPN
+  * `Implementation`
+    * QbreakN: 理想NPN
+    * Q2N3906: 2N3906NPN
 
 
+* PNP
+  * `Implementation`
+    * QbreakP: 理想PNP
+    * Q2N3904: 2N3904PNP
 
 
 找不到的型号可以通过在place part界面的search(选择path默认为所有本地library的目录).
@@ -136,8 +152,38 @@ https://blog.csdn.net/impossible1224/article/details/81837955
 
 
 ## 1.2 PSpice仿真:
+
+**生成网表**
 电路搭建后需要选择tools->create netlist(如果灰色, 说明没有在资源管理器处design resource->选中你的项目文件(./[你的项目名称].dsn))
 需要Create Netlist（生成网表）是一个关键的功能，主要用于将你的电路图转换为 PSpice 仿真所需的数据格式。
+![alt text](image.png)
+
+也可以点击这个按钮生成网表.
+![alt text](image-1.png)
+
+生成网表后, 在`outputs`里会显示
+- pstxnet.dat	(Netlist 数据文件	包含了电路的“网络连接”信息，哪些引脚和哪些线相连)
+- pstxprt.dat	(元件属性文件	描述了你用的每一个元件的名字、属性（比如值、模型名）等)
+- pstchip.dat	(封装/引脚映射文件	主要用于 PCB 布局，描述芯片的封装、引脚映射等数据)
+
+生成网表后, 点击`run pspice`进行仿真.
+![alt text](image-2.png)
+
+或者在顶部选项卡`PSpice`选择`run`
+![alt text](image-3.png)
+
+
+**生成仿真文件**
+
+在上方选项卡`PSpice`中选择`new simulation profile`来创建一个新的仿真文件.
+![alt text](image-4.png)
+
+有四个分析模式选择:
+- Time Domain (Transient) 瞬态分析
+- DC Sweep 直流扫描
+- AC Sweep 交流扫描/噪声
+- Bias Point 直流工作点分析(稳态分析)
+![alt text](image-5.png)
 
 
 
