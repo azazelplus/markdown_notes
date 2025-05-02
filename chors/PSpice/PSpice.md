@@ -178,6 +178,10 @@ https://blog.csdn.net/impossible1224/article/details/81837955
 在上方选项卡`PSpice`中选择`new simulation profile`来创建一个新的仿真文件.
 ![alt text](image-4.png)
 
+然后弹出simulation settings:
+
+
+
 有四个分析模式选择:
 - Time Domain (Transient) 瞬态分析
 - DC Sweep 直流扫描
