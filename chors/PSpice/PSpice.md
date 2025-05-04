@@ -46,6 +46,110 @@
 	- Stimulus Files(激励文件, 即输入波形)
 - Logs(日志)
 
+		#### lib介绍
+		说明:本介绍包含了\capture\library\pspice和capture\library\pspice\advanls目录下所有库,但由于作者水平有限,介绍得也比较简单,有些说明可能不一定对.请高手指正.谢谢！
+
+		1.1_SHOT              : 10个杂项器件,其中有54，74，CD的
+		2.7400~74S            : 74系列的器件
+		3.AA_IGBT             : IGBT是强电流、高压应用和快速终端设备用垂直功率MOSFET
+		4.AA_MISC             : 杂项DIODE MOSFET
+		5.ABM                 : 各种数学运算单元,如cos,sin,log,hipass,lowpass等,还有E/F/H/G等元件.
+		6.ADV_LIN             : ALD系列的线性放大器
+		7.ANA_SWIT            : 模拟开关
+		8.ANALOG和ANALOG_P    : 通用模拟器件,R，C，L
+		9.ANL_MISC            : 杂项模拟器件,如三相变压器，555，RELAY，SWITCH，VCO
+		10.ANLG_DEV           : AD公司放大器,电压参考器件，
+		11.APEX               : APEX公司PA/AM 系列运放
+		12.APEX_PWM           : APEX公司系列PWM控制器
+		13.ASW                : DG系列模拟开关
+		14.BIPOLAR~BJPD       : 三极管
+		15.BREAKOUT           : 用于最坏情况分析的元件。RAM,ROM,DA8/10/12,AD/8/10/12,R,SWITCH,Q,POT  (                       滑动变阻器),M,X(TRANSFORER)
+		16.BUF & BUFF_BRN     : BUFFERS
+		17.CD4000             : CD系列器件
+		18.CEL                : NE系三极管
+		19.COMLINR            : CLC系列BUFF,OPA
+		20.CONTROLLER         : 电源控制电路，DC TO DC
+		21.CORES              : 磁芯
+		22.DARLNGTN           : EPITAXIAL SILICON TRANSISTOR
+		23.DATACONV           : AD,DA
+		24.DI                 : DIODE
+		25.DIF                : DIODE BRIDGE
+		26.DIG_ECL            : D Flip-Flop
+		28.DIG_GAL            : Generic Array Logic
+		29.DIG_MISC           : mixed digital device
+		30.DIG_PAL            : programable Array Logic
+		31.DIG_PRIM           : Generic digitial device: and,add,Flip_Flop
+		32.DIH                : diode pull-up and pull-down network
+		33.DIODE              : diode
+		34.DIV                : diode v
+		35.DIZ                : diode z
+		36.DRI                : MIXED
+		37.EBIPLOAR           : bipolar
+		38.EDIODE             : diode
+		39.ELANTEC            : ELANTEC半导体公司器件,运放,门电路等
+		40.EPCOS              : EPCOS公司器件,磁珠,压每电阻,NTC等。
+		41.EPWRBJT            : bjt
+		42.FAIRCHILD          : fairchild device
+		43.FILTSUB            : mixed
+		44.FUNCTION           : 函数器件
+		44.FWBELL             : FWBELL 公司的霍尔元件
+		45.HARRIS             : HARRIS公司相关产品
+		46.IGBT               : IGBT管
+		47.INFINEON~INFINEON_SIGCXXT120 : INFINEON产品
+		48.IXYS                         : IXYS公司的功率管产品
+		49.JBIPOLAR                     : 日本产品,三极管
+		50.JDIODE                       : 日本产品,二极管
+		51.JFET                         : 日本产品,FET
+		52.JFN                          : 日本产品,NFET
+		53.JFP                          : 日本产品,PFET
+		54.JJFET                        : 日本产品,JJFET
+		55.JOPAMP                       : 日本产品,运放
+		56.LIN_TECH                     : LINEAR 公司产品,主要是运放,也有reference
+		57.LINEDRIV                     : LINEAR 公司产品,主要是门电路
+		58.MAGNETIC                     :MAGNETIC公司磁芯
+
+		59.MAXIM                        :  MAXIM公司产品
+		60.MFN                          : Fairchild,IR等公司N型功率MOS
+		61.MFP                          : Fairchild,IR等公司P型功率MOS
+		62.MIX_MISC                     : 4046,Relay等
+		63.MOTOR_RF                     : 飞思卡尔射频三极管
+		64.MOTORSEN                     : 飞思卡尔压力传感器
+		65.NAT_SEMI                     : 国半产品
+		66.NEC_MOS                      : NEC产品
+		67.ON_AMP~ON_PWM                : ON产品,依次是三极管,二极管,MOS管,开关电源控制芯片 (                                 MC33363,MC44608,NCP1200
+		68.OPA & OPAMP                  : 常用运放
+		69.OPT                          : 光耦
+		70.OPTO                         : 光耦
+		71.PHIL_BJT~PHIL_RF             : 飞利浦器件
+		72.POLYFET                      : POLYFET公司的MOS管
+		73.PSPICE_ELEM                  : 用pspiceAA分析的元件,L,R,C,I,V,变压器绕线
+		74.PWRBJT                       : 功率三极管
+		75.PWRMOS                       : 功率MOS管
+		76.RFBJN                        : 射频三极管N
+		77.RFBJP                        : 射频三极管P
+		78.RFDIO                        : 射击频二极管
+		79.SAH                          : HA2420,HA5320,LF398H高速精密采样保持放大器,
+		80.SHINDNGN                     : SHINDENGEN公司整流桥,二极管
+		81.SOURCE                       : 各种源
+		82.SOURCESTM                    : 数字仿真信号源
+		83.SPE~SPECIAL                  : 特殊元件。print,param,IC,nodeset,VARIABLES,lib,include等很多(                                 与仿真功能、设置等相关的
+		84.SPICE_ELEM                   : 流控,压控,电池,微/积分,零/极点,加减乘除等
+
+		85.SWIT_RAV                     : 开关电源仿真所用到的通用开关器件模型,分电流/电压型,CCM/DCM,(                                 大/小信号模型
+		86.SWIT_REG                     : microsemi公司的SG系列开关电源芯片如SG1844等
+		87.TEX_INST                     : TI的系列运放和它的TL431,但不全,新运放还得从TI网站上下.
+		88.THY1                         : ST,飞思卡尔等公司的可控硅。
+		89.THYRISTR                     : 同样是可控硅,与上面有些不同,更全一点.
+		90.TLINE                        : 传输线
+		91.TYCO_ELEC                    : Tyco公司压敏电阻
+		92.TZB                          : 单双向二极管,有常用的P6KE68A等
+		93.VD                           : 电压检测器,MC33064,S8054ALR等
+
+		94.VR                           : Voltage regulator，如常用的7805,TL431等。
+		95.XTAL                         : 晶振
+		96.ZETEX                        : zetex公司三极管等.
+		97.以osram开头的15个库          : osram公司的发光二极管等 
+
 ### 1.1.2 软件界面
 
 #### Online DRCs
