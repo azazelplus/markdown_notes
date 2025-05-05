@@ -216,15 +216,20 @@ Meg | Mega = 10⁶ |
 G | Giga = 10⁹ | 
 
 **常用电源**
+
+
 请查阅:
 https://blog.csdn.net/impossible1224/article/details/81837955
 
 
 
-* `交流电流源IAC`(用在AC sweep分析)
+* `交流电流源IAC`(用在AC sweep分析. 没有freq属性, 在transient瞬态分析中没有用, 会被当作一个直流为DC值得直流源! `VAC`同理!!❌)
 	ACMAG|ACPHASE |DC 
 	|----------|------------|------------|
 	交流幅值 |相位|直流分量
+
+
+--------------
 
 * `ISIN`(用在transient analysis)
 	属性 | 全称 | 含义 | 举例 | 对仿真类型的作用
@@ -234,14 +239,32 @@ https://blog.csdn.net/impossible1224/article/details/81837955
 	FREQ | Frequency | 频率，单位 Hz | 1k (1kHz) | 控制波每秒震几次
 	AC | AC Magnitude | AC Sweep时的交流幅值 | 1 | 只对 AC 分析有用！瞬态不看这个喵！❌
 
-* Diode的属性:
+-----------
+
+* `VPULSE`脉冲电压源
+	| 参数名                  | 含义            | 举例说明                             |
+	| -------------------- | ------------- | -------------------------------- |
+	| `V1`                 | 初始电压（Low 电平）  | 脉冲没来时的电压，例如 `0 V`                |
+	| `V2`                 | 峰值电压（High 电平） | 脉冲电平跳起后的电压，例如 `5 V`              |
+	| `TD` *(Time Delay)*  | 延迟时间          | 从仿真开始到第一个脉冲上升沿出现的时间，如 `1 ms`     |
+	| `TR` *(Rise Time)*   | 上升沿持续时间       | 脉冲从 `V1` 升到 `V2` 所用时间，如 `10 ns`  |
+	| `TF` *(Fall Time)*   | 下降沿持续时间       | 脉冲从 `V2` 降到 `V1` 所用时间，如 `10 ns`  |
+	| `PW` *(Pulse Width)* | 脉冲宽度          | 电压维持在 `V2` 的时间（高电平持续时间），如 `1 ms` |
+	| `PER` *(Period)*     | 脉冲周期          | 从一个上升沿到下一个上升沿的总时间，如 `2 ms`       |
+
+---------------
+
+* Diode
   * `Implementation`即"改元建在仿真中绑定的模型名". value即为模型名. 比如, 如果value=`Dbreak` 表示用的是理想二极管模型, value=`D1N4148`表示用的是D1N4148 二极管. 如果你改的value模型名字在当前库找不到, 会在下方DRG界面warning.
+
+--------------
 
 * NPN
   * `Implementation`
     * QbreakN: 理想NPN
     * Q2N3906: 2N3906NPN
 
+---------------
 
 * PNP
   * `Implementation`
