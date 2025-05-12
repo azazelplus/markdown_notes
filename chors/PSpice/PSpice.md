@@ -1,5 +1,6 @@
 
 # 1.软件指南
+
 (22.1版本)
 集成在cadence里. 安装cadence后, 有很多很多应用程序...
 
@@ -86,7 +87,7 @@ Online DRCs = 实时设计规则检查
 5.ABM                 : 各种数学运算单元,如cos,sin,log,hipass,lowpass等,还有E/F/H/G等元件.
 6.ADV_LIN             : ALD系列的线性放大器
 7.ANA_SWIT            : 模拟开关
-8.ANALOG和ANALOG_P    : 通用模拟器件,R，C，L
+* 8.ANALOG和ANALOG_P    : 通用模拟器件,R，C，L, S, S_ST. 后者即polar, 极性(区分正负极)模拟器件, 比如电解电容...
 9.ANL_MISC            : 杂项模拟器件,如三相变压器，555，RELAY，SWITCH，VCO
 10.ANLG_DEV           : AD公司放大器,电压参考器件，
 11.APEX               : APEX公司PA/AM 系列运放
@@ -180,7 +181,7 @@ Online DRCs = 实时设计规则检查
 96.ZETEX                        : zetex公司三极管等.
 97.以osram开头的15个库          : osram公司的发光二极管等 
 
-#### 1.1.3.2 常用元件
+#### 1.1.3.2 基本操作
 
 
 选择元件的几种方法:
@@ -228,6 +229,8 @@ G | Giga = 10⁹ |
 https://blog.csdn.net/impossible1224/article/details/81837955
 
 
+-------------------------
+#### 常用原件
 
 * `交流电流源IAC`(用在AC sweep分析. 没有freq属性, 在transient瞬态分析中没有用, 会被当作一个直流为DC值得直流源! `VAC`同理!!❌)
 	ACMAG|ACPHASE |DC 
@@ -261,7 +264,7 @@ https://blog.csdn.net/impossible1224/article/details/81837955
 ---------------
 
 * Diode
-  * `Implementation`即"改元建在仿真中绑定的模型名". value即为模型名. 比如, 如果value=`Dbreak` 表示用的是理想二极管模型, value=`D1N4148`表示用的是D1N4148 二极管. 如果你改的value模型名字在当前库找不到, 会在下方DRG界面warning.
+  * `Implementation`即"该元件在仿真中绑定的模型名". value即为模型名. 比如, 如果value=`Dbreak` 表示用的是理想二极管模型, value=`D1N4148`表示用的是D1N4148 二极管. 如果你改的value模型名字在当前库找不到, 会在下方DRG界面warning.
 
 --------------
 
@@ -352,6 +355,27 @@ https://blog.csdn.net/impossible1224/article/details/81837955
 ### 3. DC bias 静态分析
 
 即看电路稳定点. 输出是所有电压电流的固定数值.
+
+
+
+
+
+
+
+
+
+
+##
+
+# 2.LTspice
+
+LTspice一体化了画版图和仿真.
+
+
+
+
+
+
 
 
 
