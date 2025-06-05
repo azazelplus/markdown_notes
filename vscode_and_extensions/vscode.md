@@ -509,13 +509,29 @@
 C/C++
 
 
+## 2.2 Markdown
+
+使用了两个插件:
+markdown all in one: 提供语法高亮和实时预览.
+markdown pdf: 提供界面右键选择导出.md;.html文件为.pdf;.png;.html等.
+
+注意, 如果需要正确地导出pdf时内嵌latex公式也进行渲染, 需要对markdown pdf插件进行小改动:
+* 找到markdown pdf的插件本地位置(`C://Users/<username>/.vscode/extensions/yzane.markdown-pdf-x.x.x/template/template.html
+`), 改动template.html这个文件, append上这样一段:
+```html
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: {inlineMath: [['$', '$']]}, messageStyle: "none" });
+</script>
+```
+即可. 原理是啥?
+
+markdown pdf插件首先将目标文件渲染为html, 然后才渲染为pdf/png的.在这个基础上, 插件先使用`template.html`作为模板, 将md文件内容转化后插入头部/样式/JS库. 但是markdown pdf默认模板没有添加处理$$包裹数学公式渲染的库MathJax, 需要手动添加.
+追加的这一段html代码:
+从"http://cdn.mathjax.org"将MathJax库下载, 然后注入html文件中. 注意这样做并不支持离线渲染哦.
 
 
-
-
-
-
-
+如果想实现离线渲染md文件, 也可以不用这个基于html的插件, 使用**pandoc**. 这个程序直接**调用你本地的latex编译器**. 先下载pandoc这个程序, 然后在vscode里使用vscode-pandoc调用. 当然也可以直接命令行`pandoc myfile.md -o output.pdf --pdf-engine=xelatex` . 还没尝试过以后再说吧.
 
 
 
