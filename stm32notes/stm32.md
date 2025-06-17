@@ -1,5 +1,7 @@
 
-## 0 上版流程:
+## 0 上版流程 & STM32项目结构:
+
+### 0.1 上板流程
 
 #### 安装usb转串口驱动
 即ch340. 驱动安装好后, 板子插`usb转串口`那个usb口. 上电后, 在电脑设备管理器-端口应当能看到ch340端口.不上电就没有. 废话!
@@ -26,25 +28,215 @@ keil里新建一个μvision project后, 在当前目录:
 	选择下载时的程序文件为生成的hex文件.(在项目文件夹的objects里)
 	选择DTR低电平复位; RTS高电平进bootloader.(这个的原理可以参考野火文档-isp一键下载原理分析.)
 
+### 0.2 STM32项目结构
+```
+azazel@DESKTOP-NJKSK6O:/mnt/f/aza/WOKWOK/STM32/my_projects/ADC_DMA_TIM_interrupt$ tree
+.
+├── Libraries(官方库文件. 这些都是和内核相关的文件, 大部分情况下你几乎不会去修改, 只会include它们, 比如`#include stm32f10x.h`)
+│   ├── CMSIS
+│   │   ├── core_cm3.c
+│   │   ├── core_cm3.h
+│   │   ├── startup(.s文件是)
+│   │   │   ├── startup_stm32f10x_cl.s
+│   │   │   ├── startup_stm32f10x_hd.s
+│   │   │   ├── startup_stm32f10x_hd_vl.s
+│   │   │   ├── startup_stm32f10x_ld.s
+│   │   │   ├── startup_stm32f10x_ld_vl.s
+│   │   │   ├── startup_stm32f10x_md.s
+│   │   │   ├── startup_stm32f10x_md_vl.s
+│   │   │   └── startup_stm32f10x_xl.s
+│   │   ├── stm32f10x.h(主头文件. 包含所有寄存器的定义.)
+│   │   ├── system_stm32f10x.c(一些系统初始化函数)
+│   │   └── system_stm32f10x.h(一些系统初始化函数)
+│   └── FWlib(即Firmware Library, STM32F10x标准固件库)
+│       ├── inc(外设的头文件)
+│       │   ├── misc.h
+│       │   ├── stm32f10x_adc.h
+│       │   ├── stm32f10x_bkp.h
+│       │   ├── stm32f10x_can.h
+│       │   ├── stm32f10x_cec.h
+│       │   ├── stm32f10x_crc.h
+│       │   ├── stm32f10x_dac.h
+│       │   ├── stm32f10x_dbgmcu.h
+│       │   ├── stm32f10x_dma.h
+│       │   ├── stm32f10x_exti.h
+│       │   ├── stm32f10x_flash.h
+│       │   ├── stm32f10x_fsmc.h
+│       │   ├── stm32f10x_gpio.h
+│       │   ├── stm32f10x_i2c.h
+│       │   ├── stm32f10x_iwdg.h
+│       │   ├── stm32f10x_pwr.h
+│       │   ├── stm32f10x_rcc.h
+│       │   ├── stm32f10x_rtc.h
+│       │   ├── stm32f10x_sdio.h
+│       │   ├── stm32f10x_spi.h
+│       │   ├── stm32f10x_tim.h
+│       │   ├── stm32f10x_usart.h
+│       │   └── stm32f10x_wwdg.h
+│       └── src(外设的实现文件)
+│           ├── misc.c
+│           ├── stm32f10x_adc.c
+│           ├── stm32f10x_bkp.c
+│           ├── stm32f10x_can.c
+│           ├── stm32f10x_cec.c
+│           ├── stm32f10x_crc.c
+│           ├── stm32f10x_dac.c
+│           ├── stm32f10x_dbgmcu.c
+│           ├── stm32f10x_dma.c
+│           ├── stm32f10x_exti.c
+│           ├── stm32f10x_flash.c
+│           ├── stm32f10x_fsmc.c
+│           ├── stm32f10x_gpio.c
+│           ├── stm32f10x_i2c.c
+│           ├── stm32f10x_iwdg.c
+│           ├── stm32f10x_pwr.c
+│           ├── stm32f10x_rcc.c
+│           ├── stm32f10x_rtc.c
+│           ├── stm32f10x_sdio.c
+│           ├── stm32f10x_spi.c
+│           ├── stm32f10x_tim.c
+│           ├── stm32f10x_usart.c
+│           └── stm32f10x_wwdg.c
+├── Listing(汇编清单文件)
+│   ├── USART.map
+│   └── startup_stm32f10x_hd.lst
+├── Output(编译结果. 其中有大量.s(汇编源代码), .crf(keil专用中间文件), .d(记录源文件之间的依赖关系的文件), .o(目标文件), .axf(ARM处理器调试文件), .htm(网页报告)....以及最重要的.hex, 用于烧录的16进制可执行文件. 你最终要烧录的东西就是这个.)
+│   ├── USART.hex(用于烧录的16进制可执行文件)
+│   ├── USART.htm
+│	.....
+├── Project(keil工程文件.)
+│   └── RVMDK（uv5）
+│       ├── BH-F103.uvguix.azazel(用户个性化配置)
+│       ├── BH-F103.uvoptx(项目的配置和编译选项)
+│       ├── BH-F103.uvprojx(可以用keil打开的工程文件.)
+│       └── DebugConfig(调试器的配置)
+│           ├── ADC_DMA_STM32F103VE_1.0.0.dbgconf
+│           └── USART_STM32F103VE_1.0.0.dbgconf
+├── User(这里都是用户自己编写的内容. 用户主代码区! 一般在这里编写我们自己的代码.)
+│   ├── adc(如果你要用一个外设比如adc, 用模块化的风格编程.下同...)
+│   │   ├── bsp_adc.c
+│   │   ├── bsp_adc.h
+│   │   └── readme.txt
+│   ├── tim
+│   │   ├── bsp_tim.c
+│   │   └── bsp_tim.h
+│   ├── usart
+│   │   ├── bsp_usart.c
+│   │   └── bsp_usart.h
+│   ├── main.c(主函数, 程序入口.)
+│   ├── stm32f10x_conf.h
+│   ├── stm32f10x_it.c(中断服务函数.)
+│   ├── stm32f10x_it.h
+├── keilkill.bat(看起来意思是个清理工具, 可能会帮你删除所有的编译文件吧? )
+└── readme.md
+```
+
 ## 1 各种外设
+
 ![stm32f10系列引脚分类](image.png)
+
 ### 1.1 GPIO端口:
+
 通用输入输出端口的简称. 也就是软件可以控制的引脚.
 这个外设在APB2总线连接. 使用时复位和时钟信号要去APB2总线的对应控制寄存器打开.
 一共有GPIOx, x=`ABCDE`五个端口, 每个端口有个16个引脚. 在板子上比如PB0即为GPIO的B端口0号引脚.
 
+#### 1.1.1 GPIO的配置写法
+
+比如要配置3个gpio为推挽输出模式, 来用于控制三个`LED外设`, 规范的做法:
+
+```c
+
+LED_GPIO_Config()	//在main.c 中调用配置函数. 具体的配置函数写在`bsp_led.c`中.
+
+
+//bsp_led.h中配置宏名称(主要是要用的gpio名字). 实现硬件配置与程序逻辑解耦~
+/* 如果你想换一个gpio用, 需要更改下面三个属性. port和clk必须依照你具体gpio对应的板上结构哦, 去看引脚吧. */
+// R-红色: 这是一个属于`GPIOB`组的5号gpio, 使用apb2_gpiob的总线.
+#define LED1_GPIO_PORT    	GPIOB			              /* GPIO端口 */
+#define LED1_GPIO_CLK 	    RCC_APB2Periph_GPIOB		/* GPIO端口时钟 */
+#define LED1_GPIO_PIN		GPIO_Pin_5			        /* 连接到SCL时钟线的GPIO */
+
+// G-绿色
+#define LED2_GPIO_PORT    	GPIOB			              /* GPIO端口 */
+#define LED2_GPIO_CLK 	    RCC_APB2Periph_GPIOB		/* GPIO端口时钟 */
+#define LED2_GPIO_PIN		GPIO_Pin_0			        /* 连接到SCL时钟线的GPIO */
+
+// B-蓝色
+#define LED3_GPIO_PORT    	GPIOB			              /* GPIO端口 */
+#define LED3_GPIO_CLK 	    RCC_APB2Periph_GPIOB		/* GPIO端口时钟 */
+#define LED3_GPIO_PIN		GPIO_Pin_1			        /* 连接到SCL时钟线的GPIO */
+
+//假设LED1的GPIO你想换一个, 比如你想用PB8(gpio_pin_8), 则要查询: 它属于GPIOB端口, 则:
+#define LED1_GPIO_PORT  GPIOB
+#define LED1_GPIO_CLK   RCC_APB2Periph_GPIOB
+#define LED1_GPIO_PIN   GPIO_Pin_8
+
+
+//`bsp_led.c`中的配置
+void LED_GPIO_Config(void)
+{		
+	/*定义一个GPIO_InitTypeDef类型的结构体.*/
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+
+    /************* 通用配置：适用于所有 LED 引脚的通用设置 *************/
+	/*开启LED相关的GPIO外设时钟*/
+	RCC_APB2PeriphClockCmd( LED1_GPIO_CLK | LED2_GPIO_CLK | LED3_GPIO_CLK, ENABLE);
+
+	/*设置引脚模式为通用推挽输出*/
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;   
+
+	/*设置引脚速率为50MHz */   
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	/*选择要控制的GPIO引脚*/
+	GPIO_InitStructure.GPIO_Pin = LED1_GPIO_PIN;	
+
+
+    /************* 单独配置每个 LED 的引脚 *************/
+	/*调用库函数，初始化GPIO*/
+	GPIO_Init(LED1_GPIO_PORT, &GPIO_InitStructure);	
+	
+	/*选择要控制的GPIO引脚*/
+	GPIO_InitStructure.GPIO_Pin = LED2_GPIO_PIN;
+
+	/*调用库函数，初始化GPIO*/
+	GPIO_Init(LED2_GPIO_PORT, &GPIO_InitStructure);
+	
+	/*选择要控制的GPIO引脚*/
+	GPIO_InitStructure.GPIO_Pin = LED3_GPIO_PIN;
+
+	/*调用库函数，初始化GPIOF*/
+	GPIO_Init(LED3_GPIO_PORT, &GPIO_InitStructure);
+
+
+	//初始化默认状态设置(即将)
+	/* 关闭所有led灯	*/
+	GPIO_SetBits(LED1_GPIO_PORT, LED1_GPIO_PIN);
+	
+	/* 关闭所有led灯	*/
+	GPIO_SetBits(LED2_GPIO_PORT, LED2_GPIO_PIN);	 
+
+	/* 关闭所有led灯	*/
+	GPIO_SetBits(LED3_GPIO_PORT, LED3_GPIO_PIN);
+}
+
+```
+
+
+#### 1.1.2底层寄存器
 操作它们主要靠这几个寄存器:
 
-#### 1.1.1 APB2总线 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
+##### 1. APB2总线 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
 在AHB总线上. 地址为`0x4002 1000 - 0x4002 13FF`
 首先是使能和复位信号. 如果想使用GPIO端口(在总线APB2连接), 则需要开启复位和时钟控制RCC. 外设的时钟和使能信号默认是关闭的.
 当外设时钟没有启用时，软件不能读出外设寄存器的数值，返回的数值始终是0x0。
 
 
-#### 1.1.2 GBIOx_ODR (output data reg)输出数据寄存器.
+##### 2. GBIOx_ODR (output data reg)输出数据寄存器.
 它是一个32bit寄存器. 高16位预留为0没用. 低16位控制端口0~端口15的输出电平, 0为低电平.
 
-#### 1.1.3 GBIOx_CRL (config reg low)端口配置低寄存器.
+##### 3. GBIOx_CRL (config reg low)端口配置低寄存器.
 负责Px0~Px7引脚的配置. 是32bit寄存器. 
 相对于GBIOx基地址偏移为0. 复位0x4444 4444.
 每个引脚占据4bit. 比如低4位为:
@@ -60,7 +252,7 @@ keil里新建一个μvision project后, 在当前目录:
     * `10`
     * `11`
 
-#### 1.1.4 GBIOx_CRL (config reg high)端口配置高寄存器.
+##### 4. GBIOx_CRL (config reg high)端口配置高寄存器.
 负责Px8~Px15引脚的配置.
 
 
@@ -844,7 +1036,7 @@ stm32芯片的电源模块:
 
 注意: 如果有备份供电(纽扣电池), `备份域`内的RTC都可以正常运行, 寄存器都可以被正常保存.
 
-### 6.2 电源控制的寄存器(PWR_CR)和库函数
+### 6.2 电源控制(POWER CONTROL, PWR)的寄存器(PWR_CR)和库函数
 
 它们是arm cc编译器支持的一些指令, 是最底层的指令了. 我们不能再进一步跳转...
 ![alt text](image-74.png)
@@ -869,7 +1061,7 @@ stm32芯片的电源模块:
 
 唤醒: 给`WKUP`引脚上升沿信号.
 
-但是具体版上哪个引脚使`WKUP`引脚呢?
+但是具体版上哪个引脚是`WKUP`引脚呢?
 
 我们看到`数据手册 Table 5. High-density STM32F103xx pin definitions (continued)`中, `WKUP`引脚被接在`PA0` 引脚.
 
