@@ -1,3 +1,28 @@
+## -1 STM32 & STM32CubeMX
+
+我们使用型号:
+`stm32f103vet6`
+
+
+### STM32CubeMX
+
+流程:
+使用三种方式创建新工程: 
+* 1.选择MCU
+* 2.选择板子
+* 3.选择example
+
+我们选择MCU, 搜索stm32f103vet6, 选择双击:
+
+![alt text](image-76.png)
+
+
+配置RCC:
+![alt text](image-77.png)
+
+配置SYSTEM:
+![alt text](image-78.png)
+
 
 ## 0 上版流程 & STM32项目结构:
 
@@ -379,17 +404,41 @@ uint8_t TIM_ClockDivision;
 
 
 
+### 1.7 LED
+
+指南者板子有RGBled.
+其电路参见指南者原理图:
+
+![alt text](image-81.png)
+
+可见, red连接的gpio口是`PB5`, 当`PB5`低电平时导通.
+
+
+如果你要设置gpio的话如下
+```c
+void REDLED_GPIO_Config(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    
+    // 开启 GPIOB 时钟
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+    
+    // 配置 PB5 为推挽输出模式
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+    
+    // 默认PB5高电平, 关闭 LED
+    GPIO_SetBits(GPIOB, GPIO_Pin_0);
+}
+```
 
 
 
 
 
-
-
-
-
-
-## 2 实验部分:
+## 2 几个例程:
 
 ### 指南者板子硬件设计:
 从原理图查到:
@@ -899,7 +948,7 @@ LQFP144指的是144脚的芯片,
 
 
 
-#### USART初始化结构体
+#### 5.3 USART初始化结构体
 有两个结构体. 它们在固件库FWLB的stm32f10x_usart.c中
 
 ```c
@@ -944,7 +993,7 @@ uint16_t USART_LastBit; // 最尾位时钟脉冲(当 STM32 的 USART 处于 同�
 
 ```
 
-#### USART固件库函数
+#### 5.4 USART固件库函数
 它们在固件库FWLB的stm32f10x_usart.c中
 ```c
 void USART_DeInit(USART_TypeDef* USARTx);//default init. 就是把某个usart硬件`USARTx`初始化为默认值.
@@ -989,13 +1038,25 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 ```
 
 
-#### 编程任务和流程
+#### 5.5 编程任务和流程
 * 01-初始化串口需要用到的GPIO
 * 02-初始化串口, USART _InitTypeDef
 * 03-中断配置(接收中断,中断优先级)
 * 04-使能串口
 * 05-编写发送和接收函数
 * 06-编写中断服务函数
+
+
+
+
+
+#### 5.6 程序移植: 如何复用自己写的外设bsp?
+
+1. 复制USER的外设文件夹(一般包含`bsp_外设.c`, `bsp_外设.h`), 并在keil项目中添加这些文件到1.项目和2.链接器中
+2. 在项目的`stm32f10x_conf.h`中将对应的外设的库文件头文件包含(取消注释)
+3. 在main.c中包含`bsp_外设.h`, 即可开始在main.c中使用该外设了.
+
+
 
 ## 6.电源管理
 
@@ -1070,8 +1131,9 @@ stm32芯片的电源模块:
 
 
 
+## 7. RTC
 
-## 7.杂项
+## 8.杂项
 
 使用外设(如串口usart, ADC, i2c, spi)...引脚(绑定到哪个gpio口), 去`数据手册`里找(pinouts and pin descriptions). 注意`参考手册`里没有. 它主要是介绍外设的功能和原理图以及寄存器说明.
 
@@ -1120,4 +1182,54 @@ stm32芯片的电源模块:
 
 
 
+
+
+## 9 常见问题(bug log)
+
+
+### 库函数未声明(this func is decleared implicit)
+
+检查:
+* 1.有没有include头文件
+  * #include "stm32f10x.h"(总头文件)
+    * 注意: 该总头文件通过这段代码来include `stm32f10x_conf.h`:
+```c
+#ifdef USE_STDPERIPH_DRIVER
+#include "stm32f10x_conf.h"
+#endif
+```
+  * 而`stm32f10x_conf.h`中含有#include "stm32f10x_rtc.h"...(各种外设的头文件, **它们是你最终要include的头文件!**), 但是它们可能是默认被注释的, 需要把对应的头文件去注释哦!
+* 2.有没有意外的中文路径名
+  * 比如因为复制来的项目导致的文件夹叫做`xxx-副本`
+
+
+### include找不到文件
+
+keil的话, 点击魔术棒(options)选项-> C/C++ -> include paths, 选择添加要include的头文件的路径. 注意路径没有包含关系, 必须是同级目录.
+
+
+### 中断函数怎麽写好?
+
+关于一些中断函数写在哪里? 它们用的全局变量呢? 经验:
+| 方式                                       | 说明          | 是否推荐           |
+| ---------------------------------------- | ----------- | -------------- |
+| 在 `it.c` 直接 `extern` 各个变量                | 简单，但维护成本高   | ❌ 不推荐          |
+| 把变量声明写在各自 `.h` 文件中，在 `it.c` 中 `#include` | 易维护，结构清晰    | ✅ 推荐           |
+| 中断函数内部「转发」到对应外设模块处理                      | 解耦、利于大型项目扩展 | ✅✅ 强烈推荐（中大型项目） |
+
+
+### F12找不到定义跳转?
+
+如果当前没有报错或警告, 可能是你还没有编译. 编译一下再F12.
+
+
+
+
+### 添加新的bsp文件步骤:
+
+可以自己去USER新建, 也可以在keil界面直接选择USER文件夹然后add a new file...但是记得改一下路径, 看一眼你创建在哪里了. 记得维持清爽的USER文件夹下面各种外设文件夹的结构! 不然还得花时间维护include path设置
+
+![alt text](image-80.png)
+
+因为这样做生成的文件
 
