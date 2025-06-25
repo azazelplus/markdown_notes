@@ -1,12 +1,9 @@
-## -1 STM32 & STM32CubeMX
+## 9 STM32CubeMX
 
 我们使用型号:
 `stm32f103vet6`
 
-
-### STM32CubeMX
-
-流程:
+### 1. 创建项目流程:
 使用三种方式创建新工程: 
 * 1.选择MCU
 * 2.选择板子
@@ -16,12 +13,143 @@
 
 ![alt text](image-76.png)
 
+至此创建了一个新的cube工程.
 
-配置RCC:
+### 2. Pinouts&Configuration
+
+
+
+在芯片图上点击某个引脚, 会让你选择该引脚的复用功能:
+
+
+以PC13为例:
+
+![alt text](image-88.png)
+
+| 选项名                 | 含义               | 用途                                 |
+| ------------------- | ---------------- | ---------------------------------- |
+| **PC13-TAMPER-RTC** | 默认名称（芯片复位后的默认功能） | 通常用于 RTC 的 **防篡改输入**，但默认状态不是 GPIO  |
+| **Reset\_State**    | 芯片复位后默认状态        | STM32 上电后此引脚默认处于浮空输入模式             |
+| **RTC\_OUT**        | RTC 时钟输出         | 用于将 RTC 的 1Hz 信号输出到外部设备（极少用）       |
+| **RTC\_TAMPER**     | RTC 篡改检测输入       | 如果你启用 RTC 防篡改功能，它作为输入检测外部非法干预（如重启） |
+| **GPIO\_Input**     | 通用输入             | 作为普通数字输入引脚                         |
+| **GPIO\_Output**    | 通用输出             | 💡 最常用模式，用于点灯、驱动外设等                |
+| **GPIO\_Analog**    | 模拟输入模式           | 如 ADC 输入（在 PC13 上不会这么用）            |
+| **EVENTOUT**        | 输出事件信号           | 用于低功耗应用中的事件触发，极少用                  |
+| **GPIO\_EXTI13**    | 外部中断线 13         | 把这个引脚设置成中断源，如按键触发 `EXTI13` 中断      |
+
+>可以方便看到PC14和PC15分别有一个`RCC_OSC32_IN`和`RCC_OSC32_OUT`. 这两个复用引脚用于连接`LSE`外部低速晶振的输入输出端. 启用LSE的时候, PC14和PC15会被占用. 所以一般PC14和PC15不经常用作其他用途了.
+
+#### 2.1 配置gpio
+
+我们以配置PC13为gpio输出模式然后用来点灯为例.
+
+右边芯片图中配置PC13为`GPIO_Output`, 然后左边选择System Core->GPIO, 在Configuration横栏选择配置好的PC13行, 下方出现config选项.
+
+![alt text](image-89.png)
+
+| 选项名称                       | 含义                     | 推荐设置（点灯用）                       |
+| -------------------------- | ---------------------- | ------------------------------- |
+| **GPIO Output Level**      | 上电初始化时该引脚输出的是高电平还是低电平  | 🔺 `High`（先熄灯）或 `Low`（先亮）       |
+| **GPIO Mode**              | 引脚工作模式（推挽输出(强制高(3.3v)低(0v)电平, 有拉电阻能力, 但是无法做到比如说你想让引脚接入5v会搞坏板子)或开漏输出(没有拉电阻能力需要外部电路)）      | ✅ `Output Push Pull`（点灯用）       |
+| **GPIO Pull-up/Pull-down** | 是否启用芯片内部的可编程电阻配置为上下拉电阻（对输出来说通常无效）   | ❌ `No pull-up and no pull-down` |
+| **Maximum Output Speed**   | IO 口输出电平切换速度（相当于驱动能力）  | ✅ `Low`（PC13 驱动能力本就弱, 点灯也不要求）           |
+| **User Label**             | 你可以给这个引脚起个名字，生成代码时自动加宏 | 可选，如命名为 `LED1`                  |
+
+
+#### 2.2 配置RCC:
+
+在Pinout&Configuration -> System Core -> RCC 处配置.
+
 ![alt text](image-77.png)
+
+
+HSE和LSE在这里配置, 选项都一样.
+
+| 选项                          | 说明                               |
+| ----------------------------- | -------------------------------- |
+| `Disable`                     | 关闭 HSE，不使用外部晶振（只靠内部 RC 振荡器 HSI）  |
+| `BYPASS Clock Source`         | 外部提供时钟信号（不是晶振，而是模块，如 TCXO）       |
+| `Crystal/Ceramic Resonator` ✅ | 用外接晶振，**大多数开发板都选这个**（比如 8MHz 晶振） |
+
+
+选项**Master Clock Output (MCO)** 即把自己主频输出到某个引脚（如 PA8）”的功能，一般用于调试或外部同步。
+
+
+
+
+
+### 9.3 配置SYS(系统)
+
+在Pinout&Configuration -> System Core -> SYS 处配置.
 
 配置SYSTEM:
 ![alt text](image-78.png)
+
+* Debug项
+
+该项决定**调试接口**和**跟踪功能**使用哪些引脚. 一般设为Serial Wire. 
+
+| 选项名称                                     | 引脚占用                                 | 含义/用途                   |
+| ---------------------------------------- | ------------------------------------ | ----------------------- |
+| **Serial Wire**                          | 2 个引脚：`SWDIO` + `SWCLK`              | 推荐 ✅：常用的调试方式（SWD）       |
+| **JTAG (4 pins)**                        | 4 个引脚：`JTDI`, `JTDO`, `JTCK`, `JTMS` | 老式调试方式（很少用了）            |
+| **JTAG (5 pins)**                        | 5 个引脚：上面 4 个 + `nTRST`               | 更完整的老式 JTAG 接口          |
+| **Trace Asynchronous SW**                | 基于 SWD，再用额外引脚输出调试跟踪数据                | 高级 Trace 功能，STM32F1 不常用 |
+| **JTAG with Trace Synchro (1/2/4 bits)** | JTAG + Trace 输出通道                    | STM32F1 系列不支持           |
+| **Trace Synchro SW (1 bit)**             | SWD + 1 条 Trace 输出线                  | STM32F1 系列不支持           |
+
+
+
+
+
+
+### 9.4 配置其他各种外设
+
+在Pinout&Configuration->Analog(配置ADC和DAC); Timers(配置TIM)...
+
+#### GPIO口的配置
+
+
+
+### 9.5 Clock Configuration
+
+
+Clock Configuration界面如下图, 其中采用了常用的配置.
+
+![alt text](image-87.png)
+
+* input frequency:
+
+	可以看到最左边主时钟树有两个input frequency, 上面那个32.768KHz的是LSE. 在Pinout&Configration里没开的话就是灰色的. 下面这个是HSE, 即板子上焊的外部晶体晶振.
+
+* 两个内部振荡器LSI, HSI在左上角.
+
+* PLL Source Mux
+
+	这个复选器决定要倍频来自HSE的信号还是HSI的信号. 一般选择HSE.
+
+* PLLMul
+
+	可以选择PLL的倍频倍数. 对`stm13f103vet6`, 最高主频72MHz, 此处可以选择`×9`.
+
+
+	如果Pinouts&Configs没有选择conectivity->USB通讯, 则此处为灰
+
+	![USB通讯时钟树](image-84.png)
+
+* System Clock Mux:
+  
+	![alt text](image-85.png)
+
+	这个复选器选择STM32的**主系统时钟SYSCLK**来自哪个源.
+	在**选择HSE/HSE分频得到的PLLCLK为源**的时候可以选择是否启用CSS(clock security system). 如果启用, 它会在HSE震荡失败的时候生成一个不可屏蔽中断(NMI), 然后自动切换到HSI.
+
+* AHB Prescaler; APB1 Prescaler
+
+AHB和APB1分频. 分频的结果必须保证不超过该时钟线允许的最大值. 比如下图的配置中, 导致APB1总线时钟`PCLK1`最终为72KHz, 超过了允许的最大值`36 MHz max`, 于是分频器和PCLK1结果两个框标红表示错误. 需要把APB1 Prescaler设为`/2`.
+
+![alt text](image-86.png)
 
 
 ## 0 上版流程 & STM32项目结构:
@@ -158,6 +286,12 @@ azazel@DESKTOP-NJKSK6O:/mnt/f/aza/WOKWOK/STM32/my_projects/ADC_DMA_TIM_interrupt
 
 ## 1 各种外设
 
+* STM32硬件资源描述图
+
+![STM32硬件资源描述图](image-82.png)
+
+* stm32f10系列引脚分类
+
 ![stm32f10系列引脚分类](image.png)
 
 ### 1.1 GPIO端口:
@@ -177,7 +311,7 @@ LED_GPIO_Config()	//在main.c 中调用配置函数. 具体的配置函数写在
 
 //bsp_led.h中配置宏名称(主要是要用的gpio名字). 实现硬件配置与程序逻辑解耦~
 /* 如果你想换一个gpio用, 需要更改下面三个属性. port和clk必须依照你具体gpio对应的板上结构哦, 去看引脚吧. */
-// R-红色: 这是一个属于`GPIOB`组的5号gpio, 使用apb2_gpiob的总线.
+// R-红色: 这是一个属于`GPIOB`组的5号gpio, 是PB5引脚的复用. 使用apb2_gpiob的总线.
 #define LED1_GPIO_PORT    	GPIOB			              /* GPIO端口 */
 #define LED1_GPIO_CLK 	    RCC_APB2Periph_GPIOB		/* GPIO端口时钟 */
 #define LED1_GPIO_PIN		GPIO_Pin_5			        /* 连接到SCL时钟线的GPIO */
@@ -435,7 +569,20 @@ void REDLED_GPIO_Config(void)
 ```
 
 
+### 1.8 晶振
 
+![晶振图](image-83.png)
+
+* 实体晶振:
+  * `Y1`处即HSE所用的8MHz晶振(通过PLL倍频为72MHz)
+  * `Y2`处即LSE所用的32.768KHz晶振.
+
+* 内部振荡器晶振:
+  * 串口芯片`CH340C`自带一个12MHz晶振在内部. (对应`Y3`处没有晶振. 否则用的是`CH340`的话, 这里要焊一个12MHz实体晶振给CH340G用)
+  * `HSI`. 在MCU内部. 8MHz. 和焊接的HSE(PLL倍频之前)一样, 但是精度要差得多.
+  * `LSI`. 在MCU内部. 40kHz, 精度差.
+
+### 1.9
 
 
 ## 2 几个例程:
@@ -948,7 +1095,7 @@ LQFP144指的是144脚的芯片,
 
 
 
-#### 5.3 USART初始化结构体
+### 5.3 USART初始化结构体
 有两个结构体. 它们在固件库FWLB的stm32f10x_usart.c中
 
 ```c
@@ -993,7 +1140,7 @@ uint16_t USART_LastBit; // 最尾位时钟脉冲(当 STM32 的 USART 处于 同�
 
 ```
 
-#### 5.4 USART固件库函数
+### 5.4 USART固件库函数
 它们在固件库FWLB的stm32f10x_usart.c中
 ```c
 void USART_DeInit(USART_TypeDef* USARTx);//default init. 就是把某个usart硬件`USARTx`初始化为默认值.
@@ -1038,7 +1185,7 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 ```
 
 
-#### 5.5 编程任务和流程
+### 5.5 编程任务和流程
 * 01-初始化串口需要用到的GPIO
 * 02-初始化串口, USART _InitTypeDef
 * 03-中断配置(接收中断,中断优先级)
@@ -1050,13 +1197,24 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 
 
 
-#### 5.6 程序移植: 如何复用自己写的外设bsp?
+### 5.6 程序移植: 如何复用自己写的外设bsp?
 
 1. 复制USER的外设文件夹(一般包含`bsp_外设.c`, `bsp_外设.h`), 并在keil项目中添加这些文件到1.项目和2.链接器中
 2. 在项目的`stm32f10x_conf.h`中将对应的外设的库文件头文件包含(取消注释)
 3. 在main.c中包含`bsp_外设.h`, 即可开始在main.c中使用该外设了.
 
+### 5.7 delay 延时
 
+
+
+最简单粗暴的空转延时函数法:
+```c
+void Delay(__IO uint32_t nCount)
+{
+  for(; nCount != 0; nCount--);
+} 
+```
+`Delay(0x400000);`大概会在72MHz的STM32上延时1s左右.
 
 ## 6.电源管理
 
