@@ -1291,6 +1291,253 @@ stm32芯片的电源模块:
 
 ## 7. RTC
 
+用rtc实现一个中断：
+
+先看bsp_rtc.c
+```c
+#include "bsp_rtc.h"
+
+#include "stm32f10x.h"
+
+#include <stdio.h>
+
+#include "stm32f10x_exti.h"
+#include "delay.h"
+
+//rtc闹钟触发标志. 复习:__IO是stm一个宏, ==volatile, 表达这个变量可能被硬件中断或改变, 不允许优化和缓存偷懒, 时刻监视.
+__IO uint8_t rtc_alarm_triggered = 0;
+
+
+
+//rtc外设配置中断, 即在NVIC中注册RTC中断通道
+void RTC_NVIC_Config(void)
+{
+	
+
+    NVIC_InitTypeDef NVIC_InitStructure;	//NVIC配置结构体
+
+
+	  EXTI_InitTypeDef EXTI_InitStructure;	//EXIT配置结构体
+	    
+	
+	
+    EXTI_ClearITPendingBit(EXTI_Line17);// 清除 EXTI Line17 的中断挂起标志
+	  // 连接 EXTI Line17 到 RTC Alarm
+	  EXTI_InitStructure.EXTI_Line = EXTI_Line17;
+    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStructure);
+	
+	
+	
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);	//设置 中断优先级分组策略在 不使用 HAL、完全裸机风格（比如你现在的库） 中，这个配置 是必须的，否则后面 NVIC_Init() 设置的优先级可能会被忽略或不生效。
+	
+		//注意这不是 RTC_IRQn 而是 RTCAlarm_IRQn）
+    NVIC_InitStructure.NVIC_IRQChannel = RTCAlarm_IRQn;
+	//享有最高优先级.
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+}
+
+
+//初始化rtc外设.
+void RTC_Configuration(void)
+{
+		//打开 PWR 和 BKP 外设时钟
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+	
+		//允许访问后备寄存器（BKP 寄存器）
+    PWR_BackupAccessCmd(ENABLE);
+	
+		//复位RTC和BKP寄存器的备份域, 好习惯.
+    BKP_DeInit();
+		
+		//启用LSE
+    RCC_LSEConfig(RCC_LSE_ON);
+	
+		//等待LSE稳定(起振)
+    while (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET);
+	
+		//设置RTC的时钟源为LSE
+    RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+	
+		//使能RTC时钟
+    RCC_RTCCLKCmd(ENABLE);
+
+	  // 等待 RTC 寄存器同步完成（必须）
+    // 因为 APB 时钟快、RTC 慢，需要同步后才允许操作 RTC
+    RTC_WaitForSynchro();
+		
+		//等待上一条命令完成（RTC 是低速外设，需等待确认）
+    RTC_WaitForLastTask();
+
+		//使能 RTC 的闹钟中断（Alarm 中断）.RTC有三种中断来源, 用三个寄存器控制.
+    RTC_ITConfig(RTC_IT_ALR, ENABLE);
+		
+		//再次等待上条写命令完成
+    RTC_WaitForLastTask();
+
+
+		//设置 RTC 的分频器，使其以 1Hz 计数
+    // LSE = 32768 Hz → 32767 分频后每秒进 1（1 Hz）
+    RTC_SetPrescaler(32767);
+    RTC_WaitForLastTask();
+}
+
+
+//配置一个seconds秒后触发的闹钟.
+void RTC_SetAlarmInSeconds(uint32_t seconds)
+{
+		//RTC_GetCounter()库函数读取当前RTC计数器的值, 即UNIX时间戳.
+    uint32_t current_time = RTC_GetCounter();
+	
+		//RTC_SetAlarm()函数对RTC外设*设置闹钟*(请参见RTC外设产生中断的三种方式, alarm就是其中一种). 届时,RTC会产生一个中断信号.
+    RTC_SetAlarm(current_time + seconds);
+	
+		//等待上面函数的寄存器写操作完成.
+    RTC_WaitForLastTask();
+}
+
+
+
+//RTC的中断服务函数. 在it.c中转发这个函数, 实现解耦的效果.
+void BSP_RTCAlarm_IRQHandler(void)
+{
+    if (RTC_GetITStatus(RTC_IT_ALR) != RESET)
+    {
+				//清除中断标志
+        RTC_ClearITPendingBit(RTC_IT_ALR);
+			
+				//清除外部中断线
+        RTC_WaitForLastTask();
+			
+				//设置闹钟触发变量为1
+
+        rtc_alarm_triggered = 1;
+			
+		/*****************red闪烁******************************/
+		//GPIO_ResetBits(GPIOB, GPIO_Pin_5);				Delay(0x0FFFFF);
+		//GPIO_SetBits(GPIOB, GPIO_Pin_5);					Delay(0x0FFFFF);
+		//GPIO_ResetBits(GPIOB, GPIO_Pin_5);					Delay(0x0FFFFF);
+		//GPIO_SetBits(GPIOB, GPIO_Pin_5);					Delay(0x0FFFFF);
+		/*****************red闪烁******************************/
+						
+				EXTI_ClearITPendingBit(EXTI_Line17);
+    }
+}
+
+```
+
+然后在main.c中可以这样:
+```c
+//2025.6.22.azazel
+ //这是来自USART1接发项目文件夹的基础上进行的adc单通道中断读取项目的基础上的阈值检测.
+ //的基础上的USART1_ADC_DMA.
+ //的基础上的USART1_ADC_DMA_TIMled.
+ //的基础上的rtc休眠
+#include "stm32f10x.h"
+#include "bsp_usart.h"
+#include "bsp_adc.h"
+#include "bsp_tim.h"
+#include "bsp_led.h"
+#include "bsp_rtc.h"
+#include "bsp_beep.h"
+#include "delay.h"
+
+extern __IO uint16_t ADC_ConvertedValue;
+extern uint8_t led_timer_count;
+
+//局部变量.用来保存转换计算后的电压值
+float ADC_ConvertedValueLocal;
+#define THRESHOLD_VOLTAGE 0.05f
+
+
+
+int main(void)
+{	
+	
+	/****************************除了RTC外的初始化***************************************/
+  USART_Config();  /*初始化USART 配置模式为 115200 8-N-1，中断接收*/
+	ADCx_Init();	//初始化adc
+	LED_GPIO_Config();	//初始化LED
+	RED_LED_GPIO_Config();	//初始化RED LED
+	BasicTIM_Init();		//初始化TIM
+	BEEP_GPIO_Config();			/* BEEP GPIO 初始化 */
+	/*************************************************************************/
+	
+	
+	/****************************RTC初始化*********************************************/	
+	RTC_NVIC_Config();	// RTC 中断通道配置
+	RTC_Configuration();	// RTC 外设初始化（LSE、分频器、Alarm 中断使能）
+	/*************************************************************************/
+
+
+  while(1)
+	{	
+		rtc_alarm_triggered = 0; // 清标志		
+		RTC_SetAlarmInSeconds(5);	//设定工作闹钟: 工作时间为5秒
+		
+		
+		/******************************要进行的工作循环*******************************************/
+		while(!rtc_alarm_triggered){
+			//电压值=寄存器值/4096*3.3
+			ADC_ConvertedValueLocal =(float) ADC_ConvertedValue/4096*3.3; 
+
+			if (ADC_ConvertedValueLocal >= THRESHOLD_VOLTAGE)//如果超过阈限
+			{
+					// 将 LED 置低，点亮 LED
+					GPIO_ResetBits(GPIOB, GPIO_Pin_0);
+					// 重置计时器为 x（ x * 中断触发频率(0.1s) = x/10s）
+					led_timer_count = 5; 
+				
+					BEEP( ON ); 			  // 响
+					Delay(0x0FFFFF);	
+					BEEP( OFF );		  // 不响
+					Delay(0x0FFFFF);
+			} 
+		/*************************************************************************/
+
+		}
+		
+		/* —— 工作闹钟触发后进入这里 —— */
+		rtc_alarm_triggered = 0; // 清标志
+		GPIO_SetBits(GPIOB, GPIO_Pin_0);
+		/* —— 设定休眠闹钟. 休眠时间为x秒 —— */
+		RTC_SetAlarmInSeconds(5);
+		
+
+		
+
+		/* —— 进入 Stop 模式，等待 RTC 中断自动唤醒 —— */
+		PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+
+		/* —— 唤醒后要重配置系统时钟 —— */
+		
+		SystemInit();
+		/*除了RTC外的初始化******************************************************************/
+		USART_Config();  /*初始化USART 配置模式为 115200 8-N-1，中断接收*/
+		ADCx_Init();	//初始化adc
+		LED_GPIO_Config();	//初始化LED
+		BasicTIM_Init();		//初始化TIM
+		
+		//亮灯表示休眠结束
+		/*****************red闪烁******************************/
+		int i=5;
+		while(i--){
+		GPIO_ResetBits(GPIOB, GPIO_Pin_5);				Delay(0x05FFFF);
+		GPIO_SetBits(GPIOB, GPIO_Pin_5);					Delay(0x05FFFF);
+		}
+		/*****************red闪烁******************************/
+	}	
+}
+/*********************************************END OF FILE**********************/
+
+```
+
+
 ## 8.杂项
 
 使用外设(如串口usart, ADC, i2c, spi)...引脚(绑定到哪个gpio口), 去`数据手册`里找(pinouts and pin descriptions). 注意`参考手册`里没有. 它主要是介绍外设的功能和原理图以及寄存器说明.
