@@ -8,6 +8,18 @@
 # 0. esp32&arduino
 
 
+
+
+
+
+## 0.
+
+
+
+
+
+
+-------------
 开发方式:
 * 1.官方IDE
 * 2.vscode platformIO
@@ -238,7 +250,7 @@ coredump, data, coredump,0x3F0000,0x10000,
 
 #### 4.
 
-# BLE
+# 1. BLE
 
 
 BLE 通信基于 GATT（Generic Attribute Profile） 模型，整体是树状结构：
@@ -316,7 +328,10 @@ ESP32 (Peripheral / GATT Server)
         ├── Value: (e.g. 25.3°C as float or int16)
         └── Descriptor: UUID 0x2902 (Client Characteristic Configuration Descriptor, CCCD)
 
-#
+# 2. 低功耗模式
+
+
+![alt text](image-16.png)
 
 
 
