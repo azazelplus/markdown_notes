@@ -1540,23 +1540,26 @@ int main(void)
 
 ## 8.杂项
 
-使用外设(如串口usart, ADC, i2c, spi)...引脚(绑定到哪个gpio口), 去`数据手册`里找(pinouts and pin descriptions). 注意`参考手册`里没有. 它主要是介绍外设的功能和原理图以及寄存器说明.
+* 使用外设(如串口usart, ADC, i2c, spi)...引脚(绑定到哪个gpio口), 去`数据手册`里找(pinouts and pin descriptions). 注意`参考手册`里没有. 它主要是介绍外设的功能和原理图以及寄存器说明.
 
-比如, 我们使用adc, 先看`参考手册`:
-![alt text](image-3.png)
-现在我们想知道外部通道ADCx_IN0~ADCx_IN15这16个外部通道接哪个gpio引脚. 
+	比如, 我们使用adc, 先看`参考手册`:
+	![alt text](image-3.png)
+	现在我们想知道外部通道ADCx_IN0~ADCx_IN15这16个外部通道接哪个gpio引脚. 
 
-现在去查`数据手册`, 找到
-![alt text](image-5.png)
-
-
-发现文件一处错误: stm32f10xx中文说明手册，寄存器映射GPIOF基地址错了，别问我怎么知道的，这是一个痛苦的故事。
+	现在去查`数据手册`, 找到
+	![alt text](image-5.png)
 
 
-出现flash download failed cortex-M3，然后将debug中setting中的debug中的connect设置为under reset， reset设为SYSRESETEQ后就可以了.
+	发现文件一处错误: stm32f10xx中文说明手册，寄存器映射GPIOF基地址错了，别问我怎么知道的，这是一个痛苦的故事。
 
 
-编译出现4个错误20个警告的话，魔术棒target里右上选version5版本.
+	出现flash download failed cortex-M3，然后将debug中setting中的debug中的connect设置为under reset， reset设为SYSRESETEQ后就可以了.
+
+
+	编译出现4个错误20个警告的话，魔术棒target里右上选version5版本.
+
+* stm32的引脚上电后如果不初始化, 默认是浮空输入模式. 可以无视.
+* 你可以用gpio口推挽输出高低电平来驱动低功耗的外设, 但是这不规范, 最好还是用stm32的GND和3.3V两个引脚来驱动.
 
 ### 7.0 常用英文缩写说明
 
@@ -1606,10 +1609,43 @@ int main(void)
 
 * SDIO卡: 指的是可以使用SDIO协议(比如其中9个I/O口可以用作UHS-I协议的SDIO通讯, 或者其中17个I/O口可以用作UHS-II协议的SDIO通讯)的外设芯片. 注意指的是外设芯片, 而不是存储设备. 比如一块wifi芯片.
 
+* 
+	**SPI Flash 是一种使用 SPI 接口的 NOR 型闪存**；  
+	**SD 卡内部通常是 NAND 闪存结构**，由控制器管理读写。
 
 
+#### 9.0.1啥是NOR闪存/NAND闪存?
 
-存储卡速度:
+首先它们都是非易失性
+| 类型             | 名字来源                     		| 是否直接由某种门电路构成 |
+| -------------- | ------------------------ 			| ------------ |
+| **NAND Flash** | 由大量 **NAND 结构的晶体管阵列** 组成 | ✅ 是的         |
+| **NOR Flash**  | 由大量 **NOR 结构的晶体管阵列** 组成  | ✅ 是的         |
+
+
+---------------------------
+
+![alt text](image-94.png)
+
+- NAND架构显然擦除得更快, 但是读取很慢. 是以块为单位读取/写入的(一般是512bit).
+- 很便宜而且储存密度大.
+- 适用在储存卡, 硬盘...
+
+
+----------------------------
+
+![alt text](image-93.png)
+
+- NOR架构addresses the entire memory range, 所以可以访问其中任意一个字节, 所以读取非常快; 
+
+- 但是NOR逻辑门单元更大(CMOS![alt text](image-95.png)), 也更昂贵.
+- NOR首次启动需要更大的功率, 但是启动之后功耗会小于NAND.
+- 适合高速随机读取.
+- 适用在计算芯片的内存.
+
+---------------------------
+
+存储卡的速度指标:
 
 | 指标         | 说明                    | 主要影响的应用场景             | 举例                                  |
 | ---------- | --------------------- | --------------------- | ----------------------------------- |
@@ -1640,7 +1676,7 @@ int main(void)
 ![alt text](image-92.png)
 
 
-##### SD卡的标识
+### 9.1 SD卡的标识
 
 | 标识               | 含义                        | 举例         | 是否代表速度？     |
 | ---------------- | ------------------------- | ---------- | ----------- |
@@ -1664,7 +1700,11 @@ int main(void)
 		-   但它仍能保证 **V60：最小写入 60 MB/s**，适合录 4K 视频；        
 		-   App 加载快，因为是 A2 卡。
 
-##### 读写速度测试?
+
+* 因为尺寸太小, 没有办法容纳第二排UHS-II接口引脚, 所以**所有的micro SD(TF)卡都最多只支持UHS-I**, 只有9个针脚"金手指". 具体引脚说明见9.4 SD卡结构.
+
+
+### 9.2 读写速度测试?
 
 CDM(crystal disk mark)软件测速
 
@@ -1681,8 +1721,254 @@ SPI模式也称为SD卡的兼容模式. UHS-I和UHS-II协议都向下支持, 只
 而SDIO模式是更高速的协议, UHS-I和UHS-II分别使用9个和17个引脚实现(后者多了一排并行所以更快).
 
 
+### 9.3 SD卡容量
+
+不同容量的SD卡支持的SD协议版本不同. 也就是说SPI协议下工作都一样, 但是SDIO协议不同, 表现不一样.
+
+| 类型       | 全称                           | 容量范围        | 文件系统    | 指令集/协议 	 | 标识            |
+| -------- | -------------------------------- | ------------- | ----------- | ------- 		| ------------- |
+| **SDSC** | Secure Digital Standard Capacity | ≤ 2 GB        | FAT12/FAT16 | SD v1.x 				| 通常写 “SD”      |
+| **SDHC** | Secure Digital High Capacity     | 4 GB ～ 32 GB  | FAT32       | SD v2.0 				| 带 “HC” 标志     |
+| **SDXC** | Secure Digital eXtended Capacity | 64 GB ～ 2 TB  | exFAT       | SD v3.0 				| 带 “XC” 标志     |
+
+stm32F4系列只能支持SD2.0协议, 也就是说如果用SDIO协议, 只能选择SDSC, SDHC卡.
+
+### 9.4 SD卡结构
+
+![alt text](image-96.png)
 
 
+![alt text](image-97.png)
+
+
+##### 寄存器结构:
+
+| 名称      | 位宽  | 中文说明                                    | 通俗解释                                                            |
+| ------- | --- | --------------------------------------- | --------------------------------------------------------------- |
+| **CID** | 128 | 卡识别号 (Card Identification Number)       | **卡的身份证**。包含厂商ID、产品名、生产日期等。**唯一标识一张卡**。主机可以用它识别不同卡。             |
+| **RCA** | 16  | 相对地址 (Relative Card Address)            | 主机分配给SD卡的“通信地址”。多卡系统中每张卡靠它来区分。初始化时主机设置。                         |
+| **DSR** | 16  | 驱动器寄存器 (Driver Stage Register)          | 用于配置卡的输出驱动强度，**可选寄存器**，实际中**很少使用**。                             |
+| **CSD** | 128 | 卡特定数据 (Card Specific Data)              | 包含 SD 卡的**容量、读写速度、块大小、最大电流**等信息，是**主机最重要的参考信息之一**。              |
+| **SCR** | 64  | SD配置寄存器 (SD Configuration Register)     | 说明 SD 卡的**版本、总线宽度支持情况（1-bit / 4-bit）、命令支持情况等**。主机用它来判断能否启用4线模式。 |
+| **OCR** | 32  | 操作条件寄存器 (Operation Conditions Register) | 包含 SD 卡的**电压范围支持信息**，以及卡是否准备好。初始化阶段主机会不断读取这个寄存器来判断卡是否ready。     |
+| **SSR** | 512 | SD状态 (SD Status)                        | 包含更详细的卡运行状态，比如**写保护、擦除单元大小、当前速度模式等**。                           |
+| **CSR** | 32  | 卡状态 (Card Status)                       | 是主机每次发送命令（CMD）后 SD 卡反馈的“简要状态码”，包含是否出错、是否就绪等。可以理解为“最近一次操作的执行结果”。 |
+
+![alt text](image-98.png)
+
+##### SDIO总线协议:
+
+![alt text](image-100.png)
+
+![alt text](image-101.png)
+
+![alt text](image-102.png)
+
+
+ 
+  - 起始位: 4根线同时传输一个`0`
+  - 终止位: 4根线同时传输一个`1`
+- SD宽数据包
+
+
+##### 9个引脚:
+
+| 引脚 | 名称      | 说明          |
+| -- | ------- | ----------- |
+| 1  | DAT2    | 数据线         |
+| 2  | CD/DAT3 | 卡检测 / 数据线   |
+| 3  | CMD     | 命令线         |
+| 4  | VDD     | 电源（一般为3.3V） |
+| 5  | CLK     | 时钟          |
+| 6  | VSS     | 地（GND）      |
+| 7  | DAT0    | 数据线         |
+| 8  | DAT1    | 数据线         |
+| 9  | NC      | 保留/未连接      |
+
+![引脚](image-99.png)
+
+
+
+### 9.5 SDIO的命令和响应
+
+
+SD命令由主机发出. 分为四种命令.
+
+![alt text](image-109.png)
+
+
+- 命令格式:  ![alt text](image-103.png)
+- ![alt text](image-107.png)
+  - ![alt text](image-108.png)
+
+
+
+#### SD命令的命令号部分
+
+可以看到SD命令用6bit表示`命令号`. 它们是:
+
+
+🧾 标准命令（CMDx）列表（部分保留命令会标明）
+| CMD编号 | 名称                     | 功能说明                       |
+| ----- | ---------------------- | -------------------------- |
+| CMD0  | GO\_IDLE\_STATE        | 软件复位卡，进入 idle 状态（上电后第一条命令） |
+| CMD1  | SEND\_OP\_COND         | 启动卡初始化（MMC专用，SD不用）         |
+| CMD2  | ALL\_SEND\_CID         | 请求卡的CID号（卡唯一识别号）           |
+| CMD3  | SEND\_RELATIVE\_ADDR   | 设置/获取 RCA（卡相对地址）           |
+| CMD4  | SET\_DSR               | 设置 DSR 寄存器（很少用）            |
+| CMD5  | IO\_SEND\_OP\_COND     | SDIO专用，初始化IO卡              |
+| CMD6  | SWITCH\_FUNC           | 切换函数（高速模式等）或读取支持函数         |
+| CMD7  | SELECT/DESELECT\_CARD  | 选择/取消选择卡                   |
+| CMD8  | SEND\_IF\_COND         | 检测电压范围、确认是否支持SDHC/SDXC     |
+| CMD9  | SEND\_CSD              | 读取CSD寄存器                   |
+| CMD10 | SEND\_CID              | 读取CID寄存器                   |
+| CMD11 | READ\_DAT\_UNTIL\_STOP | （保留）                       |
+| CMD12 | STOP\_TRANSMISSION     | 停止多块数据传输                   |
+| CMD13 | SEND\_STATUS           | 获取卡当前状态                    |
+| CMD14 | BUSTEST\_R             | 总线测试（保留）                   |
+| CMD15 | GO\_INACTIVE\_STATE    | 让卡进入“休眠”状态，断开总线            |
+
+
+
+
+📤 数据传输相关命令：
+| CMD编号 | 名称                      | 功能说明              |
+| ----- | ----------------------- | ----------------- |
+| CMD16 | SET\_BLOCKLEN           | 设置数据块长度（标准为512字节） |
+| CMD17 | READ\_SINGLE\_BLOCK     | 读取单个数据块           |
+| CMD18 | READ\_MULTIPLE\_BLOCK   | 读取多个数据块           |
+| CMD19 | BUSTEST\_W              | 总线测试（保留）          |
+| CMD20 | WRITE\_DAT\_UNTIL\_STOP | （保留）              |
+
+
+
+📥 写入相关命令：
+| CMD编号 | 名称                     | 功能说明       |
+| ----- | ---------------------- | ---------- |
+| CMD24 | WRITE\_BLOCK           | 写入单块       |
+| CMD25 | WRITE\_MULTIPLE\_BLOCK | 写入多块       |
+| CMD26 | PROGRAM\_CID           | 编程CID（只一次） |
+| CMD27 | PROGRAM\_CSD           | 编程CSD（只一次） |
+
+⛔ 擦除、写保护等：
+| CMD编号 | 名称                          | 功能说明               |
+| ----- | --------------------------- | ------------------ |
+| CMD28 | SET\_WRITE\_PROT            | 设置写保护（硬件）          |
+| CMD29 | CLR\_WRITE\_PROT            | 清除写保护              |
+| CMD30 | SEND\_WRITE\_PROT           | 查询是否写保护            |
+| CMD32 | ERASE\_WR\_BLK\_START\_ADDR | 设置擦除开始地址           |
+| CMD33 | ERASE\_WR\_BLK\_END\_ADDR   | 设置擦除结束地址           |
+| CMD38 | ERASE                       | 执行擦除命令（搭配CMD32/33） |
+
+
+
+🧾 应用命令（ACMDxx）列表（需先发送 CMD55）：
+| ACMD编号 | 名称                         | 功能说明                     |
+| ------ | -------------------------- | ------------------------ |
+| ACMD6  | SET\_BUS\_WIDTH            | 设置总线宽度（1-bit / 4-bit）    |
+| ACMD13 | SD\_STATUS                 | 读取SD状态寄存器（512bit）        |
+| ACMD22 | SEND\_NUM\_WR\_BLOCKS      | 返回最后一次写入的块数              |
+| ACMD23 | SET\_WR\_BLK\_ERASE\_COUNT | 设置一次擦除的块数                |
+| ACMD41 | SD\_SEND\_OP\_COND         | SD卡初始化命令，检测电压范围，卡是否ready |
+| ACMD42 | SET\_CLR\_CARD\_DETECT     | 控制pull-up电阻使能            |
+| ACMD51 | SEND\_SCR                  | 读取SCR寄存器（卡支持的特性）         |
+
+![alt text](image-110.png)
+
+
+#### SD命令的参数部分 
+
+SD命令有32bit用来表达命令参数. 包括块地址、扇区编号、偏移量、标志位、状态配置值等.
+
+注意SD卡访问的地址是`块地址`, 即扇区编号. 每块512B.
+
+### 9.6 SDIO                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+
+
+
+
+###
+
+
+
+###
+
+## 10 SPI(serial peripheral interface)通信协议
+
+SPI是由motorola公司开发的一种通用数据总线. 使用四根通信线:
+
+| 信号线      | 全称                  | 方向       | 说明         |
+| -------- | ------------------- | -------- | ---------- |
+| **MOSI** | Master Out Slave In | 主机 → SD卡 | 主机发数据（命令）  |
+| **MISO** | Master In Slave Out | SD卡 → 主机 | SD卡返回数据    |
+| **SCLK** | Serial Clock        | 主机 → SD卡 | 时钟信号       |
+| **CS**   | Chip Select（片选）     | 主机 → SD卡 | 拉低使能选中的SD卡 |
+
+SPI协议是同步全双工的.
+
+支持总线挂载多个从设备.
+
+W25Q64: 一款常见的NOR Flash存储器芯片, 使用SPI接口.
+| 属性       | 说明                             |
+| -------- | ------------------------------ |
+| **型号**   | W25Q64                         |
+| **容量**   | 64 Mbit = **8 MB**             |
+| **类型**   | NOR Flash                      |
+| **接口**   | SPI（支持标准SPI、Dual SPI、Quad SPI） |
+| **电压范围** | 2.7V \~ 3.6V                   |
+| **厂家**   | Winbond（华邦电子）                  |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 11 OLED
+
+一般用作调试显示屏, 方便我们调试程序.
+
+![alt text](image-104.png)
+
+常见两种协议, 4阵脚的是I2C, 7针脚的是SPI
+
+![alt text](image-105.png)
+
+
+江协科技up主写的驱动函数:
+前两个参数是行/列.
+![alt text](image-106.png)
+
+
+
+
+
+##
+
+##
+
+##
 ## 10 常见问题(bug log)
 
 
