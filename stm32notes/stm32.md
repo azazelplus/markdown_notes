@@ -1629,21 +1629,50 @@ int main(void)
 
 ![alt text](image-94.png)
 
-- NAND架构显然擦除得更快, 但是读取很慢. 是以块为单位读取/写入的(一般是512bit).
+- NAND 串行访问结构架构. 擦除得更快, 但是读取很慢. 是以块为单位读取/写入的(一般是512bit).
 - 很便宜而且储存密度大.
 - 适用在储存卡, 硬盘...
+-   **单元连接方式**：
+      -   多个存储单元（通常32-64个）**串联成一条链（NAND String）**，共享位线。          
+      -   必须**逐页（Page）访问**（典型页大小4KB-16KB），无法直接读取单个单元。         
+      -   **结构类似硬盘**，按块/页管理。      
+-   **读取原理**：    
+    -   需要先选中整页数据，再通过串行接口逐位输出。        
+    -   **随机读取延迟高**（~25-50μs），但连续读取吞吐量高（因页缓存机制）。
+
+
+![alt text](<MVVWAN@0UYV@_24`EGV7H)L_tmb.jpg>)
+
+NAND闪存用**浮栅晶体管**串联制作. 这种晶体管是改进版的MOSFET, 相比MOSFET多了两层: `浮栅层`和`绝缘层`, 实现了非易失性存储.
+
+浮栅晶体管结构:
+
+![alt text](image-114.png)
+![alt text](image-115.png)
+
 
 
 ----------------------------
 
 ![alt text](image-93.png)
 
-- NOR架构addresses the entire memory range, 所以可以访问其中任意一个字节, 所以读取非常快; 
+- NOR 并行访问架构, addresses the entire memory range, 所以可以访问其中任意一个字节, 所以读取非常快; 
 
 - 但是NOR逻辑门单元更大(CMOS![alt text](image-95.png)), 也更昂贵.
 - NOR首次启动需要更大的功率, 但是启动之后功耗会小于NAND.
 - 适合高速随机读取.
 - 适用在计算芯片的内存.
+-   **单元连接方式**：
+    -   每个存储单元（Memory Cell）**直接并联到位线（Bit Line）**，类似“独立开关”。
+    -   通过**字线（Word Line）**选中一行单元，所有位线可同时被读取（并行访问）。
+    -   **结构类似SRAM**，支持随机寻址。   
+-   **读取原理**：
+    -   直接通过位线检测电流（无需整页读取）。       
+    -   **随机读取延迟低**（~50-100ns），适合代码执行（XIP, Execute-In-Place）。
+
+
+
+
 
 ---------------------------
 
@@ -1995,8 +2024,7 @@ Power On → Idle State (CMD0)																			\
 | **Disconnect State**  | `CMD7`（RCA=0）取消选择    | `CMD7`（重新选择卡）                                                         | 卡被临时取消选择，可快速恢复。                                           |
 
 
-
-
+* `Transfer State`是`Sending-data State`和`Receive-data State`的前置, 后两者可以看成`Transfer State`的子状态.
 
 
 
@@ -2047,8 +2075,11 @@ Power On → Idle State (CMD0)																			\
 
 
 
+* * *
 
 ###
+
+* * *
 
 ## 10 SPI(serial peripheral interface)通信协议
 
