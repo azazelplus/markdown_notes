@@ -359,9 +359,15 @@ GPIO输入电路的内部示意图: (假设GPIO口接在一个简单的mos开关
 若两个GPIO都配置成开漏输出然后外接电压+上拉电阻, 就可以实现OR控制.
 
 
+----
 
-事实上, GPIO从最早期的版本就有输入和输出两种模式. 输入模式其实就是上拉电阻连进单片机, 如下图
+GPIO从最早期的版本是**标准双向输入输出模式**:
+
 ![alt text](image-131.png)
+
+显然, 该模式下没有`push`功能.
+
+![alt text](image-132.png)
 
 一个GPIO引脚有`输入缓冲`和`输出缓冲`两套电路. 
 
@@ -660,7 +666,8 @@ uint8_t TIM_ClockDivision;
 
 ### 1.7 LED
 
-指南者板子有三色led. 它们通过灌电流的方式连接到GPIO口. 灌电流即意味着, 
+指南者板子有三色led. 它们通过**灌电流**的方式连接到GPIO口. 灌电流即意味着LED先直接连接高电平, 然后接入GPIO口, 当GPIO口以**pull模式**(即内部只存在gpio-MOS-GND通路: )运行时
+
 其电路参见指南者原理图:
 
 ![alt text](image-81.png)
@@ -1063,41 +1070,44 @@ void  BASIC_TIM_IRQHandler (void)
 }
 ```
 
-## 4. 串口通信(Serial Communication)
+## 4 UART串口通信
+
+### 4.0 UART概述
 **串口**（Serial Port），通常指的是 UART（Universal Asynchronous Receiver/Transmitter，通用异步收发器），它是一种数据传输协议。
-### 串口协议的硬件部分:
 
-**在 STM32 和大多数单片机上，UART 通信默认使用 TTL 电平.**
+实现起来超级简单, 就是两根线, 约定一个传输速度然后一根发送一根接收.
 
-**TTL**(transistor-transistor logic)晶体管晶体管逻辑. 
-
-* TTL(transistor transistor level)电平: 即直接从单片机/芯片引脚里出来的电平. 高电平有5v(51单片机的gpio端口), 3.3v等.
-* RS-232电平: 15v表示0, -15v表示1. RS-232标准串口一般用于工业设备直接通信. 电平转换芯片常用的有`MAX3232`,`SP3232`.
-![alt text](image-20.png)
-RS-232长这样子:(九根针)
-![alt text](image-21.png)
-
-* *可以在指南者上拓展出RS232接口:*
-购买一个232转TTL:
-![alt text](image-23.png)
-四个引脚,vcc和gnd分别接stm32提供的一个vcc和gnd即可;
-rxd(收端)和txd(发端)
-![alt text](image-22.png)
+缺点:
+* 不能远距离传输信号;
+* 通信速度比spi, i2c等通信协议慢;
+* 不能一对多.
+  
 
 
 
-### usb转串口:
-图中的控制器A即stm32. 
-usb协议(即universaal serial bus,通用串行总线协议), 信号传输方式是差分信号, 且需要复杂的协议通信(枚举, 握手, 数据帧...)
-#### 具体来说, stm32板子和电脑连接:
+### 4.1 USART的硬件部分:
+
+**在 STM32 和大多数单片机上，UART 通信默认使用 TTL(0v 5v) 电平.**
+
+#### USB转UART:
+实际中我们经常使用USB数据线, 想要使用UART通讯, **需要进行两个协议的转换**.
+
+>usb协议(即universaal serial bus,通用串行总线协议), 信号传输方式是差分信号, 且需要复杂的协议通信(枚举, 握手, 数据帧...)
+
+具体来说, stm32板子和电脑连接;
+
 stm32指南者板子上, 信号要通过板子上的ch340芯片, 然后通过连接的usb转串口数据线. 
-##### 引脚连接方式:(如图)
+
+**引脚连接方式:(如图)**
 ![alt text](image-25.png)
 查原理图得:(查原理图第一图, 即下方标有`stm32f103vet6`, 此为cpu的引脚. 可看到PA9分配到USART1_TX, 后者即为stm32的UART发送引脚, PA10分配到USART1_RX.)
 看板子上PA9和PA10分别连接RXD, TXD, 这部分属于J11框图. 于是在原理图中搜索J11框图, 查到这是usb串口转换模块, 而TXD和RXD是芯片ch340的引脚, 它们通过两个跳帽和PA9(USART1_RX), PA10(USART1_TX)相联.
 * PA9表示一个物理上的唯一的引脚. 而引脚可以复用, 抽象意义的引脚USART1_RX被分配在PA9.
+
 ![cpu原理图](image-26.png)
+
 ![J11](image-27.png)
+
 STM32 TX（即USART1_TX, 即PA9. TTL电平） → CH340 RX(即J11板块上的RXD)
 STM32 RX（即USART1_RX, 即PA10. TTL电平） → CH340 TX(即J11板块上的TXD)
 STM32 GND → CH340 GND
@@ -1130,7 +1140,7 @@ TTL转usb电平的芯片常有`ch340`.
 
 
 
-### 串口协议的软件部分:
+### 4.2 UART的软件部分:
 ![alt text](image-28.png)
 ![alt text](image-29.png)
 ![alt text](image-30.png)
@@ -1139,7 +1149,7 @@ TTL转usb电平的芯片常有`ch340`.
 ![alt text](image-33.png)
 
 
-### 串口通信-功能框图
+###  4.3 UART串口通信-功能框图
 
 #### 1.引脚部分
 ![alt text](image-34.png)
@@ -1199,9 +1209,8 @@ LQFP144指的是144脚的芯片,
 
 ![alt text](image-48.png)
 
-### USART编程
-
-### 学习stm32f10x_usart.h.
+### 4.4 USART编程
+stm32f10x_usart.h.
 
 ## 5. 编程经验
 
@@ -1348,8 +1357,6 @@ void Delay(__IO uint32_t nCount)
 
 
 ### 5.8 两种检测方式: 轮询扫描&设置中断
-
-
 
 
 
@@ -1720,6 +1727,7 @@ int main(void)
 
 ## 8.杂项
 
+### 1. 去哪里找引脚?
 * 使用外设(如串口usart, ADC, i2c, spi)...引脚(绑定到哪个gpio口), 去`数据手册`里找(pinouts and pin descriptions). 注意`参考手册`里没有. 它主要是介绍外设的功能和原理图以及寄存器说明.
 
 	比如, 我们使用adc, 先看`参考手册`:
@@ -1741,7 +1749,7 @@ int main(void)
 * stm32的引脚上电后如果不初始化, 默认是浮空输入模式. 可以无视.
 * 你可以用gpio口推挽输出高低电平来驱动低功耗的外设, 但是这不规范, 最好还是用stm32的GND和3.3V两个引脚来驱动.
 
-### 7.0 常用英文缩写说明
+### 2. 常用英文缩写说明
 
 -   **LDO**：Low Drop-Out regulator，低压差线性稳压器. 比DC-DC降压模块,比如buck低能, 就是纯电阻分压.
     -   工作方式：在输入和输出之间串联一个“可变电阻”（通常是一个晶体管），通过调节它的导通度来丢弃多余电压。
@@ -1761,8 +1769,39 @@ int main(void)
 -   **VBUS**：USB 总线供电电压
 
 
+### 3 通信协议的电平标准
 
 
+| 电平标准                                          | 典型电压范围                 | 逻辑0电平     | 逻辑1电平     | 常见使用场景/协议                   |
+| --------------------------------------------- | ---------------------- | --------- | --------- | --------------------------- |
+| **TTL (Transistor-Transistor Logic)**         | 0V \~ 5V| < 0.8V    | > 2.0V    | UART（单片机）、SPI、I2C（主流MCU级通信） |
+| **LVTTL (Low Voltage TTL)**                   | 0V \~ 3.3V(兼容TTL)        | < 0.8V    | > 2.0V    | 新一代 MCU/FPGA（STM32, Zynq 等） |
+| **CMOS**                                      | 0V \~ Vcc（1.8V\~5V 不等）(兼容TTL) | < 0.3×Vcc | > 0.7×Vcc | SPI、I2C、数字逻辑芯片内部传输          |
+| **RS-232**                                    | -12V \~ +12V（±5\~15V）  | > +3V     | < -3V     | PC串口通信（老式串口）、调试串口等          |
+| **RS-485 / RS-422**                           | 差分信号 ±1.5V \~ ±5V      | 差分        | 差分        | 工业总线、485串口、多点通信             |
+| **CAN Bus**                                   | 差分信号（典型2.5V为中点）        | 差分        | 差分        | 汽车通信、工业控制                   |
+| **USB**                                       | 差分信号（低速3.3V）           | 差分        | 差分        | USB 1.1\~3.0 接口             |
+| **Ethernet (PHY)**                            | 差分信号 ±1.0V \~ ±2.5V    | 差分        | 差分        | 局域网通信（RJ45网口）               |
+| **LVDS (Low Voltage Differential Signaling)** | ±350mV（中心电压1.2V）       | 差分        | 差分        | 高速传输，LCD屏、FPGA高速接口          |
+| **MIPI D-PHY / C-PHY**                        | 低电压差分，<1V              | 差分        | 差分        | 手机摄像头/屏幕的 CSI/DSI 总线        |
+
+* RS-232电平: 15v表示0, -15v表示1. RS-232标准串口一般用于工业设备直接通信. 电平转换芯片常用的有`MAX3232`,`SP3232`.
+
+![alt text](image-20.png)
+
+RS-232长这样子:(九根针)
+
+![alt text](image-21.png)
+
+* *可以在指南者上拓展出RS232接口:*
+购买一个232转TTL:
+
+![alt text](image-23.png)
+
+四个引脚,vcc和gnd分别接stm32提供的一个vcc和gnd即可;
+rxd(收端)和txd(发端)
+
+![alt text](image-22.png)
 
 
 
