@@ -312,16 +312,13 @@ azazel@DESKTOP-NJKSK6O:/mnt/f/aza/WOKWOK/STM32/my_projects/ADC_DMA_TIM_interrupt
 
 
 
-#### 1.1.1 GPIO结构&模式
-
-
-##### 1. GPIO结构的发展史
+#### 1.1.1 GPIO结构的发展史
 GPIO在发展中, 支持的模式也在发展.
 
 ![alt text](image-130.png)
 
 
-##### 2. GPIO的标准双向输入输出模式
+#### 1.1.2 (old) GPIO的标准双向输入输出模式
 
 GPIO从最早期的版本是**标准双向输入输出模式**:
 
@@ -336,13 +333,13 @@ GPIO从最早期的版本是**标准双向输入输出模式**:
 ![alt text](image-132.png)
 
 
-##### 3. STM32的GPIO结构
+#### 1.1.3 STM32的GPIO结构
 
 STM的GPIO结构如图所示. 它分为输入电路和输出电路两部分.
 
 ![alt text](image-137.png)
 
-###### GPIO的输入电路:
+##### 1.1.3.1 GPIO的输入电路:
 
 
 
@@ -363,7 +360,7 @@ STM32的输入电路结构提供了4种输入模式:
   * ![alt text](image-149.png)
 
 
-###### GPIO的输出电路:
+##### 1.1.3.2GPIO的输出电路:
 
 ![alt text](image-150.png)
 
@@ -404,23 +401,36 @@ STM32的输入电路结构提供了4种输入模式:
 * **复用推挽输出**
 * **复用开漏输出**
 
-
-###### STM32 控制GPIO模式的寄存器
+#### 1.1.4 STM控制GPIO的寄存器
 
 GPIO的完整结构可以看成**寄存器-控制(驱动)器-针脚**. 前面讲的输入/输出电路图结构, 也成为**输入/输出驱动器**. 而前面的寄存器控制这套电路哪里断开哪里闭合. 用户通过软件设置这些寄存器.
 
 
-
-
 ![alt text](image-148.png)
 
+这些**GPIO配置寄存器**为:
+| GPIO配置寄存器名  | 含义                                           |
+| ------ | ------------------------------------------------ |
+| `CRL`  | 配置低 8 位引脚（Pin 0\~7）的控制寄存器。配置引脚的模式/功能等。           |
+| `CRH`  | 配置高 8 位引脚（Pin 8\~15）的控制寄存器。                      |
+| `IDR`  | 输入数据寄存器（Input Data Register），可读某个引脚当前输入的电平状态。    |
+| `ODR`  | 输出数据寄存器（Output Data Register），写入这个寄存器来输出电平。      |
+| `BSRR` | 位设置/复位寄存器（Bit Set/Reset Register），可以快速置位/清零某个引脚。 |
+| `BRR`  | 位复位寄存器（Bit Reset Register），专门用来清零引脚。             |
+| `LCKR` | 锁存寄存器（Lock Register），用来锁住引脚配置，防止修改。              |
+
+
+##### 1.1.4.1 CRL和CRH
+
+其中**CRL**和**CRH**配置了GPIO的模式.
 GPIO引脚的**模式**通过 
 * **GPIOx_CRL(控制 GPIOx的第 0～7 引脚 `Pin0~7`)**
 * **GPIOx_CRH(控制 GPIOx的第 8～15 引脚 `Pin8~15`)**
 寄存器配置.
+
 这两个寄存器一共64bit宽, 每个引脚分到4bit: MODE[1:0] + CNF[1:0]
 
-| 字段名         | 位数 | 作用                          |
+| CRL/CRH寄存器字段名   | 位数 | 作用                          |
 | ----------- | -- | --------------------------- |
 | `MODE[1:0]` | 2位 | 指定“输出模式下”的速率（输入模式时强制为 `00`） |
 | `CNF[1:0]`  | 2位 | 指定该引脚的“具体模式”（比如推挽、开漏等）      |
@@ -437,22 +447,42 @@ GPIO引脚的**模式**通过
 | `01/10/11`  | `10`       | 复用推挽输出（AF Output PP）       | 输出    | 比如 SPI/USART/PWM 用 |
 | `01/10/11`  | `11`       | 复用开漏输出（AF Output OD）       | 输出    | 比如 I2C 等需开漏输出的复用场景 |
 
+##### 1.1.4.2 APB2总线 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
+在AHB总线上. 地址为`0x4002 1000 - 0x4002 13FF`
+首先是使能和复位信号. 如果想使用GPIO端口(在总线APB2连接), 则需要开启复位和时钟控制RCC. 外设的时钟和使能信号默认是关闭的.
+当外设时钟没有启用时，软件不能读出外设寄存器的数值，返回的数值始终是0x0。
+
+##### 1.1.4.3 IDR (input data reg)输入数据寄存器.
+
+它是一个32bit寄存器. 高16位预留为0没用. 低16位保存端口0~端口15的实际物理电平, 0为低电平.
+
+它储存引脚实际物理电平.
+
+它的值用库函数
+`GPIO_ReadInputDataBit()`来读取.
+
+##### 1.1.4.4 ODR (output data reg)输出数据寄存器.
+
+它是一个32bit寄存器. 高16位预留为0没用. 低16位控制端口0~端口15的输出电平, 0为低电平.
+
+ODR寄存器只有**推挽输出模式**时有用. 当推挽驱动时, IDR被驱动为ODR的值.
+
+它的值用库函数
+`GPIO_ReadOutputDataBit()`来读取.
+
+在GPIO的不同模式下:
+| 模式     | 输入逻辑（IDR） | 输出逻辑（ODR）  |
+| ------ | --------- | ---------- |
+| 输入模式(上/下拉输入, 浮空输入, 模拟输入)   | ✅使能       | ❌关闭        |
+| 推挽输出模式 | ✅仍然打开！    | ✅使能（推高/推低） |
 
 
-#### IDR和ODR寄存器
 
+#### 1.1.5 GPIO的配置写法
 
-
-
-
-
-
-#### 1.1.1 GPIO的配置写法
-
-比如要配置3个gpio为推挽输出模式, 来用于控制三个`LED外设`, 规范的做法:
+比如要配置3个gpio为**推挽输出**模式, 来用于控制三个`LED外设`, 规范的做法:
 
 ```c
-
 LED_GPIO_Config()	//在main.c 中调用配置函数. 具体的配置函数写在`bsp_led.c`中.
 
 
@@ -530,63 +560,8 @@ void LED_GPIO_Config(void)
 ```
 
 
-#### 1.1.2底层寄存器
-操作它们主要靠这几个寄存器:
-
-##### 1. APB2总线 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
-在AHB总线上. 地址为`0x4002 1000 - 0x4002 13FF`
-首先是使能和复位信号. 如果想使用GPIO端口(在总线APB2连接), 则需要开启复位和时钟控制RCC. 外设的时钟和使能信号默认是关闭的.
-当外设时钟没有启用时，软件不能读出外设寄存器的数值，返回的数值始终是0x0。
-
-##### 2.**IDR输入数据寄存器** 
-
-它是一个32bit寄存器. 高16位预留为0没用. 低16位保存端口0~端口15的实际物理电平, 0为低电平.
-
-它储存引脚实际物理电平.
-
-它的值用库函数
-`GPIO_ReadInputDataBit()`来读取.
-
-##### 2. GBIOx_ODR (output data reg)输出数据寄存器.
-
-它是一个32bit寄存器. 高16位预留为0没用. 低16位控制端口0~端口15的输出电平, 0为低电平.
-
-ODR寄存器只有**推挽输出模式**时有用. 当推挽驱动时, IDR被驱动为ODR的值.
-
-它的值用库函数
-`GPIO_ReadOutputDataBit()`来读取.
-
-在GPIO的不同模式下:
-| 模式     | 输入逻辑（IDR） | 输出逻辑（ODR）  |
-| ------ | --------- | ---------- |
-| 输入模式(上/下拉输入, 浮空输入, 模拟输入)   | ✅使能       | ❌关闭        |
-| 推挽输出模式 | ✅仍然打开！    | ✅使能（推高/推低） |
-
-##### 3. GBIOx_CRL (config reg low)端口配置低寄存器.
-负责Px0~Px7引脚的配置. 是32bit寄存器. 
-相对于GBIOx基地址偏移为0. 复位0x4444 4444.
-每个引脚占据4bit. 比如低4位为:
-* MODEy[1:0] 这两位设置Px0的工作模式:
-	* `00`输入模式
-	* `01`输出模式，10 MHz
-	* `10`输出模式，2 MHz
-	* `11`输出模式，50 MHz
-* CNFy[1:0] 这两位设置:
-  * 当MODEY是`00`时;
-    * `00`
-    * `01`
-    * `10`
-    * `11`
-
-##### 4. GBIOx_CRL (config reg high)端口配置高寄存器.
-负责Px8~Px15引脚的配置.
 
 
-* 双重模式特质adc1, adc2一起使用.
-![alt text](image-17.png)
-
-* 常用固件库函数(后面数字表示在对应头文件(ADC_开头就是`stm32f10x_adc.h`, RCC_开头就是`stm32f10x_rcc.h`等)的第几行.)
-![alt text](image-18.png)
 
 
 
@@ -1110,148 +1085,6 @@ void  BASIC_TIM_IRQHandler (void)
 	}		 	
 }
 ```
-
-## 4 UART串口通信
-
-### 4.0 UART概述
-**串口**（Serial Port），通常指的是 UART（Universal Asynchronous Receiver/Transmitter，通用异步收发器），它是一种数据传输协议。
-
-实现起来超级简单, 就是两根线, 约定一个传输速度然后一根发送一根接收.
-
-缺点:
-* 不能远距离传输信号;
-* 通信速度比spi, i2c等通信协议慢;
-* 不能一对多.
-  
-
-
-
-### 4.1 USART的硬件部分:
-
-**在 STM32 和大多数单片机上，UART 通信默认使用 TTL(0v 5v) 电平.**
-
-#### USB转UART:
-实际中我们经常使用USB数据线, 想要使用UART通讯, **需要进行两个协议的转换**.
-
->usb协议(即universaal serial bus,通用串行总线协议), 信号传输方式是差分信号, 且需要复杂的协议通信(枚举, 握手, 数据帧...)
-
-具体来说, stm32板子和电脑连接;
-
-stm32指南者板子上, 信号要通过板子上的ch340芯片, 然后通过连接的usb转串口数据线. 
-
-**引脚连接方式:(如图)**
-![alt text](image-25.png)
-查原理图得:(查原理图第一图, 即下方标有`stm32f103vet6`, 此为cpu的引脚. 可看到PA9分配到USART1_TX, 后者即为stm32的UART发送引脚, PA10分配到USART1_RX.)
-看板子上PA9和PA10分别连接RXD, TXD, 这部分属于J11框图. 于是在原理图中搜索J11框图, 查到这是usb串口转换模块, 而TXD和RXD是芯片ch340的引脚, 它们通过两个跳帽和PA9(USART1_RX), PA10(USART1_TX)相联.
-* PA9表示一个物理上的唯一的引脚. 而引脚可以复用, 抽象意义的引脚USART1_RX被分配在PA9.
-
-![cpu原理图](image-26.png)
-
-![J11](image-27.png)
-
-STM32 TX（即USART1_TX, 即PA9. TTL电平） → CH340 RX(即J11板块上的RXD)
-STM32 RX（即USART1_RX, 即PA10. TTL电平） → CH340 TX(即J11板块上的TXD)
-STM32 GND → CH340 GND
-* 用 CH340 连接 STM32 和电脑时，它在做两个转换
-
-	* USB ⇄ UART（协议转换）
-	电脑用的是 USB，但 STM32 只会 UART，CH340 充当“协议翻译官”。
-	* USB ⇄ TTL（电平转换）
-	电脑的 USB 是 0V / 5V，STM32 的 UART 是 3.3V，CH340 还能帮忙匹配电平。
-安装ch340驱动后, windows可以认识ch340, 给它分配一个com口.
-TTL转usb电平的芯片常有`ch340`.
-![alt text](image-24.png)
-
-**实际电路图:**
-实际上就是ch340电路图.
-![usb转串口的ch340电路图](image-49.png)
-
-![实物图](image-50.png)
-
-由上图, 默认ch340芯片的RXD和TXD连接的时PA9和PA10, 这两个引脚被分配在USART1的TX和RX. 所以默认使用的是USART1.
-
-如果想要使用USART2, 可以拆掉两个跳帽, 把CH340的RXD和TXD连接到USART2外设的TX和RX上. 查表(`Table 5. High-density STM32F103xx pin definitions`)得, 
-![查表结果](image-51.png)
-它们是:`PA3`, `PA2`. 于是我们可以用杜邦线把RXD和TXD连接到PA2和PA3.
-
-同理, PB10, PB11默认和wifi连接, 是USART3.
-
-
-
-
-
-
-### 4.2 UART的软件部分:
-![alt text](image-28.png)
-![alt text](image-29.png)
-![alt text](image-30.png)
-![alt text](image-32.png)
-![alt text](image-31.png)
-![alt text](image-33.png)
-
-
-###  4.3 UART串口通信-功能框图
-
-#### 1.引脚部分
-![alt text](image-34.png)
-
-每个USART串口有五个常用引脚(IRDA_OUT和IRDA_IN是红外功能, 很少用):
-
-![alt text](image-35.png)
-nRTS中的n表示低电平有效.
-这些引脚对应的gpio: 去查询`2-STM32F103xCDE_数据手册-英文`的`pinouts and pin descriptions, table 5`.
-![alt text](image-38.png)
-就这个表. high-density即高容量. 指南者就是高容量.
-LQFP144指的是144脚的芯片,
-指南者是LQFP100型号的.
-但是前六列这些数字的意义? 是PCB封装引脚号.
-例如如果我想找usart1的cts, 我应该搜索这个引脚名:`USART1_CTS`
-然后搜索数据手册(`pinouts and pin descriptions, table 5`):
-这是查询的结果.
-![alt text](image-36.png)
-
-
-* 我们可以看到stm32指南者有5个串口模块, 其中uart1挂载在总线APB2(72M时钟)上,比较快. 剩下四个挂载在APB1总线(36M时钟).  同时也要注意写程序的时候记得打开总线时钟.
-
-* 前三个是`USART`, 即通用同步/异步收发器. 后两个是`UART`,即通用异步收发器. 少了`SCLK`, `CTS`, `RTS`三个引脚.
-
-#### 2.数据寄存器部分
-这部分自己看寄存器文档即可.
-
-`USART_DR`. 9位有效. 
-![alt text](image-41.png)
-![USART_DR寄存器](image-42.png)
-
-由USART_CR1的M位决定具体用几位.
-![USART_CR1寄存器](image-43.png)
-
-
-
-停止位由USART_CR2寄存器的相关位配置:
-![USART_CR2寄存器](image-44.png)
-最常用:1个停止位.
-
-
-想要使用usart, 首先UE(usart enable, 在CR1寄存器的13位)要置1. 如果接收, RE(也在CR1寄存器)=1. 同理发送需要TE=1.
-
-* SR寄存器:存储状态用的. 
-
-![TXE和TC](image-45.png)
-
-
-`RXNE`: 读数据寄存器非空. 该位表示:
-![alt text](image-46.png)
-
-`TXEIE`: 
-
-`USART_BRR`是波特率寄存器.
-![USART_BRR](image-47.png)
-
-
-![alt text](image-48.png)
-
-#### 4.4 USART编程
-stm32f10x_usart.h.
 
 ## 5. 编程经验
 
@@ -1809,9 +1642,9 @@ int main(void)
     
 -   **VBUS**：USB 总线供电电压
 
+### 3. 通信协议
 
-### 3 通信协议的电平标准
-
+#### 3.0 通信协议的电平标准
 
 | 电平标准                                          | 典型电压范围                 | 逻辑0电平     | 逻辑1电平     | 常见使用场景/协议                   |
 | --------------------------------------------- | ---------------------- | --------- | --------- | --------------------------- |
@@ -1845,7 +1678,186 @@ RS-232长这样子:(九根针)
 rxd(收端)和txd(发端)
 
 ![alt text](image-22.png)
+#### 3.1 UART串口通信
 
+##### 3.1.0 UART概述
+**串口**（Serial Port），通常指的是 UART（Universal Asynchronous Receiver/Transmitter，通用异步收发器），它是一种数据传输协议。
+
+实现起来超级简单, 就是两根线, 约定一个传输速度然后一根发送一根接收.
+
+缺点:
+* 不能远距离传输信号;
+* 通信速度比spi, i2c等通信协议慢;
+* 不能一对多.
+  
+
+
+
+##### 3.1.1 USART的硬件部分:
+
+**在 STM32 和大多数单片机上，UART 通信默认使用 TTL(0v 5v) 电平.**
+
+###### USB转UART:
+实际中我们经常使用USB数据线, 想要使用UART通讯, **需要进行两个协议的转换**.
+
+>usb协议(即universaal serial bus,通用串行总线协议), 信号传输方式是差分信号, 且需要复杂的协议通信(枚举, 握手, 数据帧...)
+
+具体来说, stm32板子和电脑连接;
+
+stm32指南者板子上, 信号要通过板子上的ch340芯片, 然后通过连接的usb转串口数据线. 
+
+**引脚连接方式:(如图)**
+![alt text](image-25.png)
+查原理图得:(查原理图第一图, 即下方标有`stm32f103vet6`, 此为cpu的引脚. 可看到PA9分配到USART1_TX, 后者即为stm32的UART发送引脚, PA10分配到USART1_RX.)
+看板子上PA9和PA10分别连接RXD, TXD, 这部分属于J11框图. 于是在原理图中搜索J11框图, 查到这是usb串口转换模块, 而TXD和RXD是芯片ch340的引脚, 它们通过两个跳帽和PA9(USART1_RX), PA10(USART1_TX)相联.
+* PA9表示一个物理上的唯一的引脚. 而引脚可以复用, 抽象意义的引脚USART1_RX被分配在PA9.
+
+![cpu原理图](image-26.png)
+
+![J11](image-27.png)
+
+STM32 TX（即USART1_TX, 即PA9. TTL电平） → CH340 RX(即J11板块上的RXD)
+STM32 RX（即USART1_RX, 即PA10. TTL电平） → CH340 TX(即J11板块上的TXD)
+STM32 GND → CH340 GND
+* 用 CH340 连接 STM32 和电脑时，它在做两个转换
+
+	* USB ⇄ UART（协议转换）
+	电脑用的是 USB，但 STM32 只会 UART，CH340 充当“协议翻译官”。
+	* USB ⇄ TTL（电平转换）
+	电脑的 USB 是 0V / 5V，STM32 的 UART 是 3.3V，CH340 还能帮忙匹配电平。
+安装ch340驱动后, windows可以认识ch340, 给它分配一个com口.
+TTL转usb电平的芯片常有`ch340`.
+![alt text](image-24.png)
+
+**实际电路图:**
+实际上就是ch340电路图.
+![usb转串口的ch340电路图](image-49.png)
+
+![实物图](image-50.png)
+
+由上图, 默认ch340芯片的RXD和TXD连接的时PA9和PA10, 这两个引脚被分配在USART1的TX和RX. 所以默认使用的是USART1.
+
+如果想要使用USART2, 可以拆掉两个跳帽, 把CH340的RXD和TXD连接到USART2外设的TX和RX上. 查表(`Table 5. High-density STM32F103xx pin definitions`)得, 
+![查表结果](image-51.png)
+它们是:`PA3`, `PA2`. 于是我们可以用杜邦线把RXD和TXD连接到PA2和PA3.
+
+同理, PB10, PB11默认和wifi连接, 是USART3.
+
+
+
+
+
+
+##### 3.1.2 UART的软件部分:
+![alt text](image-28.png)
+![alt text](image-29.png)
+![alt text](image-30.png)
+![alt text](image-32.png)
+![alt text](image-31.png)
+![alt text](image-33.png)
+
+
+#####  3.1.3 UART串口通信-功能框图
+
+###### 1.引脚部分
+![alt text](image-34.png)
+
+每个USART串口有五个常用引脚(IRDA_OUT和IRDA_IN是红外功能, 很少用):
+
+![alt text](image-35.png)
+nRTS中的n表示低电平有效.
+这些引脚对应的gpio: 去查询`2-STM32F103xCDE_数据手册-英文`的`pinouts and pin descriptions, table 5`.
+![alt text](image-38.png)
+就这个表. high-density即高容量. 指南者就是高容量.
+LQFP144指的是144脚的芯片,
+指南者是LQFP100型号的.
+但是前六列这些数字的意义? 是PCB封装引脚号.
+例如如果我想找usart1的cts, 我应该搜索这个引脚名:`USART1_CTS`
+然后搜索数据手册(`pinouts and pin descriptions, table 5`):
+这是查询的结果.
+![alt text](image-36.png)
+
+
+* 我们可以看到stm32指南者有5个串口模块, 其中uart1挂载在总线APB2(72M时钟)上,比较快. 剩下四个挂载在APB1总线(36M时钟).  同时也要注意写程序的时候记得打开总线时钟.
+
+* 前三个是`USART`, 即通用同步/异步收发器. 后两个是`UART`,即通用异步收发器. 少了`SCLK`, `CTS`, `RTS`三个引脚.
+
+###### 2.数据寄存器部分
+这部分自己看寄存器文档即可.
+
+`USART_DR`. 9位有效. 
+![alt text](image-41.png)
+![USART_DR寄存器](image-42.png)
+
+由USART_CR1的M位决定具体用几位.
+![USART_CR1寄存器](image-43.png)
+
+
+
+停止位由USART_CR2寄存器的相关位配置:
+![USART_CR2寄存器](image-44.png)
+最常用:1个停止位.
+
+
+想要使用usart, 首先UE(usart enable, 在CR1寄存器的13位)要置1. 如果接收, RE(也在CR1寄存器)=1. 同理发送需要TE=1.
+
+* SR寄存器:存储状态用的. 
+
+![TXE和TC](image-45.png)
+
+
+`RXNE`: 读数据寄存器非空. 该位表示:
+![alt text](image-46.png)
+
+`TXEIE`: 
+
+`USART_BRR`是波特率寄存器.
+![USART_BRR](image-47.png)
+
+
+![alt text](image-48.png)
+
+###### 3.1.4 USART编程
+stm32f10x_usart.h.
+
+#### 3.2 I2C协议
+
+
+就像SPI解决了UART因为没有CLK线传输导致不稳定和很慢的问题一样,
+I2C的思想是通过`总线`的提出, 解决UART无法和一对多通信问题. 当然, `总线`结构比UART, SPI要复杂得多.
+
+I2C有两条线, 主机连出一条clk(称为**SCK, serial clock**)一条data(**SDA, serial data总线**). 每个从机都挂载在这两根线上(如下图). 每个从机有独立ID, 主机通过选定ID来实现和想要通信的从机通信.
+
+---
+
+UART无法一对多通信. 每个外设都需要占用MCU一个UART接口.
+![alt text](image-134.png)
+而I2C可以一对多通信.
+![alt text](image-135.png)
+
+---
+
+* 串行通信的意思: 实际数据是一位一位地串行传输. UART, I2C, SPI都是串行通信. 虽然I2C的总线结构从电路上来说, 从机是"并联"在SLK和SDA上的.
+
+#### 3.3 SWD(serial wire debug)
+
+SWD是arm公司开发的专门为**调试**和**烧录** MCU 设计的 通信协议.
+
+🔍 和 UART/I2C/SPI 的区别是什么？
+
+| 项目       | **SWD**                        | **UART/I2C/SPI**                            |
+| -------- | ------------------------------ | ------------------------------------------- |
+| 📌 目的    | 💻 调试、单步运行、烧录程序                | 📡 数据通信（传感器、模块、MCU之间）                       |
+| 📎 引脚    | SWDIO（双向数据）、SWCLK（时钟）          | UART: TX/RX；I2C: SDA/SCL；SPI: MISO/MOSI/SCK |
+| 📦 通信角色  | 主机 = ST-Link<br>从机 = STM32 MCU | 多为 MCU 与外设模块通信                              |
+| 💡 通信模式  | 串行调试协议（带握手、寄存器访问等）             | 简单收发数据（无调试概念）                               |
+| 🛠️ 控制功能 | 调试寄存器、查看内存、设置断点、复位等            | 通常只是收发用户数据                                  |
+| 🧱 使用范围  | 仅用于支持 SWD 的 ARM MCU            | 几乎所有嵌入式设备                                   |
+| 📂 协议复杂度 | 较高，包含协议层、AP、DP 等内部机制           | 相对简单（尤其 UART）                               |
+
+SWD 是 “调试员”和 MCU 之间的远程控制协议，能“偷看” MCU 大脑里的内容。
+
+UART/I2C/SPI 是 “两个普通人”之间的信息交流协议，他们只管互相传消息。
 
 ### 4. 施密特触发器
  
@@ -1881,7 +1893,36 @@ rxd(收端)和txd(发端)
 然后正如一开始的过程, 当输入从小变大的时候, 只要不高于**高参考电压**, 比较器都不会反应. 于是迟滞比较器实现了!
 
 
-###
+### 5. status和state区别?
+
+| 单词       | 意思                                    | 适用场景（常见）                                  |
+| -------- | ------------------------------------- | ----------------------------------------- |
+| `stat`   | statistic/statistics 的缩写，或 status 的缩写 | 通常用作简写变量名（如 `DSTATUS stat;`）表示当前设备状态      |
+| `status` | 当前状态/状态码（返回值常用）                       | ✅ 函数返回状态（成功/失败/错误码）最常用的词                  |
+| `state`  | 状态（偏向“内部状态机”的状态）                      | 状态机 / 模块的状态值，常用于逻辑控制，比如 `"idle"`、`"busy"` |
+
+
+
+
+### 6.
+
+### 7.
+
+### 8. STM的启动文件
+
+`startup_stm32f10x_hd.s`是stm的启动文件. 使用ARM汇编语言**Assembly**.
+
+一般在项目的`.\STARTUP\`下.
+
+#### 8.1 栈空间
+
+在`startup_stm32f10x_hd.s`中可以修改栈空间.
+栈的作用是保存程序运行的时候产生的局部变量. 如果程序很臃肿或者要调用很多复杂的大型图像/字库资料, 或者涉及到递归, 应该改大一点防止运行的时候爆栈.
+
+```assembly
+Stack_Size      EQU     0x00000400  ;当前设置为1KB
+```
+
 
 
 
@@ -2518,8 +2559,9 @@ ATFS 是一个轻量级的 FAT 文件系统库，专门用于在嵌入式系统�
 
 
 
-## 10 SPI(serial peripheral interface)通信协议
+## 10 SPI Flash
 
+### 10.0 SPI协议
 SPI可以看作USART的改进:
 
 UART传输速度慢而且不稳定, 因为即使约定好了传输速率, 双方的实际波特也会有浮动. 一般只能在使用同一个系统时钟两个挨得很近的双方使用. 
@@ -2556,24 +2598,6 @@ W25Q64: 一款常见的NOR Flash存储器芯片, 使用SPI接口.
 
 
 
-## 11 I2C
-
-
-就像SPI解决了UART因为没有CLK线传输导致不稳定和很慢的问题一样,
-I2C的思想是通过`总线`的提出, 解决UART无法和一对多通信问题. 当然, `总线`结构比UART, SPI要复杂得多.
-
-I2C有两条线, 主机连出一条clk(称为**SCK, serial clock**)一条data(**SDA, serial data总线**). 每个从机都挂载在这两根线上(如下图). 每个从机有独立ID, 主机通过选定ID来实现和想要通信的从机通信.
-
----
-
-UART无法一对多通信. 每个外设都需要占用MCU一个UART接口.
-![alt text](image-134.png)
-而I2C可以一对多通信.
-![alt text](image-135.png)
-
----
-
-* 串行通信的意思: 实际数据是一位一位地串行传输. UART, I2C, SPI都是串行通信. 虽然I2C的总线结构从电路上来说, 从机是"并联"在SLK和SDA上的.
 
 ## 12 OLED
 
@@ -2596,13 +2620,17 @@ UART无法一对多通信. 每个外设都需要占用MCU一个UART接口.
 
 ##
 
-##
+## 13 文件系统
+
+FarFS(FAT(File Allocation Table) File System), 文件分配表-文件系统.
+
+
 
 ##
 ## 14 常见问题(bug log)
 
 
-### 库函数未声明(this func is decleared implicit)
+### 14.1 库函数未声明(this func is decleared implicit)
 
 检查:
 * 1.有没有include头文件
@@ -2618,12 +2646,73 @@ UART无法一对多通信. 每个外设都需要占用MCU一个UART接口.
   * 比如因为复制来的项目导致的文件夹叫做`xxx-副本`
 
 
-### include找不到文件
+### 14.2 C项目的.c和.h; 
 
+在编译之前首先是预处理阶段. 这个阶段, 预处理器会分别处理**project list**的每个.c文件. 预处理器开始阅读这个.c代码, 并且将所有`#`命令进行代码替换. 当遇到`#include`时, 预处理器在`including path`中寻找该文件, 然后将该文件的所有代码插入到此处.
+
+**.h头文件在且仅在在这个阶段被使用.** 预处理完了后, .h文件已经融入到**project list**的每个.c文件, 不复存在. 
+这些预处理好的.c文件一般后缀为.i
+
+然后是编译.
+编译器会将**project项目列表**中的**每个**.c文件(已被预处理为对应.i文件)编译为对应.o文件, 然后使用这些.o文件进行link.
+
+记住黄金法则：  
+**「.c文件是工人（需要雇佣），.h文件是工具（需要知道在哪拿）」**
+
+* **project list项目列表**只会看到.c文件, 忽略.h文件.
+由于上述说明的, 编译实际上是以一个个.c文件为最小单元处理然后link, 所以不应当#include 任何.c文件. 这意味着你在预处理阶段将一个.c文件复制到另一个.c文件中去了. 这两个.c文件都会参与编译, 这在link阶段一定会导致重复定义函数错误.
+
+(除非你用static关键字...**每个static符号获得唯一内部标识**. 可以有同名的static函数或static全局变量，它们被视为不同的实体，不会在链接时发生冲突。).
+
+* `static`关键字即意味着该函数/变量的作用域是**当前编译单元**, 即: link的时候, 当前这个.i文件自己可以用, 其他参与link的.i文件不可以.
+* 目标文件(.o)的`symbol`指的是函数名和全局变量名（非static的）。
+
+* 关于全局变量和静态变量:
+在一个project list中, 对每个.c文件, (不考虑函数内部形参变量) 函数和变量只有全局和静态之分, 默认是全局, static是静态.
+
+* extern关键字的作用: *给**编译器**的承诺.*
+  * **编译阶段**: 告诉编译器：这个符号不在当前**翻译单元(.i文件)**定义，而是在其他某个地方定义，所以不要为它分配存储空间（对于变量）或者不要报错（对于函数. 
+    * 它会相信这个符号在其他地方定义，因此不会在当前目标文件（.o）中为该符号分配空间（对于变量）或生成代码（对于函数），也不会因为找不到定义而报错。它会在目标文件中生成一个未解决的外部符号（unresolved external symbol）的引用。
+    * 只有变量需要extern, 函数的声明默认是`extern`的，所以通常我们写函数声明时不需要显式加上`extern`。但是，如果你希望强调它是外部链接，也可以加上。
+  * **链接阶段**：链接器会收集所有目标文件.i，然后解析这些未解决的引用。如果链接器在所有目标文件中都找不到这个符号的定义，就会报“未定义的符号”错误.
+
+#### link阶段的编译错误: .o文件中未定义符号/
+
+在keil5中编译SD的fatfs项目时3, 因为在ffconf.h中配置了
+```c
+//系统使用的字符编码(Code Page)
+#define _CODE_PAGE	437
+
+//使用长文件名模式
+#define	_USE_LFN	1
+```
+而没有在左侧project栏添加`..\fatfs\options\unicode.c`一起编译, 从而会报错:
+```
+*** Using Compiler 'V5.05 update 2 (build 169)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
+Build target 'sdio_sdcard'
+compiling ff.c...
+compiling diskio.c...
+compiling main.c...
+linking...
+..\..\Output\Template.axf: Error: L6218E: Undefined symbol ff_convert (referred from ff.o).
+..\..\Output\Template.axf: Error: L6218E: Undefined symbol ff_wtoupper (referred from ff.o).
+Not enough information to list image symbols.
+Not enough information to list load addresses in the image map.
+Finished: 2 information, 0 warning and 2 error messages.
+"..\..\Output\Template.axf" - 2 Error(s), 0 Warning(s).
+Target not created.
+```
+
+这种错误是因为编译器在编译好所有.c文件后, 在link阶段发现其中一些symbol(其实就是.o文件中的函数)找不到定义. 这是因为缺少了一些.c文件没有编译后参与到link阶段.
+
+ * 类似的link阶段报错还有symbol重复定义. 这是由于所有参与link的.o文件中, 存在重复的函数定义. 这一般是由于你在项目的project中含有两个同名函数的.c文件参与编译, 或者.h文件
+
+
+#### include找不到文件?
 keil的话, 点击魔术棒(options)选项-> C/C++ -> include paths, 选择添加要include的头文件的路径. 注意路径没有包含关系, 必须是同级目录.
 
 
-### 中断函数怎麽写好?
+### 14.3 中断函数怎麽写好?
 
 关于一些中断函数写在哪里? 它们用的全局变量呢? 经验:
 | 方式                                       | 说明          | 是否推荐           |
@@ -2633,18 +2722,47 @@ keil的话, 点击魔术棒(options)选项-> C/C++ -> include paths, 选择添�
 | 中断函数内部「转发」到对应外设模块处理                      | 解耦、利于大型项目扩展 | ✅✅ 强烈推荐（中大型项目） |
 
 
-### F12找不到定义跳转?
+### 14.4 F12找不到定义跳转?
 
 如果当前没有报错或警告, 可能是你还没有编译. 编译一下再F12.
 
+也有可能是编译器内建的扩展关键字（attribute）. 如:
 
 
+```c
+//__weak是Keil MDK (armcc)和ARM GCC（比如 STM32CubeIDE）的编译器内建的扩展关键字（attribute）. 表示这个函数是弱符号（Weak Symbol）
+//如果程序中没有其他地方定义这个函数, 那就用这个定义. 否则就无视这个定义! get_fattime()这个函数可能很容易在其他地方重复声明, 我们不希望影响到那些地方.
+__weak DWORD get_fattime(void) {
+```
 
-### 添加新的bsp文件步骤:
+
+### 14.5 添加新的bsp文件步骤:
 
 可以自己去USER新建, 也可以在keil界面直接选择USER文件夹然后add a new file...但是记得改一下路径, 看一眼你创建在哪里了. 记得维持清爽的USER文件夹下面各种外设文件夹的结构! 不然还得花时间维护include path设置
 
 ![alt text](image-80.png)
 
 因为这样做生成的文件
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

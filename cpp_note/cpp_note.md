@@ -1264,16 +1264,82 @@ C++ 由 **ISO/IEC** 标准化，通常每 3-6 年更新一次。
 
 ## 8. 枚举enumeration
 
+直接定义常量, 会有一些不便之处:
+```cpp
+const int Monday = 0;
+const int Tuesday = 1;
+// 或者用宏
+#define Monday 0
+#define Tuesday 1
+```
 
-**枚举（Enumeration，简称 `enum`）** 是一种用户自定义的数据类型，用于定义一组命名的常量（称为 **枚举值**），以提高代码的可读性和安全性。  
+**这样做的缺点：**
 
-#### **基本语法（C 和 C++ 通用）**
+* 没有关联性：Monday、Tuesday 只是孤立的常量，编译器不知道它们属于同一组逻辑。
+* 类型不安全：你可以把 Monday 和任意整数混用（比如 int day = Monday + 100），编译器不会报错。
+* 调试困难：如果打印 day，看到的是数字 0，而不是有意义的 Monday。
+
+**枚举把相关的常量打包成一个逻辑类型，解决上述问题.**
+
+### 8.1 枚举的基本类型定义语法
+
+先来看它的通用语法(C和Cpp通用).
+枚举和`struct`或`class`一样, **需要先进行类型定义, 然后实例化**. 
+```cpp
+//定义一个名为Weekday的enum类型, 允许的取值为`Monday`和`Tuesday`.
+//注意, Monday是Weekday枚举类型的常量成员, 属于Weekday类型(不是一个字符串或者int), 是编译期常量(符号常量). 虽然底层存储的方式上, 枚举成员以int类型0,1,2...存储, 但是你不能当int用就是了.
+enum Weekday { Monday, Tuesday};
+Weekday myday = Monday;
+// int x = Monday;    // 错误：不能隐式转 int（C++ 强类型枚举特性）
+
+// 用 typeid 检查类型名（输出可能编译器依赖）
+std::cout << "Monday 的类型是: " << typeid(Monday).name() << "\n"; 
+// 输出可能是 "5Weekday"（GCC）或类似，表示 Weekday 类型
+
+// 验证底层是整数（需强制转换）
+std::cout << "Monday 的底层值: " << static_cast<int>(Monday) << "\n"; // 输出 0
+
+```
+
+### 8.2 C风格枚举定义
+
+有
+* **匿名枚举**,
+* **非匿名枚举(用typedef去定义一个匿名枚举的别名)**
+* **非匿名枚举(或者直接定义一个枚举类)**
+
+三种枚举, 如下:
+
 ```c
-enum 枚举名 {
-    枚举值1,
-    枚举值2,
-    // ...
+//匿名枚举并没有创建一个枚举类. 可以认为只是声明几个int常量的紧凑写法.
+//等价于const int Monday =0; const int Tesday =1;
+enum {
+    Monday=0,
+    Tuesday=1
 };
+
+//可以直接使用.因没有声明一个类, 也没法实例化什麽东西.
+int myday = Monday;
+
+//用typedef去定义一个匿名枚举的别名, 实现创建一个Weekday枚举类.
+typedef enum  {
+    Monday=0,
+    Tuesday=1
+} Weekday;
+
+//实例化的时候前面可以不加enum, 因为Weekday已经是一个数据类型的别名了. 这就和C中的struct如果用typedef声明的话, 在实例化的时候也可以省略struct一样.
+Weekday myday = Monday;
+
+//传统C风格枚举
+enum Color{
+    RED = 100,
+    GREEN = 200,
+    BLUE = 300
+};
+
+//实例化. 就和struct的`struct MyStruct myexample;`实例化语法一样的, 就是关键词从struct替换为了enum.
+enum Color mycolor = BLUE;
+
 ```
 **示例：**
 ```c
@@ -1281,7 +1347,19 @@ enum Color { Red, Green, Blue };  // 定义枚举
 enum Color c = Red;               // 使用枚举
 ```
 
----
+#### 8.2.2
+
+
+### 8.3 C++11强类型枚举(推荐)
+
+```cpp
+enum class SDTransferState {
+  OK = 0,
+  BUSY = 1
+};
+
+auto status = SDTransferState::OK;
+```
 
 ### **C 和 C++ 中的枚举区别**
 枚举在 **C** 和 **C++** 中均存在，但 **C++ 对枚举进行了扩展**，提供了更安全的 `enum class`（强类型枚举）。
