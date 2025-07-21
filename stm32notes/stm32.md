@@ -2648,6 +2648,9 @@ FarFS(FAT(File Allocation Table) File System), 文件分配表-文件系统.
 
 ### 14.2 C项目的.c和.h; 
 
+
+#### 14.2.1 预处理阶段和编译阶段
+
 在编译之前首先是预处理阶段. 这个阶段, 预处理器会分别处理**project list**的每个.c文件. 预处理器开始阅读这个.c代码, 并且将所有`#`命令进行代码替换. 当遇到`#include`时, 预处理器在`including path`中寻找该文件, 然后将该文件的所有代码插入到此处.
 
 **.h头文件在且仅在在这个阶段被使用.** 预处理完了后, .h文件已经融入到**project list**的每个.c文件, 不复存在. 
@@ -2676,7 +2679,7 @@ FarFS(FAT(File Allocation Table) File System), 文件分配表-文件系统.
     * 只有变量需要extern, 函数的声明默认是`extern`的，所以通常我们写函数声明时不需要显式加上`extern`。但是，如果你希望强调它是外部链接，也可以加上。
   * **链接阶段**：链接器会收集所有目标文件.i，然后解析这些未解决的引用。如果链接器在所有目标文件中都找不到这个符号的定义，就会报“未定义的符号”错误.
 
-#### link阶段的编译错误: .o文件中未定义符号/
+#### 14.2.2 link阶段的编译错误: .o文件中未定义符号/
 
 在keil5中编译SD的fatfs项目时3, 因为在ffconf.h中配置了
 ```c
@@ -2708,8 +2711,32 @@ Target not created.
  * 类似的link阶段报错还有symbol重复定义. 这是由于所有参与link的.o文件中, 存在重复的函数定义. 这一般是由于你在项目的project中含有两个同名函数的.c文件参与编译, 或者.h文件
 
 
-#### include找不到文件?
+#### 14.2.3 IDE的**project list**和**including path**
+
+包括keil的IDE有两个列表:
+* project list: 在这个虚拟路径下的所有.c文件会参与预处理和编译, **.h文件则被忽略.**
+* including path: 这是一个地址列表. 在预处理时, 预处理器会在这个列表里寻找include命令指向的文件.
+
+
 keil的话, 点击魔术棒(options)选项-> C/C++ -> include paths, 选择添加要include的头文件的路径. 注意路径没有包含关系, 必须是同级目录.
+
+#### 14.2.4 官方的头文件怎麽也报错"xxx not decleared/ implicit declearation"?
+
+因为官方头文件可能并不是被设计用来单独使用的. 
+比如CMSIS的"core_cm3.h". 这个头文件直接使用了很多变量/枚举类型, 比如`IQR_Type`, 直接包含它, 会在编译的时候因为没有定义`IQR_Type`而报错. 事实上, "core_cm3.h"期望它被一个具体的MCU头文件给包含, 而前者已经定义好了具体的
+`IQR_Type`等变量/宏 作为一款具体型号的MCU的接口.
+
+#### 14.2.5 CMSIS和stm32f10x标准库
+
+**CMSIS（Cortex Microcontroller Software Interface Standard）**是 ARM 官方为所有 Cortex-M 系列 MCU 提供的**底层标准接口/核心库**. 包括所有的stm32的MCU都是Cortex-Mx(x=3,4,7)架构的.
+
+
+**使用CMSIS为基础编写的stm32f10x标准库**的文件结构:
+
+![**使用CMSIS为基础编写的stm32f10x标准库**的文件结构:](W{@90@]_AKS4OUQ`MP0QEH6.png)
+
+可以看到, 主要是4个库文件在项目列表分支`CMSIS`中, `stm32f10x.h` 是STM32F10x MCU 的**设备头**. 它include了`core_cm3.h`. 使用**stm32f10x标准库**的时候只需要在需要用到标准库的模块`#include "core_cm3.h"`即可.
+
 
 
 ### 14.3 中断函数怎麽写好?
