@@ -1,6 +1,10 @@
-## 1 常用bash命令 
+# 1 bash 
+
 linux中输入的命令行即为bash命令。每个bash命令是一个可执行程序(在/bin中储存). 创建一个可执行的bash命令行文件, 即为bash脚本script.
 
+## 1.1
+
+## 1.2 常用bash命令
 
 ### 1.1 man 
 想要搜索的外部命令名可以跳转到该命令的man界面. 如果想查看bash内部命令, 比如cd, pwd, 使用help即可.
@@ -260,8 +264,41 @@ powershell:
     tree /A   输出当前目录, 以ASCII字符的方式.(我觉得没啥区别, 无非就是树枝符号变更丑了. 即使是非ascii符号一般情况下也可以复制粘贴和在大部分地方显示的啦...)
 
 
+
+
+## 1.3 Here Document
+
+又称heredoc, 是bash中一种多行文本输入方式, 语法:
+
+```bash
+command <<结束标记
+内容内容
+内容内容
+结束标记
+```
+
+当你以`<<EOF`结束一行后, 按下回车, bash自动进入换行模式, 一直等待直到某一行你输入单独的`EOF`并回车.
+例如如果你想要写一个简单的c程序:
+
+```bash
+cat > test.cpp << MY_EOF_SIGNAL
+//this is my test program. just press ENTER.
+#include iostream //just press ENTER!
+
+int main(){
+cout>>"hello world!";
+return 0;
+}
+MY_EOF_SIGNAL
+```
+
+
+
 ##
 
+##
+
+##
 
 # 2 make命令和Makefile 一个基础的编译方式
 
@@ -735,6 +772,7 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
    `source` 命令常用于加载和应用环境变量设置。这在你修改了 `.bashrc`、`.bash_profile` 或其他配置文件后特别有用。例如：
    ```bash
    source ~/.bashrc
+   ```
    这会重新加载 .bashrc 文件，使得你对环境变量的更改立即生效，而无需重新登录或启动新的 shell 会话。
 
 2.  **执行脚本：**
@@ -750,9 +788,9 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 
 
-# 一些实例   
+# 5 一些实例   
 
-# git
+# 6 git
 
 * 将一个文件夹myfile初始化为仓库并导入azazelplus账号的git在线仓库：
 首先在在该目录下运行git bash.
@@ -949,9 +987,59 @@ git ls-files  #列出暂存区的文件.
 
 
 
+##
+
+# 7 进程
+
+## 7.1 什麽是进程?
+**进程（process）** 是**程序(一个可执行单位, 如.exe, .bin, .out)**的**运行实例**。
+
+-   当你运行一个**程序**，它被加载进**内存**，就变成了“一个进程”。
+    
+-   每个进程有自己的**内存空间**、**寄存器**、**打开的文件**等资源。
+    
+-   “万物皆进程”通常是 Linux 的设计哲学：
+    
+    > 在 Linux 中，**设备、文件、服务、终端、后台任务，都是进程或可以用进程处理的东西**。
+
+可以用 ps(process status)命令查看当前运行的进程:
+
+```bash
+ps aux # a: all users; u: user-friendly; x: no controlling terminal,即不要显示控制终端的进程(如后台服务)
+```
+
+**执行 ps aux 会显示以下字段：**
+
+-   **USER**：进程所有者
+    
+-   **PID**：进程 ID
+    
+-   **%CPU/%MEM**：CPU/内存占用百分比
+    
+-   **VSZ/RSS**：虚拟内存/物理内存占用（KB）
+    
+-   **TTY**：关联的终端（`?` 表示无终端）
+    
+-   **STAT**：进程状态（如 `S`\=休眠，`R`\=运行，`Z`\=僵尸进程）
+    
+-   **COMMAND**：启动进程的命令
+
+常见用法:
+
+```bash
+ps aux | grep your_keywords   #用管道符过滤结果;
+
+ps aux --sort=-%cpu  #按降序排序, CPU降序
+
+```
 
 
 
 
 
-a
+#
+#
+
+
+
+
