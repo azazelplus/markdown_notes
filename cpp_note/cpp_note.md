@@ -894,6 +894,59 @@ int main(int argc, char* argv[])
 返回值为`0`(成功), `-1`(失败).
 
 
+### 0.11 命名空间
+
+所有函数和变量必须属于且仅属于一个命名空间.
+你不显式指定命名空间，那它就默认属于全局命名空间（也叫匿名命名空间或 `::` 命名空间）。
+
+直接写函数名（不加 :: 或命名空间前缀）调用，有几种情况成立：
+
+* ① 函数在当前作用域中定义（包括当前命名空间）
+
+```cpp
+namespace A {
+    void hello() {
+        std::cout << "A::hello()\n";
+    }
+
+    void call() {
+        hello(); // OK，不需要写 A::hello()，因为在同一个命名空间 A 中
+    }
+}
+
+```
+-----------------------------------
+* ② 你在当前作用域中使用了 using namespace xxx;
+
+```cpp
+namespace B {
+    void hello() {
+        std::cout << "B::hello()\n";
+    }
+}
+
+using namespace B;
+
+int main() {
+    hello(); // OK，因为我们 using namespace B
+}
+
+```
+-----------------------------------
+* ③ 函数在**全局命名空间**（::）中定义	
+
+```cpp
+void hi() {
+    std::cout << "Global hi()\n";
+}
+
+int main() {
+    hi(); // OK，调用全局空间的 hi()
+}
+
+```
+
+
 
 ## 1. 数据结构
 

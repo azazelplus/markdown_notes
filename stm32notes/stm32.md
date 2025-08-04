@@ -2925,11 +2925,50 @@ Reset选项:
 
 
 
-## 16. 汇编语言
+## 16. 汇编语言(Assembly)
+
+
+
+
+
+
+
+
+
+
+
 
 https://www.bilibili.com/video/BV1KG411T77D/?spm_id_from=333.337.search-card.all.click&vd_source=4665566d92a194d3e4867c96fe3441c0
 
 
+### 0. 简介
+
+汇编语言没有统一的标准版本，因为它是针对**具体处理器架构**编写的，每种处理器（或架构）都有自己的汇编语言指令集。我们通常说“汇编语言版本”时，实际是指 所使用的指令集架构（ISA）：
+| 架构                      | 常见使用者             | 示例汇编指令             |
+| ----------------------- | ----------------- | ------------------ |
+| x86 / x86-64            | Intel, AMD PC端    | `MOV EAX, 1`       |
+| ARM (如 ARMv7, Cortex-M) | STM32、手机CPU等嵌入式系统 | `MOV R0, #1`       |
+| RISC-V                  | 新兴开源架构，清华Ysyx等    | `addi a0, zero, 1` |
+| MIPS                    | 教育领域、早期嵌入式        | `li $v0, 1`        |
+
+汇编语言源代码一般以.asm结尾.
+
+汇编器(Assembler)将**汇编代码**翻译为**机器码(比特流)**.
+不同工具链的汇编器也会有版本，例如：
+| 汇编器                  | 常见平台             | 示例版本命令                    |
+| -------------------- | ---------------- | ------------------------- |
+| `GNU as` (gas)       | Linux、ARM GCC工具链 | `as --version`            |
+| `Keil ARM Assembler` | Keil MDK for ARM | 自动随 IDE 集成                |
+| `NASM`               | x86/PC平台         | `nasm -v`                 |
+| `MASM`               | Windows x86      | Microsoft Macro Assembler |
+
+例如,**Keil + STM32**调试环境中使用的是:
+  -   使用的是 **ARM Cortex-M 架构的汇编语言（ARM Thumb 指令集）** 
+  -   汇编器是 **Keil MDK 的 ARM 汇编器**（内部支持 `.asm` 或 `.s` 文件）
+
+
+
+### 1. ASM的vscode插件
 
 在vscode里用这个插件写汇编.
 
@@ -2937,12 +2976,103 @@ https://www.bilibili.com/video/BV1KG411T77D/?spm_id_from=333.337.search-card.all
 
 
 
+插件配置主要改这两个:使用的**汇编工具**/使用的**DOS环境模拟器**就可以了
+
+![alt text](image-160.png)
+
+
+dosbox: 弹出类似cmd的黑框框.
+msdos pleayer: 直接在终端运行
+
+
+代码写好之后, 右键可以看到:
+![alt text](image-161.png)
+
+* open emulator(打开dos环境)
+* run ASM code(运行当前程序, 汇编+linking+running)
+* debug ASM code(调试当前程序, 汇编+linking+debugging)
+
+
+
+#### 1.1 调试ASM code
+![alt text](image-162.png)
+
+指令:
+* `t`: trap单步执行
+* `r`: 查看寄存器
+* `G`: 程序运行到底
+* `D [addr]`: 查看内存中的内容. 如D
+
+
+### 2. 基础指令&通用寄存器 (intel 8086架构)
+
+* 通用寄存器（General Purpose Registers）
+这些寄存器可以用于算术运算、存储临时变量、函数调用参数等。它们也可以细分为高8位和低8位，例如 AX 可以拆成 AH（高）和 AL（低）。
+| 名称   | 含义                   | 用途                                                   |
+| ---- | -------------------- | ---------------------------------------------------- |
+| `AX` | Accumulator 累加器      | 最重要的寄存器之一，很多指令默认使用 AX 作为操作数。例如乘法、除法等指令结果默认存入 AX      |
+| `BX` | Base Register 基地址寄存器 | 常用于作为基址，配合变址寄存器组成内存访问地址                              |
+| `CX` | Count Register 计数器   | `LOOP` 指令自动使用 CX 作为循环计数器；也用于 `SHIFT`、`ROTATE` 类的重复次数 |
+| `DX` | Data Register 数据寄存器  | 通常用于存放 I/O 地址、数据或乘除法时的高位操作数或结果                       |
+
+* 指针和变址寄存器（Pointer and Index Registers）
+主要用于处理 内存地址计算，特别是在字符串操作、数组访问等。
+| 名称   | 含义                        | 用途                                          |
+| ---- | ------------------------- | ------------------------------------------- |
+| `SP` | Stack Pointer 栈指针         | 指向栈顶；入栈 `PUSH` 和出栈 `POP` 操作会自动改变它           |
+| `BP` | Base Pointer 基指针          | 用于访问栈帧中的数据（函数局部变量/参数）；常和 `SP` 配合使用          |
+| `SI` | Source Index 源变址寄存器       | 字符串复制或数组读取时用于指向源数据地址，常用于 `MOVS`, `LODS` 等指令 |
+| `DI` | Destination Index 目标变址寄存器 | 同上，但用于目标地址，常用于 `STOS`, `SCAS` 等指令           |
+
+* 段寄存器（Segment Registers）
+  在 8086 中内存寻址采用段:偏移（Segment:Offset）方式。每个段寄存器控制一类内存区域的起始位置。
+| 名称   | 全称                       | 用途                                    |
+| ---- | ------------------------ | ------------------------------------- |
+| `CS` | Code Segment 代码段         | 指向当前正在执行的程序代码的段地址                     |
+| `DS` | Data Segment 数据段         | 默认的数据存储段                              |
+| `SS` | Stack Segment 栈段         | 当前栈的段地址，配合 `SP` 使用                    |
+| `ES` | Extra Segment 附加段        | 一般用于字符串操作（比如 `MOVS`, `LODS`）中作为附加的数据段 |
+| `IP` | Instruction Pointer 指令指针 | 当前正在执行指令的偏移地址，配合 `CS` 定位下一条要执行的指令     |
+
+* 标志寄存器（FLAGS Register）
+  用于保存 CPU 当前的状态，比如上次运算结果是正/负/零/溢出等，供条件跳转和判断使用。
+| 名称   | 含义              | 功能                       |
+| ---- | --------------- | ------------------------ |
+| `ZF` | Zero Flag       | 上一操作结果为 0，则 ZF = 1       |
+| `SF` | Sign Flag       | 上一操作结果为负数，则 SF = 1       |
+| `CF` | Carry Flag      | 进位标志（无符号数运算时有溢出则 CF = 1） |
+| `OF` | Overflow Flag   | 溢出标志（有符号数运算时溢出）          |
+| `PF` | Parity Flag     | 检查结果的最低字节中有偶数个1，则 PF = 1 |
+| `AF` | Auxiliary Carry | 半字节进位（用于 BCD 运算）         |
+| `IF` | Interrupt Flag  | 是否响应外部中断                 |
+| `DF` | Direction Flag  | 字符串处理指令的方向（自增或自减）        |
+
+
+MOV:
+
+```Assembly
+MOV	AX, Y ;
+
+```
 
 
 
 
+Operand(操作数): 指令作用的对象.`MOV AX BX`指令中, 
+常见操作数可以是：
+| 类型       | 示例            | 说明         |
+| -------- | ------------- | ---------- |
+| **寄存器**  | AX, BX, CX... | 寄存器内的值     |
+| **立即数**  | 5, 0x1F       | 直接写的数值     |
+| **内存地址** | `[1234H]`     | 某个内存位置     |
+| **偏移地址** | `[BX+SI]`     | 用寄存器计算出的地址 |
 
+```asm
+MOV AX, 1234H     ; 将立即数 1234H 放入 AX
+MOV BX, AX        ; 将 AX 的值复制到 BX
+MOV [2000H], BX   ; 将 BX 的值写入内存 2000H
 
+```
 
 
 

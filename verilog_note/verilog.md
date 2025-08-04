@@ -4,7 +4,10 @@
 
 
 
-#### 模块结构
+### 1.模块结构
+
+
+#### 1.0 verilog 1995风格
 verilog的基本设计单元是模块(block). 对标C中的函数.
 
 ```verilog
@@ -37,9 +40,20 @@ endmodule
 ```
 
 
+verilog的过程块有:
+* assign 组合逻辑过程块. 
+* always 组合逻辑(always@(*)时) / 时序(always @(posedge clk)等)逻辑过程块
+* initial 初始化过程块: 仿真启动的时候会执行一次.
 
-##### 新格式
-现在verilog已经推行新格式, 虽然兼容旧格式.
+verilog有**两种建模方式**.
+
+除了**assign**属于**连续赋值建模**, always, always_ff, always_comb, initial都是**过程建模**  .
+
+
+
+#### 1.1 新格式: SystemVerilog
+
+现在verilog已经推行新格式**SystemVerilog**, 虽然兼容旧格式.
 
 ```
 module mymodule #
@@ -49,9 +63,44 @@ module mymodule #
 (
     // 端口定义部分
 );
+
+//过程块(procedural blocks)
+
 endmodule
 ```
-例子: 呼吸灯实验中的模块:
+
+例如, 上面旧格式的AND&OR门用SystemVerilog风格写就是:
+
+
+```verilog
+module mychip (
+    input  logic a,//`logic`是SystemVerilog中取代wire/reg的推荐变量类型. 它在组合逻辑/时序逻辑的过程块中都可以被赋值. 组合逻辑使用assign+logic是最标准的! 但是顶层模块的输入输出, 还是最好用wire. 
+    input  logic b,
+    output logic c,
+    output logic d
+);
+
+assign c = a | b;
+assign d = a & b;
+
+endmodule
+```
+
+
+再来一个纯行为级的例子:
+```verilog
+module our;//没有参数列表.
+
+	//initial块
+    initial begin
+        $display("Hello World");//打印信息
+        $finish;//立即结束仿真
+    end
+endmodule
+```
+
+
+来一个很复杂的例子: 呼吸灯实验中的模块:
 ```verilog
 `timescale 1 ns / 1 ps
 
@@ -136,7 +185,7 @@ endmodule
 
 
 
-#### 数据类型
+#### 1.2 数据类型
 `verilog`的数据类型不像C一样复杂.
 * `reg`(寄存器)
   * 默认初始值为`x`(不定值). 
@@ -213,146 +262,9 @@ define int my_const 5   //预处理环节声明一个常量
 
 
 
+#### 1.3 运算符
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#### 运算符
-
-##### 位运算符
+##### 1.3.1 位运算符
   * `~`
     * `~a`: 将`a`按位取反.
   * `&`
@@ -362,14 +274,14 @@ define int my_const 5   //预处理环节声明一个常量
   * `^` 
     * `a^b`: 将`a`和`b`按位相`XOR`
 
-##### 移位运算符
+##### 1.3.2 移位运算符
 
   * `a>>b`: 将a右移b位
     * $4'b1001>>1 == 4'b100$;
   * `a<<b`: 将a左移b位
     * $4'b1001<<2 == 6'b100100$;
 
-##### 位拼接运算符
+##### 1.3.3 位拼接运算符
   * `{a,b}`:  将`a`和`b`拼接起来.
 ```verilog
 reg [3:0] a;    //四位信号a
@@ -385,8 +297,9 @@ assign result = {a,b};
 
 
 
-#### 例化
-=`实例化`/`调用模块`. 
+#### 1.4 例化/实例化/调用模块`. 
+
+类比c的函数调用.
 
 例化的作用：
 例化一个模块可以让你重用模块的逻辑和功能，就像调用一个函数一样。这样，你可以在一个更大的设计中多次使用同一个模块，而不需要重复定义它。
@@ -413,11 +326,25 @@ module top_module(
     output c
 );
     // 例化 my_module
-    my_module instance_name (
+    my_module1 instance_name (
         .a(a), // 将top_module中的a连接到my_module的a端口
         .b(b), // 将top_module中的b连接到my_module的b端口
         .c(c)  // 将my_module的c端口连接到top_module的c
     );
+
+	//也有更简洁的例化语法:
+    my_module2 instance_name (a,b,c); //verilog-1995的位置链接法. 	顺序必须严格匹配端口定义时的顺序, 不然接错了也不会报错哦
+
+	my_module4 instance_name (
+        .a,     // 自动匹配同名端口!
+        .b,     
+        .c      
+	);
+
+	my_module4 instance_name (
+    	.*	//自动匹配同名端口的更加简洁版本.
+	);
+
 endmodule
 ```
 在上面的代码中，`my_module` 被例化为一个名为 `instance_name` 的实例。在 `top_module` 中，它将输入 `a` 和 `b` 传递给 `my_module`，然后 `my_module` 将计算结果输出到 `c`。
