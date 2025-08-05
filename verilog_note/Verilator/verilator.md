@@ -2,7 +2,7 @@
 
 
 
-# 0. 简介
+# 0. verilator 简介
 
 ## 0.1 verilator仿真流程
 
@@ -192,7 +192,7 @@ int main(int argc, char** argv){
 
 
 
-### 0.2.3 使用SystemC
+### 0.2.3 例子3: 使用SystemC
 
 * 编写our.v:
 ```verilog
@@ -204,6 +204,8 @@ int main(int argc, char** argv){
 ```
 
 * 编写sc_main.cpp:
+
+(注意:verilator命令要求main函数名为`sc_main`, 同时生成的makefile里要求wrapper文件名为`sc_main.cpp`.)
 
 ```cpp
 #include "Vour.h"
@@ -232,32 +234,66 @@ int sc_main(int argc, char** argv){
 
 * 运行`verilator --sc --exe -Wall sc_main.cpp our.v`
 
+* 使用verilator生成的makefile来编译. `make -j -C obj_dir -f Vour.mk Vour`
 
 
+* 尝试运行: `obj_dir/Vour`
 
-### 0.2.4
+### 0.2.4 例子4: Examples in the Distribution
 
-
-
-
-
+# 1. SystemC
 
 
+## 1.0 安装SystemC: 从源码构建安装软件.
+
+首先从官网`https://www.eda.org/downloads/standards/systemc`下载`systemc-2.3.3.tar.gz`到一个空文件夹.`./systemC`
 
 
+* 解压
+```bash
+tar -xzf systemc-2.3.3.tar.gz
+cd systemc-2.3.3
+```
 
 
+* 编译. 先创建一个objdir, 然后在该文件夹编译. 这个目录是 CMake 构建中常见的“**out-of-source build**”，也就是编译结果不污染源码本身。
 
 
+```bash
+mkdir objdir
+cd objdir
+../configure --prefix=$HOME/systemc #配置编译参数
+make -j$(nproc) #使用所有CPU核心来编译
+make install    #将内容复制到`/usr/local/systemc-2.3.3/`.
+```
 
+* 添加环境变量. 打开.bashrc
+```bash
+vim ~/.bashrc
+```
 
+* append这些在末端:
 
+```bash
+export SYSTEMC_HOME=$HOME/systemc-2.3.3-install
+export LD_LIBRARY_PATH=$SYSTEMC_HOME/lib-linux64:$LD_LIBRARY_PATH
+export CPLUS_INCLUDE_PATH=$SYSTEMC_HOME/include:$CPLUS_INCLUDE_PATH
+export SYSTEMC_INCLUDE=$SYSTEMC_HOME/include
+export SYSTEMC_LIBDIR=$SYSTEMC_HOME/lib-linux64
+```
 
+* 在当前shell激活一下环境变量
+```bash
+source ./.bashrc
+```
 
+* 安装完毕, 删除原来的systemC文件夹.
 
+* 安装了啥?
 
-
-
-
-
+| 目录/内容                                 | 是否需要保留 | 说明                    |
+| ------------------------------------- | ------ | --------------------- |
+| `build/`                              | ❌ 不需要  | 编译中间产物，已安装完成可以删       |
+| `/usr/local/include/systemc`          | ✅ 需要   | 头文件位置，用于编译 SystemC 程序 |
+| `/usr/local/lib/libsystemc.a` 或 `.so` | ✅ 需要   | 库文件，链接用               |
 
