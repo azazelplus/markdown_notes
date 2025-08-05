@@ -424,6 +424,18 @@ make mycode_main.cpp #制定目标编译项目. 查找当前目录的Makefile中
 ```
 
 
+```bash
+make -j -C obj_dir -f Vour.mk Vour
+```
+* `-j` 多线程并行编译
+* `-C [路径]` 切换到[路径]再运行make
+* `-f Vour.mk` 使用指定的Makeifle文件来编译
+* `Vour` 编译的目标名. 
+
+
+
+
+
 ## 2.2 编写Makefile的简单例子
 
 ### 2.2.1 Makefile 简述
