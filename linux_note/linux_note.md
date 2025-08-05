@@ -104,18 +104,7 @@ more AVeryVeryLongDocument.txt
     - 按 / 键进入搜索模式，输入要搜索的字符串，按 Enter 键搜索。
     - 按 q 键退出。
 
-### 1.10 gcc(GNU compiler Collection, GNU 编译器套装")
-- 格式:     
-  <span style="color: red;"> 
-  **gcc [选项] [源文件] -o [输出文件]**</span>,
 
-  或者    <span  style="color: red;">  
-   **gcc [选项]  -o [输出文件] [源文件] </span> (只要-o后面跟着输出文件命名, 源文件放在前面和最后都是可以的)** 
-   
-   这命令将源(文本)文件.c编译为可执行文件'输出文件'.
-- 选项-o表示输出文件的名称(如果不加-o [输出文件], 则在则会默认生成名为a.out的文件, 它的含义是assembler output)
-- 选项-O:优化代码. 有-O1(一级优化), -O2(二级优化), -O3(三级优化)三个等级.
-- 选项 -g
 
 ### 1.11 tee(这个名字来自字母T, 一个三向接口, 寓意数据分流)
 这个命令读取标准输入, 并将数据输出到多个目标中.
@@ -300,9 +289,20 @@ MY_EOF_SIGNAL
 
 ##
 
-# 2 make命令和Makefile 一个基础的编译方式
+# 2 如何编译C文件: 直接使用gcc/g++; MAKE命令和Makefile
 
-## 程序编译的四个步骤
+如果你不想写好一个c文件然后`gcc yourcode.c`(如果你的yourcode.c要包含其他文件, 要让它们在同目录下.)
+
+抑或是写好一个cpp然后`g++ yourcode.cpp`(如果你的yourcode.c要包含其他文件, 要让它们在同目录下.)
+
+
+那麽使用make吧.
+
+大多数linux发行版预装了MAKE.
+`make -v`
+
+## 2.-1 前言: 程序编译的四个步骤
+
 ### 1. 预处理（Preprocessing）
 - 任务: 在编译源代码之前，对代码进行初步处理。
 
@@ -337,58 +337,157 @@ MY_EOF_SIGNAL
 生成可执行文件: 输出最终的可执行文件，通常是没有扩展名的文件（如 program）或带有 .exe 扩展名的文件。
 - 结果: 完整的可执行文件，可以在计算机上运行。
 
-## make命令
+## 2.0 gcc(GNU compiler Collection, GNU 编译器套装")
+
+最简单的编译命令.
+gcc会根据**提供文件类型**和**选项**自动决定处理阶段:
+|选项|输入文件|行为|output|
+|---|---|---|---|
+|无|.c|预处理->compile->汇编->link|可执行文件|
+|无|.i|compile->汇编->link|可执行文件|
+|无|.o|汇编->link|可执行文件|
+|-c|.c|预处理->compile|.o目标文件|
+|-E|.c|预处理|.i预处理文件|
+
+
+
+- 基本命令:     
+  <span style="color: red;"> 
+  **gcc [选项] [源文件] -o [输出文件]**
+  </span>,
+
+  或者    <span  style="color: red;">  
+   **gcc [选项]  -o [输出文件] [源文件] 
+   </span> 
+   (只要`-o`后面跟着输出文件命名, 源文件放在前面和最后都是可以的)** 
+   
+   这命令将源(文本)文件.c编译为可执行文件'输出文件'.
+- 选项`-o`表示输出文件的名称(如果不加-o [输出文件], 则在则会默认生成名为a.out的文件, 它的含义是assembler output)
+- 选项-O:优化代码. 有-O1(一级优化), -O2(二级优化), -O3(三级优化)三个等级.
+- 选项 -g
+- 选项`-c`: 即compile, 只编译为目标文件.o.
+    ``
+
+**例子:**
+* `gcc hello.c -o hello`
+  * 在当前目录寻找`hello.c`, 将其编译为可执行程序`hello`
+* **只编译**: `gcc -c hello.c -o hello.o`
+  * 在当前目录寻找`hello.c`, 将其编译为目标文件`hello.o`
+* **只预处理**: `gcc -E hello.c -o hello.i`
+  * 在当前目录寻找`hello.c`, 将其预处理为目标文件`hello.i`  
+* **分步编译**: 
+```bash
+#编译每个.c文件为.o文件. 注意要在代码中正确写好include头文件
+gcc -c main.c -o main.o
+gcc -c utils.c -o utils.o` 
+
+#链接所有编译单元(即.o文件)
+gcc main.o utils.o -o myprogram
+```
+* 启用警告和调试信息:`gcc -Wall -Wextra -g main.c -o debug_app`
+  * `-Wall`: 启用所有常见警告
+  * `-Wextra`: 启用额外警告(如未初始化的变量)
+  * `-g`: 添加调试信息, 供`gdb`使用
+
+* 优化代码性能(牺牲编译时间): `gcc -02 main.c -o myprogram`
+  * `-01`: 添加该选项后, 进行基础优化. 编译更慢, 优化更好.
+  * `-02`: 推荐的平衡级别.
+  * `-03`: 激进优化. 可能会影响代码行为..
+
+* 链接外部库: `gcc main.c -lm -lpthread -o myprogram`
+  * `-lm`:
+
+* 指定头文件和库路径: `gcc -I./include -L./lib program.c -lmylib -o app`
+  * -I和-L选项指定了头文件在 ./include，库文件在 ./lib。
+  * -lmylib：链接 libmylib.so。
+
+* 静态链接: `gcc -static main.c -o static_app`
+  * -static选项生成不依赖动态库的可执行文件, 适合分发, 文件体积显著增大.
+
+* 检查语法: `gcc -fsyntax-only main.c`
+  * `-fsyntax-only`选项: 快速验证代码语法是否正确（无需编译）。
+
+* 多线程编译加速: `gcc -j4 main.c utils.c -o app  # 使用 4 个线程`
+  * `-j4`即使用4个线程. `-j0`即使用cpu所有线程.
+
+## 2.1 make命令的使用
 
 **make命令**利用Makefile(一个txt)工作, 用于自动化编译和构建程序的过程。使用方法是在项目文件夹中同时放入源文件和一个名为Makefile的文本文件, 然后在当前项目文件夹目录下直接键入命令make.
-* 如果没有 `Makefile`，`make` 会自动尝试使用默认的编译命令。
-  * 此时， 如果输入`make ex1`, 命令会尝试查找名字带有ex1的文件, 如`ex1.c`,`ex1.cpp`等, 如果找到并唯一, 就以此为**依赖**,  创建一个ex1可执行文件作为**目标**, 同时输出他刚刚执行的编译命令,即`cc     ex1.c   -o ex1`
-* 每次运行make命令时, make会检查源文件和目标文件(如果已经存在同名目标文件)的时间戳. 如果发现目标文件已经存在, 并且时间戳新于所有依赖源文件, 那麽会停止命令, 并且输出"make: 'hello' is up to date."(没有需要更新的文件)
-* 在make命令前加上对环境变量CFLAGS的改变, 可以在编译时启动所有警告显式. 
-  ```
-  CFLAGS "-Wall" make ex1
-  ```
-  也可以在Makefile里添加对这个环境变量的修改. 下面是一个Makefile:
-  ```Makefile
-  CFLAGS=-Wall -g #将环境变量CFLAGS修改为-Wall以启用所有常见编译警告. g选项生成调试信息.
 
-  clean:
-    rm -f ex1
-  ```
-* `make clean` 该命令将当前目录由编译器生成的可执行文件删除. 方便你重新开始生成可执行文件.
+**bash命令的基本用法:**
 
-## Makefile
-是一个特定格式(见下文)的文本文件, 由一组规则组成，其中每个规则通常包含三个部分：目标、先决条件（或依赖项）和配方（要执行的命令）. 若想使用命令`make clean`, 你必须写一个Makefile, 并且自己定义好clean这个规则:(假设你在项目ex3目录中)
+```bash
+make #编译项目. 查找当前目录的Makefile, 执行默认目标`all`.
+
+make mycode_main.cpp #制定目标编译项目. 查找当前目录的Makefile中有没有叫做`mycode_main.cpp`的target, 如果有, 执行这个target. 如果没有找到, 或者甚至根本没有找到Makefile, 查找当前目录中的`mycode_main.cpp, 编译它.`
+
+```
+
+
+## 2.2 编写Makefile的简单例子
+
+### 2.2.1 Makefile 简述
+如果要使用make, 需要编写**Makefile**.
+
+* Makefile
+是一个特定格式(见下文)的文本文件, 它由:
+* **变量声明**
+* **一个个规则**
+组成.
+
+* **变量部分**
+| 变量名   | 默认值 | 作用                     |
+|----------|--------|--------------------------|
+| `CC`     | `cc`   | C 编译器（通常链接到 gcc） |
+| `CFLAGS` | 空     | C 编译选项                |
+| `LDFLAGS`| 空     | 链接选项                  |
+| `CPPFLAGS`| 空    | 预处理选项（如 `-I`）     |
+
+
+
+* **规则部分:**
+每个规则通常包含三个部分: 
+- **目标(target)**：要创建或更新的文件或对象。这通常是可执行文件或目标文件。
+- **先决条件/依赖(dependencies/Prerequisites)**：目标所依赖的文件。如果这些文件中的任何一个发生更改，目标将被重建。
+- **Recipe** : make 将执行的命令来创建或更新目标。这些命令必须使用`Tab`缩进。
+
+**格式**:
+```Makefile
+target: dependencies
+  recipe
+```
+
+
+例如, 若想使用bash命令`make clean`, 你的Makefile中必须写好了下面这个clean规则:(假设你在项目ex3目录中)
+
 ```Makefile
 clean:
   rm -f ex3
 ```
 
-### Makefile 的一般格式:
-- **目标(target)**：要创建或更新的文件或对象。这通常是可执行文件或目标文件。
-- **先决条件/依赖(dependencies/Prerequisites)**：目标所依赖的文件。如果这些文件中的任何一个发生更改，目标将被重建。
-- **Recipe** : make 将执行的命令来创建或更新目标。这些命令必须使用制表符（而不是空格）缩进。
-- 
-```bash
-#一个规则的构成:
-target: prerequisites
-	recipe  #注意是/t而不是空格
-```
+### 2.2.2 例子1
+* 例子1: 将当前文件夹内的hello.c编译为hello.
 
-例子1: 将当前文件夹内的hello.c编译为hello.
+
 ```bash
+
+#任务很简单, 就不声明那些变量了, 让make默认吧.
+
 hello:hello.c
-	gcc hello.c -o hello	
+	gcc hello.c -o hello	#
 
 .PHONY: clean  
  #.PHONY: targetName是一种特殊的指令，用于告诉 make，clean 是一个伪目标（也就是不与某个具体文件相关的目标）。这可以防止有同名文件时的冲突。
- #在 Makefile 中，目标（target）通常对应于要生成的文件，例如可执行文件或编译后的目标文件。但有时，目标可能不会生成一个文件，而是用于执行某个动作，比如清理编译生成的文件。这些目标就是伪目标（phony targets）。
+ #在 Makefile 中，目标target通常对应于要生成的文件，例如可执行文件或编译后的目标文件。但有时，目标可能不会生成一个文件，而是用于执行某个动作，比如清理编译生成的文件。这些目标就是伪目标（phony targets）。
  #如果你在当前目录下有一个名字叫 clean 的文件，而你在 Makefile 中也有一个 clean 目标，那么 make clean 时，Makefile 可能会认为目标已经满足，而不会执行清理操作。使用 .PHONY 可以告诉 make 这个目标是伪造的，不要检查同名文件是否存在。
 
+
+#clean规则. 显然它不需要dependencies.
 clean:
 	rm hello	
 ```
 
-例子2:
+* 例子2: 有main.c和utils.c两个编译单元.
 ```Makefile
 #假设你已经有了源文件 main.c 和 utils.c
 # 变量定义
@@ -445,6 +544,135 @@ all:$(patsubst %.c, %, $(wildcard ex[0-9]*.c))
 %:%.c
         $(CC) $(CFLAGS)  -o $@ $<
 ```
+
+## 2.3 **编写Makefile, 用make进行编译 的一个综合例子**
+
+### 2.3.1 例程内容
+现在有一个简单的项目: main.c主程序, 以及一个`math_utils`模块, 包括math_utils.h和math_utils.c两个文件.
+
+* math_utils.h
+```cpp
+#ifndef MATH_UTILS_H
+#define MATH_UTILS_H
+
+int add(int a, int b);
+int multiply(int a, int b);
+
+#endif
+```
+
+* math_utils.c
+```cpp
+#include "math_utils.h"
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int multiply(int a, int b) {
+    return a * b;
+}
+```
+
+
+* main.c
+```cpp
+#include <stdio.h>
+#include "math_utils.h"  // 依赖 math_utils.h
+
+int main() {
+    printf("3 + 5 = %d\n", add(3, 5));
+    printf("3 * 5 = %d\n", multiply(3, 5));
+    return 0;
+}
+```
+
+### 2.3.2 手动编译这个例程
+
+
+如果手动编译, 需要把三个文件放在一个目录下, 然后使用gcc.
+要添加所有参与编译的.c文件.
+
+```bash
+gcc main.c math_utils.c -o myprogram
+```
+
+
+### 2.3.3 写Makefile编译这个例程
+
+
+
+**下面我们编写这个例程的Makefile.**
+
+```Makefile
+# 定义编译器和选项
+CC = gcc
+CFLAGS = -Wall -Wextra#启用额外警告
+
+#你想要生成的可执行文件名字
+TARGET = myprogram
+
+# 约定用法: 变量SRCS, 项目文件列表. 这就对应IDE中的项目文件列表. 告诉编译器, 这些文件要参与编译.
+SRCS = main.c math_utils.c 
+
+
+# 约定用法: 变量OBJS, 目标文件列表. 为 make 和linker提供明确的中间文件列表。
+# 虽然按理说所有的.c编译单元对应生成一个.o, 但是Makefile提供OBJS变量原因:
+# 1.可以在特殊情况下控制哪些编译文件被link, 
+# 2.而且可以实现增量构建(Partial Rebuild): 只编译修改过的文件而不是重新编译整个项目. 有了OBJS列表, 当你修改一个文件xx.c或.h后, make 会一个个检查OBJS中的目标文件, 当这个目标文件依赖xx.c时, 才会重新编译这个目标文件.
+# 大部分情况下直接OBJS = $(SRCS:.c=.o)就可以了...
+# 语法上, 这句话的意思是, 将`字符串数组`变量SRCS中所有字符串中`.c`都替换为`.o`(得到一个中间变量), 然后赋值给OBJS.
+# 这样做的好处就是你只需要维护一个SRCS, 如果加入一个newmodule.c, 会自动在OBJS添加一个newmodule.o.
+OBJS = $(SRCS:.c=.o)
+
+# 命令行住直接运行make, 不指定target时, make会执行`all`默认目标. 也就是说在命令行中, `make`和`make all`命令等价.
+# $符号即引用变量的值. 此处的`all: $(TARGET)`等价于`all: myprogram`.
+all: $(TARGET)
+
+
+#上面是定义本makefile要用的变量. 下面就是一个个makefile规则. 一个makefile的结构:
+# target: dependencies
+#     recipe
+# 其中target是一个字符串, 表示要生成的可执行文件的名字.
+# dependencies是字符串数组, 表示生成这个可执行文件需要的所有依赖.o文件名称.
+# recipe是生成target要执行的命令.必须以Tab开头哦
+# $@表示当前目标, 即$(TARGET), 
+# $^代表所有依赖文件,即 $(OBJS), 
+# $<表示第一个依赖文件（如 main.c）
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+
+
+# 编译每个 .c 文件到 .o 文件（依赖对应的 .h）
+%.o: %.c math_utils.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+```
+
+-
+* 如果没有 `Makefile`，`make` 会自动尝试使用默认的编译命令。
+  * 此时， 如果输入`make ex1`, 命令会尝试查找名字带有ex1的文件, 如`ex1.c`,`ex1.cpp`等, 如果找到并唯一, 就以此为**依赖**,  创建一个ex1可执行文件作为**目标**, 同时输出他刚刚执行的编译命令,即`cc     ex1.c   -o ex1`
+* 每次运行make命令时, make会检查源文件和目标文件(如果已经存在同名目标文件)的时间戳. 如果发现目标文件已经存在, 并且时间戳新于所有依赖源文件, 那麽会停止命令, 并且输出"make: 'hello' is up to date."(没有需要更新的文件)
+* 在make命令前加上对环境变量`CFLAGS`的改变, 可以在编译时启动所有警告显式. 
+
+
+```
+CFLAGS "-Wall" make ex1
+```
+
+  也可以在Makefile里添加对这个环境变量的修改. 下面是一个Makefile:
+  ```Makefile
+  CFLAGS=-Wall -g #将环境变量CFLAGS修改为-Wall以启用所有常见编译警告. g选项生成调试信息.
+
+  clean:
+    rm -f ex1
+  ```
+* `make clean` 该命令将当前目录由编译器生成的可执行文件删除. 方便你重新开始生成可执行文件.
+
+
+
+
 
 
 # 3 linux的用户(组)管理
@@ -546,11 +774,11 @@ chown -R root:root hello #将文件夹hello内所有文件所属用户和用户�
 
 ## 4.1 shell和linux哲学: 一切都是子进程.
 
-linux里, 运行一个脚本 = 启动一个子shell, 不污染当前shell环境. 如果运行`~/your_script.sh`, 不会对当前shell(如bash, git bash)产生任何影响, 如指定当前python环境等. 
+linux里, 运行一个.sh脚本 = 启动一个子shell, 不污染当前shell环境. 如果运行`~/your_script.sh`, 不会对当前shell(如bash, git bash)产生任何影响, 如指定当前python环境等. 
 
 如果想要某些激活效果影响当前终端, 需要添加关键词`source`(把这个脚本文件当作一个**源文件**, 读取文本, 将文本注入(打出来)到当前shell来执行. 效果等同于把里面的东西手动敲出来. ):`source ~/your_script.sh` 
 
-* 相比之下，**PowerShell**是windows为交互式任务和管理系统环境而生的，它更倾向于“运行脚本时改当前 shell 的行为”，所以设计上允许直接运行脚本: `~\your_script.ps1` 来改变当前环境。 `.ps1`本质上是以恶搞可以独立运行的命令单元!
+* 相比之下，**PowerShell**是windows为交互式任务和管理系统环境而生的，它更倾向于“运行脚本时改当前 shell 的行为”，所以设计上允许直接运行脚本: `~\your_script.ps1` 来改变当前环境。 `.ps1`本质上是一个可以独立运行的命令单元!
 
 
 
@@ -573,12 +801,13 @@ Bash中的万用字符(wildcards)(*通配符就是一种万用字符.)
 匹配花括号中的多个选项之一。
 例子：file{1,2,3}.txt 匹配 file1.txt、file2.txt 和 file3.txt.
 
-## 正则表达式
+## 4.3 正则表达式
+
 正则表达式是一种比bash的万用字符更复杂的模式匹配工具("增强版通配符")，通常用于文本处理。正则表达式在Bash中主要用于工具如 grep、sed 和 awk 中。它提供了更多的匹配功能.\
 *正则表达式在线测试工具：https://regex101.com/
 
 
-## 限定符(quantifiers)
+### 正则表达式- 限定符(quantifiers)
 #### .（点）
 匹配任意单个字符。(即万用字符中的?)
 例子：a.b 匹配 aab、acb，但不匹配 ab。
@@ -620,7 +849,7 @@ Bash中的万用字符(wildcards)(*通配符就是一种万用字符.)
 - [^0-9] 匹配所有非数字的单字符.
 - 
 
-## 或运算(OR operators)
+### 或运算(OR operators)
 
 #### |
 | 即为或. 如"a (cat|dog)"可以匹配到"a cat"和"a dog".
@@ -719,13 +948,13 @@ Bash中的万用字符(wildcards)(*通配符就是一种万用字符.)
 
 
 
-## 路径结尾加不加/?    
+## 4.4 路径结尾加不加/?    
 在路径的结尾加上 / 并不影响操作，但它可以帮助明确指示目标路径的类型。如果你在路径的结尾加上 /，通常是为了明确指出这是一个目录。例如：cp ~/note .和cp ~/note ./效果都是把~/note复制粘贴到当前目录中.
 
-## 在当前路径检索时加上./是好习惯.
+## 4.5 在当前路径检索时加上./是好习惯.
 有些Linux发行版系统默认情况下并不查找当前目录, 这是因为Linux下有大量的标准工具(如test等), 很容易与用户自己编写的程序重名, 不搜索当前目录消除了命令访问的歧义.   在操作当前目录文件时,路径开头不要省略./是好习惯.
 
-## 过滤输出
+## 4.6 过滤输出
 一种实现过滤输出的方式为将内容输出到 **/dev/null** 中. 任何试图输出到这个特殊文件的信息都会被丢弃, 而读取它则总是返回 EOF (End of File) . 
 
 *这是由一个简单的设备驱动程序实现的。这个驱动程序处理所有对该文件的 I/O 请求。对于写入操作，它直接丢弃数据，而对于读取操作，它返回零字节（EOF）。
@@ -734,7 +963,7 @@ Bash中的万用字符(wildcards)(*通配符就是一种万用字符.)
 time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时间, 此时我不关心他的输出,  可以将其丢到/dev/null中.
 ```
 
-## ? 变量
+## 4.7 ? 变量
 **?** 是一个重要的环境变量(which also means, 不要把自己的变量取名叫`?`!), 它用来储存上一个命令执行后的退出状态 (exit status). 在unix/linux系统中, 几乎每一个命令都会返回一个退出状态码, 一般情况下**0** 表示成功执行,  其他非0值表示各种类型的错误情况. 
 - 例如**ping** 命令:
 >**0** : 成功
@@ -753,7 +982,7 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 使用$?来表示上一个命令的退出状态码的值.
 
-## 条件运算符
+## 4.8 条件运算符
 
 **-eq** 是一个用于比较整数的条件运算符，表示 "equal"（等于）。在 if 语句中，你可以使用它来比较两个整数是否相等。
 
@@ -762,9 +991,9 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 其他类似的运算符还有 **-lt**（小于），**-le**（小于等于），**-gt**（大于），**-ge**（大于等于）。
 
 
-## source命令以及环境变量
+## 4.9 source命令以及环境变量
 
-`source` 命令（在某些 shell 中也可以使用 `.` 符号）在 Unix 和 Linux 系统的 shell 环境中用于执行文件中的命令，通常是 shell 脚本或配置文件。它的主要作用是在当前 shell 会话中执行文件的内容，而不是启动一个新的 shell。
+`source` 命令（在某些 shell 中也可以使用 `.` 符号）在 Unix 和 Linux 系统的 shell 环境中用于执行.sh脚本文件中的命令。它的主要作用是在当前 shell 会话中执行文件的内容，而不是启动一个新的 shell。
 
 ### 使用场景
 
@@ -787,6 +1016,23 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 
 
+## 4.10 解压文件
+
+`tar -xvzf systemc-2.3.3.tar.gz`
+
+参数解释：
+-   `x`：extract 解压 
+-   `v`：verbose 显示详细信息（可以省略）  
+-   `z`：gzip（.gz 就是用这个压缩的）   
+-   `f`：file 后面接文件名
+
+
+
+##
+
+##
+
+##
 
 # 5 一些实例   
 
@@ -1037,7 +1283,97 @@ ps aux --sort=-%cpu  #按降序排序, CPU降序
 
 
 
-#
+# 8 WSL
+
+## 8.1 wsl2和win10的交互复制粘贴方式.
+
+	从https://www.c3scripts.com/tutorials/msdos/paste.zip
+	下载paste.exe, 放在`C:\Windows\System32`中.
+	配置 Vim 快捷键
+	在~/.vimrc文件中添加以下内容：
+	```
+		" 复制到Windows剪贴板（Visual模式下选中文本按;y）
+		vmap ;y : !/mnt/c/Windows/System32/clip.exe<CR>u''
+
+		" 从Windows剪贴板粘贴（任何模式下按;p）
+		map ;p :read !/mnt/c/Windows/System32/paste.exe <CR>
+		map! ;p <Esc>:read !/mnt/c/Windows/System32/paste.exe <CR>
+	```
+
+	目前似乎;y会强制复制选中部分的完整行。无伤大雅...
+	有时似乎;y会导致gbk-utf-8的乱码. 比如选中一个单独行`a(单个字母)`的时候,我暂时无法解释...
+
+## 8.2 运行脚本
+	比如当前目录有一个init.sh脚本, 直接运行一个脚本文件（如 init.sh）需要满足以下条件之一：
+
+	* 脚本文件具有可执行权限：你可以通过 chmod +x init.sh 赋予脚本可执行权限。
+
+	* 显式指定解释器：如果你没有赋予脚本可执行权限，可以通过显式调用解释器来运行脚本，例如 bash init.sh。
+	
+	
+## 8.3 wsl的环境变量
+	查看某个环境变量目前的值, echo $(环境变量名).
+	使用export命令在当前终端临时给某个环境变量赋值, export NVBOARD_HOME=~/ysyx-workbench/nvboard
+	将export命令写入./bashrc里, 直接在永久对某个环境变量赋值(退出系统重进仍然生效), echo 'export NVBOARD_HOME=~/ysyx-workbench/nvboard' >> ~/.bashrc
+	source ~/.bashrc	#让修改立即生效
+	Linux 其实有很多“层级”来存储环境变量，不是只有 ~/.bashrc 一个地方：
+
+	变量存储位置					作用范围						生效时机
+	/etc/environment			全局（所有用户）				开机时加载
+	/etc/profile				全局，但仅适用于“登录 shell”	用户登录时加载
+	/etc/bash.bashrc			全局，所有 Bash 终端都生效		终端启动时加载
+	~/.profile					当前用户，仅“登录 shell”有效	用户登录时加载
+	~/.bashrc					当前用户，适用于交互式终端		每次打开终端时加载
+	export VAR=xxx（直接运行）	仅当前 shell	立即生效，		终端关闭后失效
+	
+	* 短期用 export（只在当前终端生效）。
+	* 长期用 ~/.bashrc 或 ~/.profile（开机自动加载）。
+	* 系统级变量放 /etc/environment（所有用户都能用）。
+	
+	* 注意, 在bash中$(command)是命令替换, 比如`$(pwd)`会被`/home/azazel`替换.  如果表示环境变量, 不加(), 即$NVBOARD_HOME, 会被这个环境变量值`/home/azazel/nvboard`替换. 
+	* 而在编写Makefile时环境变量要加括号, $(NVBOARD_HOME)会被`/home/azazel/nvboard`替换.
+
+
+
+## 8.4 关于Makefile
+	* 奶奶的, Makefile的注释必须单独成行,,,,诸如`TOPNAME = top	 # 这句话的意思xxx`会导致#前面的空格也被读进去然后就完蛋了....
+	
+	* **优先级**: Makefile中, 变量赋值加载顺序是语句先后. 后面覆盖前面. 可以用?=(最低优先级),  `override a=5`(最高优先级). 不过在bash里make命令行参数直接指定 `make a=5`无视Makefile有最高优先级
+	
+	* 关键词变量. Makefile有一些约定俗成的变量（常见的“内部变量”）. 这些变量虽然 不是 Makefile 的关键字，但 make 及编译工具默认会识别：
+		* CC：指定 C 编译器（默认为 gcc）
+		* CXX：指定 C++ 编译器（默认为 g++）
+		* CFLAGS：C 编译选项
+		* CXXFLAGS：C++ 编译选项
+		* LDFLAGS：链接选项（影响最终生成的可执行文件）.
+			* `LDFLAGS`是Makefile内部参数, 用于指定`链接器`linker. +=表示在已有值上append新选项. -l库名表示链接该库.
+		* CPPFLAGS：预处理选项（如 -I 头文件路径）
+		* LDLIBS：库文件（通常是 -l 选项，但和 LDFLAGS 不同，它出现在链接命令的 最后）
+			
+	* 下面是一些注释笔记.
+	```Makefile
+	# 那些在TARGET(:build)块外的等式, 意义是: 变量TOPNAME的值是"top", 可以用$(TOPNAME)得到字符串"top". 顺带, Makefile有严格的缩进要求, TARGET块内的命令必须缩进.
+	# `?=`意味着, 考虑`INC_PATH?=`, 如果INC_PATH变量还没有被定义, 则定义其值为""(空). 如果外部已传入, 比如用户输入命令`make INC_PATH=/somepath`, 则该行语句不执行.
+	#default 目标块在用户没有指定目标的时候执行. 比如用户输入`make`.  此处具体来说执行的是`./build/top`. 如果用户输入`make build`, 则执行build目标块.
+	# `$^`表示所有依赖文件的列表, `@(bash command)`表示执行之后的bash command但不在终端显示命令.
+	```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #
 
 
