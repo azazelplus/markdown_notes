@@ -6,6 +6,20 @@
 
 ## 0.1 verilator仿真流程
 
+
+//编写一个verilog模块并仿真的流程:
+//1.进入项目文件夹. 编写.v模块文件top.v
+//2.编写.cpp驱动文件sim_main.c_str
+//3.运行命令链接它们. verilator --cc --exe --build -j -Wall --trace sim_main.cpp top.v
+//--build即自动寻找规则编译. 如果没有加, verilator生成的obj_dir目录中就没有可执行文件Vtop, 你需要自己做饭: 使用Vtop.mk这个Makefile, 运行make `make -j -f(即filename) Vtop.mk Vtop`来做一个Vtop出来.
+//-j(即jobs)number表示同时运行的编译任务数。例如，-j4 表示同时运行 4 个编译任务。如果不指定数字，make 会根据系统的 CPU 核心数自动选择并行任务数。)
+//--trace是波形分析用的. 这个选项会开启波形分析功能, 比如为模块对象top创建trace成员以供设置等.
+//4.进入verilator生成的obj_dir目录, 运行其生成的可执行文件Vtop. 如果没用--build选项, 第四步还会要自己make.
+
+
+
+
+
 ### step1: `verilate`, 即由.v文件生成cpp文件
 
 第一步称为**verilate**,
@@ -241,6 +255,145 @@ int sc_main(int argc, char** argv){
 
 ### 0.2.4 例子4: Examples in the Distribution
 
+## 0.3 波形生成
+
+波形生成请参考例子`双控开关`.
+//关于波形生成: verilator波形生成一般使用VDC(value change dump)格式. 大致步骤:
+//1.在`cpp驱动文件`中启用波形跟踪. (引入头文件, 启用波形跟踪, 创建VCD记录对象, 关闭波形文件)
+//2.运行仿真(即运行`含有--trace选项的verilator命令得到的可执行文件`)时生成VCD波形文件.(wave.vcd)
+//3.用GTKWave查看波形文件.(先apt-get install gtkwave)
+
+//chors:
+//FST格式的波形文件大致是VCD格式的1/50, 但它仅能被GTKWave支持. 如果想使用fst格式的波形文件, 只需要使用`VerilatedFstC`代替`VerilatedVcdC`.
+
+### 0.3.1 例子: 双控开关
+
+这个例子不适用systemC, 写一个简单的a^b逻辑, 在wrapper中生成100组随机ab信号来测试. 同时输出一个波形图.
+
+* 先编写`top.v`和`sim_main.cpp`
+
+
+```verilog
+module top(
+	input a,
+	input b,
+	output f
+);
+	assign f= a^b;
+endmodule
+```
+
+
+```cpp
+//verilator不提供自动仿真功能, 需要cpp代码驱动, 这就是对每个.v模块文件的sim.main.cpp的作用. 它被称为wrapper.
+#include <stdio.h>	
+#include <stdlib.h>
+#include <assert.h>
+#include "Vtop.h"	//verilator自动生成的头文件,运行verilator --cc witch.v后自动生成, 在obj_dir目录下.
+#include "verilated.h"	//同上
+
+#include "verilated_vcd_c.h"	//如果需要波形生成, 引入VCD波形头文件.
+
+
+
+
+int main(int argc, char** argv){
+	
+	//初始化verilator环境.
+      VerilatedContext* contextp = new VerilatedContext;	//创建`仿真上下文类`对象 contextp. `VerilatedContext`这个类是verilog提供的仿真环境管理器, 其成员和方法能实现多个管理功能之类的.
+      contextp->commandArgs(argc, argv);	//解析命令行参数      
+	  contextp->traceEverOn(true);	//启用波形跟踪
+	  //设置完环境管理器contextp后, 在其基础上创建模块对象top.
+	  Vtop* top = new Vtop{contextp};		//创建Vour类(verilator的顶层模块) top, 绑定它到仿真上下文.  此处模块类名是 V{模块名}，其中 {模块名} 是你 Verilog 顶层模块（module）的名
+	  
+	  
+	//创建VCD波形记录对象tfp(trace file pointer)
+	VerilatedVcdC* tfp = new VerilatedVcdC;
+	top->trace(tfp, 99);	//指定信号跟踪深度.深度为1则只记录顶层模块的信号变化. 深度更高则记录子模块的变量的变化. 常用默认值99, 意为记录所有有意义信号.
+	tfp->open("wave.vcd");	//打开波形文件"wave.vcd",并准备将数据写入.在仿真结束后就可以使用工具(如 GTKWave)查看这个文件, 得到波形.
+	
+	
+	  
+	//循环执行仿真. 
+	for(int i=0;i<100;++i){		//运行一百个时钟周期, verilator默认将dump的时间步长设为1ps. 随机测试我们的XOR门
+		//生成随机输入信号.
+		int a = rand() & 1;	//rand()返回一个大整数, 如`00110000000111001`. 和1进行&运算时只取最低位, 由于0&1=0,1&1=1, 而最低位随机, 所以`rand()&1`可以随即给出0或1.
+		int b = rand() & 1;
+		top->a = a;	//传递给verilog模块
+		top->b = b;
+		top->eval();	//run sim
+		
+		tfp->dump(i);	//波形记录对象tfp记录时间步i的信号
+		
+		printf("a = %d, b = %d, f = %d \n", a, b, top->f);
+		assert(top->f == (a^b));	//assertion检查XOR计算是否正确.		`
+	}
+	//仿真结束清理.
+	delete top;
+	delete contextp;
+	delete tfp;
+	
+	return 0;
+}
+```
+
+* 然后使用verilator命令:
+
+```bash
+verilator --cc top.v --exe sim_main.cpp --trace -Wall
+```
+| 参数                   | 说明                                          |
+| -------------------- | ------------------------------------------- |
+| `--cc`               | 生成 C++ 模型（不生成 SystemC）                      |
+| `top.v`              | 你的顶层 Verilog 模块                             |
+| `--exe sim_main.cpp` | 使用 `sim_main.cpp` 作为仿真主程序（Verilator 不自带仿真器） |
+| `--trace`            | 启用 VCD 波形生成（启用 tfp/wave.vcd）                |
+| `-Wall`              | 打开所有警告                                      |
+
+* 然后使用verilator生成好的文件和makefile编译:
+
+```bash
+make -C obj_dir -f Vtop.mk Vtop
+```
+
+
+* 运行仿真:
+
+
+```bash
+./obj_dir/Vtop
+```
+
+* 显示波形: (如果你安装了`gtkwave`, 这样安装:`apt-get install gtkwave`)
+
+```bash
+gtkwave wave.vcd
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # 1. SystemC
 
 
@@ -296,4 +449,55 @@ source ./.bashrc
 | `build/`                              | ❌ 不需要  | 编译中间产物，已安装完成可以删       |
 | `/usr/local/include/systemc`          | ✅ 需要   | 头文件位置，用于编译 SystemC 程序 |
 | `/usr/local/lib/libsystemc.a` 或 `.so` | ✅ 需要   | 库文件，链接用               |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# NV Board
+
+
+
+
+
 
