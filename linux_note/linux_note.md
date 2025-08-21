@@ -1418,7 +1418,7 @@ ps aux --sort=-%cpu  #按降序排序, CPU降序
   * 静态库文件`libutils.a`
   * 静态库头文件`utils.h`
 * 2.在你的主函数`main.c`里`#include utils.h`
-* 3.在编译你的主函数`main.c`时**链接**静态库文件`libutils.a`. 链接的命令为: `gcc main.c -L -lutils -o main`.  也就添加`-L -l[libname]`选项. 
+* 3.在编译你的主函数`main.c`时**链接**静态库文件`libutils.a`. 链接的命令为: `gcc main.c -L -lutils -o main`.  也就添加`-L -l[libname]`选项, 抑或不使用`-L -l[libname]`, 直接指定要链接的库路径作为依赖之一: `gcc main.c ./libutils.static_app`
   * gcc的-L选项即`在当前目录查找静态/动态库文件.a或.so`
   * -lname: 链接名为`libname.a`或`libname.so`的库文件. 
   * -l选项不接受完整的文件名, 会自动添加前缀lib和后缀.a/.so, 这是linux的传统命名约定.
@@ -1484,20 +1484,57 @@ utils.o: utils.c utils.h
 
 # 编译生成可执行文件main. 编译使用main.c, 同时链接libutils.a静态库.
 # gcc的-L选项即`在当前目录查找静态/动态库文件.a或.so`
-# -lname: 链接名为`libname.a`或`libname.so`的库文件. 
+# -l[name]: 链接名为`libname.a`或`libname.so`的库文件. 
 # -l选项不接受完整的文件名, 会自动添加前缀lib和后缀.a/.so, 这是linux的传统命名约定.
+# -static选项: 只链接静态库. `-L -l[name]`此时只会选中.a文件而不是.so文件了. 否则, 如果同时存在`libutils.a`, `libutils.so`两个文件, `gcc  main.c -L. -lutils -o main`命令会优先选择动态库链接.
+# 当然其实有一个更好的方法, 直接指定要链接的库: 
+# $(CC) $(CFLAGS) main.c ./libutils.a -o main
 main: main.c libutils.a
-	$(CC) $(CFLAGS) main.c -L. -lutils -o main
+	$(CC) $(CFLAGS) -static main.c -L. -lutils -o main
 
 clean:
 	rm -f *.o *.a main
 ```
+
+然后`make`, 就可以得到可执行程序main啦.
 
 
 
 
 ## 9.2 自己写一个动态库`libutils.so`并使用它.
 
+我们仍然使用上面的例子, 在一个目录里有`utils.c`, `utils.h`.
+
+首先把utils.c编译成.so库. 这需要使用命令:
+
+`gcc -fPIC -shared -o libutils.so utils.c`
+
+**参数解释**:
+-   `-fPIC`：生成位置无关的代码（Position Independent Code），这是动态库所要求的。
+-   `-shared`：生成共享库，也就是 `.so` 文件。  
+-   `-o libutils.so`：输出为共享库文件名，建议以 `libxxx.so` 命名格式。
+
+
+* 然后你会得到一个`libutils.so`文件. 有趣的是, 它是**绿色**的, 这意味着它**被设置了`x`执行权限**(查看一下:`ls -l libutils.so`). 事实上.so文件的确是ELF文件, 但是它不是一个**有效的主程序入口**, 直接运行它一般会报错.
+
+* main.c中已经引入了**库函数头文件**`utils.h`, 现在我们直接编译main并链接`libutils.so`. 这命令和链接静态库一样. 使用选项`-L -l[name]`
+
+`gcc main.c -L -lutils.o -o main2`
+
+完成. 运行试试看.`./main2`
+
+不过要注意, 使用动态库编译出来的可执行程序main, 运行的时候可能发生找不到动态库路径错误. 比如你把main换个位置之类的.
+
+在链接动态库的时候, **不要**不使用`-L -l[name]`命令而直接指定库的路径:`gcc main.c ./libutils.so -o main2`.
+
+-   你不是在告诉 gcc “去链接 libutils.so 这个动态库”；
+-   而是直接把 `.so` 文件当作 `.o` 文件来用了！（**这虽然在技术上可行，但不推荐！**）
+-   当你这么编译的时候，它没有把路径信息嵌入到 ELF 文件中，**运行时可能找不到动态库**，报错：`error while loading shared libraries: libutils.so: cannot open shared object file`
+-   如果现在能运行，是因为当前目录就在 LD_LIBRARY_PATH 或者 rpath 默认可见路径中，或者因为你之前运行过已经缓存了。
+
+
+`readelf -d ./main2`用这个命令来看看rpath. 如果啥也没有, 就说明你的可执行文件没有指定动态库路径.
+解决方式...(哎呀你用-L -l[name]选项重新编译就好啦!)
 
 
 
