@@ -1,4 +1,4 @@
-# 1 bash 
+# 1 bash命令行 
 
 linux中输入的命令行即为bash命令。每个bash命令是一个可执行程序(在/bin中储存). 创建一个可执行的bash命令行文件, 即为bash脚本script.
 
@@ -1044,11 +1044,12 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 ##
 
-##
-
 # 5 一些实例   
 
 # 6 git
+
+
+## 6.1 如何初始化一个git仓库
 
 * 将一个文件夹myfile初始化为仓库并导入azazelplus账号的git在线仓库：
 首先在在该目录下运行git bash.
@@ -1091,7 +1092,7 @@ git push  #将本地提交推送到 本地仓库所默认的 远程仓库.
 
 
 
-## 查看历史 git log
+## 6.2 查看历史 git log
 ```bash
 git log #显示当前仓库所有提交历史
 
@@ -1113,7 +1114,8 @@ git log --auther="name" #过滤掉某个作者的提交显示.
 git log --grep="bug fix"  #提交信息过滤, 过滤出包含"bug fix"的更新日志.
 ```
 
-## 显示状态 git status
+## 6.3 显示状态 `git status`
+
 ```bash
 git status #显示当前仓库状态, 包括这些信息: 
 #Unstaged changes(那些已经被修改, 但是未添加到暂存区的文件); 
@@ -1122,11 +1124,32 @@ git status #显示当前仓库状态, 包括这些信息:
 
 ```
 
+----------------------------
+---------------------------
+
 ![alt text](image-2.png)
 
-上述示例表示你在`master`分支上, 本地分支`master`相比于远程仓库`origin`的`master`分支, 多了三次提交. 这三次提交只存在于你的本地, 还没有被push到远程仓库. 提示你用`git push`命令push.
-同时, 工作目录是clean的, 没有任何暂存更改和为跟踪的文件, 所有更改都提交到了本地的`master`分支.
-## 保存到本地仓库 git commit
+上述示例表示:
+* 你在`master`本地分支上.
+* 本地分支`master`相比于远程仓库`origin`的`master`分支, 多了三次提交. 这三次提交只存在于你的本地, 还没有被push到远程仓库. 提示你用`git push`命令push.
+* 工作目录是clean的, 即本地没有任何暂存更改和为跟踪的文件, 所有更改都提交到了本地的`master`分支.
+
+-----------------------------
+-----------------------------
+
+![alt text](image-4.png)
+
+上述示例表示:
+* 你在`master`本地分支上.
+* 本地分支`master`相比于远程仓库`origin`的`master`分支, 完全相同. 这意味着远程仓库最后一次被push的 commit 就是本地仓库当前分支.
+* 本地工作目录中, 有未被staged(放入暂存区)的本地改动:
+  * `Academic/Linux_note/linux_note.md`(modified, 即这个文件相较于该本地仓库分支的[最新快照]发生了改变.)
+
+* 本地工作目录中, 有未被track(跟踪)的新建文件:
+  * MEMO/ssh.txt
+
+
+## 6.4 保存到本地仓库 git commit
 ```bash
 git commit #当前文件夹进行一个commit.
 
@@ -1136,19 +1159,22 @@ git commit -a #好像等于先执行了一个git add .
 
 git commit --allow-empty  #该选项允许无改动提交.
 ```
-## 推送到远程仓库 git push
+
+## 6.5 推送到远程仓库 git push
 
 ```bash
-git push  #把本地仓库提交到远程仓库.
+git push  #把本地仓库的[当前所在分支]提交到远程仓库的对应[上游分支]. 如果当前本地仓库没有设置[上游分支], 则失败并提示要
 
-git push origin master  #把当前分支推送到远程仓库`origin`的`master`分支. 实际上`origin`是默认的远程仓库名称. `master`是默认的主分支名称.
+git push [远程仓库名] [远程仓库的分支名]  #把本地仓库的[当前所在branch]推送到指定远程仓库的指定分支(如果权限允许)
 
-git push -u origin master #-u选项会将本地分支与远程分支关联起来, 今后直接使用git push会默认指定的远程仓库分支.
+git push origin master  #把[当前所在本地分支]推送到远程仓库`origin`(远程仓库的名字默认叫做origin)的`master`分支.  `master`是默认的主分支名称.
 
-git push --force  #强制推送,覆盖远程分支上的内容, 谨慎使用.
+git push -u origin master #-u选项会将[当前所在本地分支]与[远程分支`master`]关联起来, 今后直接使用git push会默认指定的远程仓库分支.
+
+git push --force  #强制推送[本地当前],覆盖远程分支上的内容, 谨慎使用.
 
 ```
-## git reflog
+## 6.6 git reflog
 这个指令显示最近在**当前本地仓库**中对`head`(当前分支的指针)所做的操作记录.
 这些记录仅存在于本地仓库, 不会被推送到远程仓库.
 
