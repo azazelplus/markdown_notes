@@ -1,0 +1,88 @@
+at capacity			满负荷运行
+Outage				停电，停机
+torque				力矩
+experimental assessment		实验评估
+seamless				无缝的，无缝衔接丝滑的
+algorithm				算法。
+series resistance			串联电阻
+*utilise=utilize			利用
+ascertain				查明，计算出
+lumped				集总的:集总串联电阻LSR,表示把系统看成一个整体的串联等效电阻。
+depletion				损耗。
+histogram			直方图。
+intrinsic				固有的，本征的
+comma				逗号。CSV，Comma-Separated Values，逗号分隔值文件。			
+HIT				异质结Heterojunction with Intrinsic Thin-layer
+et alia (et al.)			拉丁语：等等。 Azazel et al. 阿撒泄勒等人。
+empirical				经验主义的。
+ingot				(尤指金、银的)铸块，锭。
+Ohm				欧姆
+shunt				转移。shunt resistance并联电阻，分流电阻。
+explicit function			显式函数
+quadrant				象限
+Knee				(膝盖)图像的拐点。In practice this condition is considered to be met as long as the exponential knee of the IV-curve remains in the first quadrant.只要 IV 曲线的指数拐点保持在第一象限内，就认为满足了这一条件。 
+logarithmic			对数的。
+denominator			分母
+DOI				代表数字对象标识符（Digital Object Identifier），它是一种用于唯一、准确且永久地标识数字资源的全球标准化标识符。DOI为每篇论文提供一个独特的识别码。
+Linting 				找出程序中的错误，这些错误包括潜在的语法错误，编译错误，拼写错误等。简单来说就是使用工具来对代码提供一些检查，保证提交代码的质量。Lint 这个单词的本意就是衣服上的棉球，通过 Linting 这个单词的意思就是去除代码中可能存在问题的意思。
+invoke command			调用命令。
+auxiliary				辅助的。
+Affiliation				附属(所属的组织、机构或单位), 填写Xi'an Jiaotong University.
+infrared				红外线的
+Preview (Nightly)			这个版本通常指的是软件开发过程中的一种预览版，这种版本几乎每夜都会更新，以包含最新的代码更改。"Nightly" 版本让开发者和早期测试者可以尝试最前沿的功能和改进，但这些更新可能未经充分测试，因此可能包含错误或稳定性问题。
+asterisk				星号`*`
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
