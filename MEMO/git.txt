@@ -1,4 +1,35 @@
-我的远程仓库地址.
+我的1几个重要的远程仓库地址.
+
+
+
+* Windows 笔记远程仓库
+azazel@DESKTOP-NJKSK6O MINGW64 /f/aza/notes_git (master)
+$ git remote -v
+origin  git@github.com:azazelplus/markdown_notes.git (fetch)
+origin  git@github.com:azazelplus/markdown_notes.git (push)
+
+* Windows 代码远程仓库
+azazel@DESKTOP-NJKSK6O MINGW64 /f/aza/code_git (main)
+$ git remote -v
+origin  git@github.com:azazelplus/cpp_test.git (fetch)
+origin  git@github.com:azazelplus/cpp_test.git (push)
+
+* YSYX项目 代码远程仓库
+
+
+* wsl2的自用代码远程仓库地址
+azazel@DESKTOP-NJKSK6O:~/Code_git$ git remote -v
+origin  git@github.com:azazelplus/cpp_test.git (fetch)
+origin  git@github.com:azazelplus/cpp_test.git (push)
+
+
+
+
+
+
+
+
+
 
 
 
