@@ -1042,11 +1042,27 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 ##
 
-##
+
 
 # 5 一些实例   
 
 # 6 git
+
+## 6.0 git的相关概念
+
+![alt text](image-5.png)
+
+在 **Git** 里，文件有4种主要状态：
+
+1.  **未追踪 (untracked)**：新建的文件，Git 根本还不知道它。
+    
+2.  **已追踪 (tracked) 但未修改**：文件已经被 `git add` 过，Git 会继续管理它。
+    
+3.  **已修改 (modified)**：文件改过了，但还没被放进暂存区。
+    
+4.  **已暂存 (staged)**：用 `git add` 加进去，准备提交。
+
+* track的意义? 我们发现, 想要让一个改动后的本地文件进入**staged**状态, 从而进行commit, 无论该文件是不是**tracked**(比如, 建了个新文件写了点东西(untracked)或已有文件改动了一下(tracked)), 都需要使用命令`git add file`.
 
 
 ## 6.1 如何初始化一个git仓库
@@ -1092,27 +1108,16 @@ git push  #将本地提交推送到 本地仓库所默认的 远程仓库.
 
 
 
-## 6.2 查看历史 git log
-```bash
-git log #显示当前仓库所有提交历史
+## 6.2 HEAD指针
 
-git log -n 3 #显示最近的三次提交.
+一个git本地仓库维护一个全局的HEAD指针. 它指向"**你现在在哪个分支的哪个提交**"
 
-git log -n 3 --oneline #--oneline选项将每个提交略缩为一行简洁信息显示.
+**每个分支维护自己的指针**, 用来记录该分支的最新commit.
 
-git log --since="2 weeks ago" #显示过去两周内的提交记录.
+* 一般情况下, 它指向当前branch(比如master), 然后**当前分支再指向其最新的commit**.
 
-git log <filename> #只显示文件夹中某个文件的提交历史.
+* **detached HEAD** 模式下, HEAD指向一个具体的commit.
 
-
-git log | less  #分页查看日志, 可用Page Up/Page Down查看大量信息.
-
-git log <branch-name> #显示某个分支的所有提交.
-
-git log --auther="name" #过滤掉某个作者的提交显示.
-
-git log --grep="bug fix"  #提交信息过滤, 过滤出包含"bug fix"的更新日志.
-```
 
 ## 6.3 显示状态 `git status`
 
@@ -1149,7 +1154,107 @@ git status #显示当前仓库状态, 包括这些信息:
   * MEMO/ssh.txt
 
 
-## 6.4 保存到本地仓库 git commit
+
+## 6.5 git checkout
+
+该命令让用户在不改动的情况下查看某个branch/commit.
+
+```bash
+git checkout branch_name  #切换分支.  把当前本地仓库切换到该branch(最新commit)(工作目录改变), HEAD指针变为detached模式.
+
+
+
+git checkout <commit_hash>  #把当前本地仓库的当前branch切换到指定历史commit. HEAD指针变为detached模式.
+
+git checkout -- filename  #把当前本地仓库工作目录的某个文件恢复到[暂存区]的样子, 丢弃你在工作区的修改. 例如: 上一次commit后, 想改一个文件, 改来改去不想改了(期间没有git add), 想恢复到上一次commit的内容.
+
+```
+
+## 6.6 查看日志 git log & git reflog
+
+### 6.6.1 git log
+
+这个命令列出**当前本地分支的commit记录**.
+
+```bash
+git log #显示当前仓库所有提交历史
+
+git log -n 3 #显示最近的三次提交.
+
+git log -n 3 --oneline #--oneline选项将每个提交略缩为一行简洁信息显示.
+
+git log --since="2 weeks ago" #显示过去两周内的提交记录.
+
+git log <filename> #只显示文件夹中某个文件的提交历史.
+
+
+git log | less  #分页查看日志, 可用Page Up/Page Down查看大量信息.
+
+git log <branch-name> #显示某个分支的所有提交.
+
+git log --auther="name" #过滤掉某个作者的提交显示.
+
+git log --grep="bug fix"  #提交信息过滤, 过滤出包含"bug fix"的更新日志.
+```
+
+### 6.6.2 git reflog
+
+这个指令显示在当前本地仓库中**对`HEAD`(当前分支的指针)所做的操作记录**.
+这些记录仅存在于本地仓库, 不会被推送到远程仓库.
+
+当你执行这些操作的时候, HEAD指针会变化:
+* git commit
+  * 新建一个commit节点, HEAD移动到新commit.
+* git checkout <branch_name>
+  * HEAD指向
+* git reset
+* git merge
+* git rebase
+* git pull
+
+从而记录在git reflog中.
+
+![alt text](image-3.png)
+这些输出的意思:
+```git
+49d4be5 (HEAD -> master, origin/master) HEAD@{0}: pull origin master: Fast-forward
+```
+>`49d4be5`: 这是一个提交 ID，标识了当前 `HEAD` 指向的提交，也就是 git pull 操作后指向的提交。
+
+>`HEAD -> master`: 表示当前 HEAD 指向的是 `master` 分支。
+
+>`origin/master`: 说明这个提交同时也是远程仓库 `origin` 的 `master` 分支的最新提交。
+
+>`HEAD@{0}`: 表示这是你最近的一次操作，索引值为 `0`。
+
+>`pull origin master: Fast-forward`: 说明最近的一次操作是 `git pull`，并且通过 “Fast-forward” 模式合并了远程 `master` 分支的更改到本地 `master` 分支。
+
+```git
+9bf2b3c (testbranch) HEAD@{1}: checkout: moving from testbranch to master
+```
+>这是倒数第二次操作, 操作为`checkout`,将分支从`testbranch`切换到了`master`.
+
+
+
+## 6.7 
+
+## 6.8 暂存区和提交
+
+```bash
+git ls-files  #列出暂存区的文件.
+```
+
+### 6.8.1 将文件加入跟踪列表 git add
+```bash
+git add ./somefolder/new_file  #将指定路径下的new_file加入跟踪列表
+
+git add -A #将所有未被跟踪文件加入跟踪列表. 这可能会跟踪一些不必要的文件, 例如编译产生的.o文件, 和最后产生的可执行文件. 而事实上只需要跟踪 代码源文件. 
+#可以编辑./.gitignore 文件, 在里面给出git需要忽略的文件(类型).
+
+git add . #将当前目录中所有的文件加入跟踪列表. 效果即和`git add -A`相同.
+```
+
+### 6.8.2 保存到本地仓库 git commit
 ```bash
 git commit #当前文件夹进行一个commit.
 
@@ -1160,61 +1265,11 @@ git commit -a #好像等于先执行了一个git add .
 git commit --allow-empty  #该选项允许无改动提交.
 ```
 
-## 6.5 推送到远程仓库 git push
-
-```bash
-git push  #把本地仓库的[当前所在分支]提交到远程仓库的对应[上游分支]. 如果当前本地仓库没有设置[上游分支], 则失败并提示要
-
-git push [远程仓库名] [远程仓库的分支名]  #把本地仓库的[当前所在branch]推送到指定远程仓库的指定分支(如果权限允许)
-
-git push origin master  #把[当前所在本地分支]推送到远程仓库`origin`(远程仓库的名字默认叫做origin)的`master`分支.  `master`是默认的主分支名称.
-
-git push -u origin master #-u选项会将[当前所在本地分支]与[远程分支`master`]关联起来, 今后直接使用git push会默认指定的远程仓库分支.
-
-git push --force  #强制推送[本地当前],覆盖远程分支上的内容, 谨慎使用.
-
-```
-## 6.6 查看日志 git reflog
-这个指令显示最近在**当前本地仓库**中对`head`(当前分支的指针)所做的操作记录.
-这些记录仅存在于本地仓库, 不会被推送到远程仓库.
-
-当你进行`commit`, `checkout`, `pull` 时, git系统会记录下这些操作.
-
-![alt text](image-3.png)
-这些输出的意思:
-```git
-49d4be5 (HEAD -> master, origin/master) HEAD@{0}: pull origin master: Fast-forward
-```
->`49d4be5`: 这是一个提交 ID，标识了当前 `HEAD` 指向的提交，也就是 git pull 操作后指向的提交。
->`HEAD -> master`: 表示当前 HEAD 指向的是 `master` 分支。
->`origin/master`: 说明这个提交同时也是远程仓库 `origin` 的 `master` 分支的最新提交。
->`HEAD@{0}`: 表示这是你最近的一次操作，索引值为 `0`。
->`pull origin master: Fast-forward`: 说明最近的一次操作是 `git pull`，并且通过 “Fast-forward” 模式合并了远程 `master` 分支的更改到本地 `master` 分支。
-
-```git
-9bf2b3c (testbranch) HEAD@{1}: checkout: moving from testbranch to master
-```
->这是倒数第二次操作, 操作为`checkout`,将分支从`testbranch`切换到了`master`.
-
-
-## 6.7 从远程仓库合并到本地 git pull
-
-```bash
-git pull  #将当前本地仓库分支的默认upstream(如果有的话)拉取
-```
-
-## 6.8 将文件加入跟踪列表 git add
-```bash
-git add ./somefolder/new_file  #将指定路径下的new_file加入跟踪列表
-
-git add -A #将所有未被跟踪文件加入跟踪列表. 这可能会跟踪一些不必要的文件, 例如编译产生的.o文件, 和最后产生的可执行文件. 而事实上只需要跟踪 代码源文件. 
-#可以编辑./.gitignore 文件, 在里面给出git需要忽略的文件(类型).
-
-git add . #将当前目录中所有的文件加入跟踪列表. 效果即和`git add -A`相同.
-```
 ## 6.9 回档 git reset
-`git rest`用于改变`HEAD`指针及其相关引用, 达到回退版本的效果.
+
+`git reset`用于改变`HEAD`指针及其相关引用, 达到回退版本的效果.
 发生意外后的chronos.
+
 ```bash
 git reset --选项 <commit> 
 #其中`<commit>`可以是是欲返回的存档的hash code的前缀(前几位或更多,只要他们在仓库中唯一就被允许, git会自动匹配); 可以是相对引用: `HEAD~1`(表示上一次提交), `HEAD~2~(上上次提交), `HEAD^`(当前提交的父提交); 可以是分支名,如`master`
@@ -1229,42 +1284,129 @@ git reset --选项 <commit>
 
 ## 6.10 branch管理
 
-### 使用branch的标准流程:
-* 在开始一个新的大型改动之前, new a branch `try`, 检查一下 然后在该分支上code.
-* 完成修改后, 合并分支`try`到`master`, 然后回到`master`进行检查.
+### 6.10.1 使用branch的标准流程:
 
-### 语法
+* 在开始一个新的大型改动之前, new a branch `try`, 检查一下 然后在该分支上code.
+* 完成修改后, merge分支`try`到`master`, 然后回到`master`进行检查.
+
+
+### 6.10.2 查看分支
+
 ```bash
 git branch  #查看当前仓库的所有分支.
-
-git checkout -b pa0 #-b选项是创建分支.  创建一个名为pa0的分支,并立即切换到这个分支.
-
-git checkout master #切换到master分支.
 ```
 
+### 6.10.3 创建新分支和切换当前分支
+
+
+**创建分支**:
+```bash
+git branch pa0 #创建一个新分支pa0, 但你仍然停留在当前分支.
+
+git checkout -b pa0 #-b(branch)选项是创建分支.  创建一个名为pa0的分支, 并立即切换到这个分支.
+
+git switch -c pa0 #新版本推荐. -c即create, 创建pa0新分支并立即切换到它.
+```
+
+**切换分支:**
+```bash
+git checkout master #切换到master分支.
+
+#从git 2.23开始, 推荐使用switch命令切换分支:
+git switch branch_name
+```
+
+### 6.10.4 合并分支 git merge
+
+```bash
+git merge branch_name #将<branch_name>这个分支合并进当前本地分支.
+```
+
+合并时会发生几种情况: (例子: 在main分支下, 使用`git merge feature`)
+
+1.  **Fast-forward 合并**（快进合并）
+    
+    -   如果 **`main` 落后于 `feature`**, 那么 Git 会直接把 `main` 的指针“快进”到 `feature` 的最新提交。
+    -   不会生成新的 merge commit。
+    -   就像直接移动 HEAD 一样。
+    
+    ```
+    当前两个分支的commit记录:
+    main: A---B 
+    feature: A---B---C---D  
+    
+    运行命令:
+    git checkout main 
+    git merge feature   # 快进 
+
+    结果:
+    main: A---B---C---D
+    ```
+
+2.  **普通合并（merge commit）**
+    
+    -   如果 `main` 和 `feature` 都有自己的提交，Git 会生成一个新的 **合并提交（merge commit）**，有两个父节点。
+        
+    -   Git 会尽量自动合并代码, **如果同一个文件的同一行被两个分支修改**, 就会出现 **冲突（conflict）**，需要你手动解决。
+    
+    ```
+    当前状态:
+    main:    A---B---C
+                  \ 
+    feature:       D---E  
+    
+    运行命令:
+    git checkout main 
+    git merge feature   # 生成一个新提交 M 
+    
+    结果:
+    main:    A---B---C---M
+                  \     / 
+                   D---E
+    ```
 
 ## 6.11 从网上clong仓库
 ```bash
 git clone <url>
 #请使用ssh_url而不是http_url. 后者已经不支持了.
 ```
-## 6.12 远程仓库管理 git remote
+
+## 6.12 远程仓库管理 
+
+### git remote
 ```bash
 git remote -v #查看当前本地仓库的默认推送远程仓库.
 
 git push --set-upstream <remote_name> <branch_name> #更改当前本地仓库的默认推送远程仓库和分支.
 
 ```
-## 6.13 others
-```bash
-git ls-files  #列出暂存区的文件.
+### 6.12.2 推送到远程仓库 git push
 
+```bash
+git push  #把本地仓库的[当前所在分支]提交到远程仓库的对应[上游分支]. 如果当前本地仓库没有设置[上游分支], 则失败并提示要
+
+git push [远程仓库名] [远程仓库的分支名]  #把本地仓库的[当前所在branch]推送到指定远程仓库的指定分支(如果权限允许)
+
+git push origin master  #把[当前所在本地分支]推送到远程仓库`origin`(远程仓库的名字默认叫做origin)的`master`分支.  `master`是默认的主分支名称.
+
+git push -u origin master #-u选项会将[当前所在本地分支]与[远程分支`master`]关联起来, 今后直接使用git push会默认指定的远程仓库分支.
+
+git push --force  #强制推送[本地当前],覆盖远程分支上的内容, 谨慎使用.
 
 ```
+### 6.12.3 从远程仓库合并到本地 git pull
+
+
+```bash
+git pull  #将当前本地仓库分支的默认upstream(如果有的话)拉取
+```
+
+## 6.13 others
+
 
 ##
 
-![alt text](image-5.png)
+
 
 
 
@@ -1354,51 +1496,56 @@ ps aux --sort=-%cpu  #按降序排序, CPU降序
 	
 	
 ## 8.3 wsl的环境变量
-	查看某个环境变量目前的值, echo $(环境变量名).
-	使用export命令在当前终端临时给某个环境变量赋值, export NVBOARD_HOME=~/ysyx-workbench/nvboard
-	将export命令写入./bashrc里, 直接在永久对某个环境变量赋值(退出系统重进仍然生效), echo 'export NVBOARD_HOME=~/ysyx-workbench/nvboard' >> ~/.bashrc
-	source ~/.bashrc	#让修改立即生效
-	Linux 其实有很多“层级”来存储环境变量，不是只有 ~/.bashrc 一个地方：
+查看某个环境变量目前的值, echo $(环境变量名).
 
-	变量存储位置					作用范围						生效时机
-	/etc/environment			全局（所有用户）				开机时加载
-	/etc/profile				全局，但仅适用于“登录 shell”	用户登录时加载
-	/etc/bash.bashrc			全局，所有 Bash 终端都生效		终端启动时加载
-	~/.profile					当前用户，仅“登录 shell”有效	用户登录时加载
-	~/.bashrc					当前用户，适用于交互式终端		每次打开终端时加载
-	export VAR=xxx（直接运行）	仅当前 shell	立即生效，		终端关闭后失效
-	
-	* 短期用 export（只在当前终端生效）。
-	* 长期用 ~/.bashrc 或 ~/.profile（开机自动加载）。
-	* 系统级变量放 /etc/environment（所有用户都能用）。
-	
-	* 注意, 在bash中$(command)是命令替换, 比如`$(pwd)`会被`/home/azazel`替换.  如果表示环境变量, 不加(), 即$NVBOARD_HOME, 会被这个环境变量值`/home/azazel/nvboard`替换. 
-	* 而在编写Makefile时环境变量要加括号, $(NVBOARD_HOME)会被`/home/azazel/nvboard`替换.
+使用export命令在当前终端临时给某个环境变量赋值, `export NVBOARD_HOME=~/ysyx-workbench/nvboard`
+将export命令写入./bashrc里, 直接在永久对某个环境变量赋值(退出系统重进仍然生效), echo 'export NVBOARD_HOME=~/ysyx-workbench/nvboard' >> ~/.bashrc
+source ~/.bashrc	#让修改立即生效
+Linux 其实有很多“层级”来存储环境变量，不是只有 ~/.bashrc 一个地方：
+
+
+| 变量存储位置                | 作用范围                  | 生效时机              |
+|-----------------------------|---------------------------|-----------------------|
+| /etc/environment            | 全局（所有用户）          | 开机时加载            |
+| /etc/profile                | 全局，但仅适用于“登录 shell” | 用户登录时加载        |
+| /etc/bash.bashrc            | 全局，所有 Bash 终端都生效 | 终端启动时加载        |
+| ~/.profile                  | 当前用户，仅“登录 shell”有效 | 用户登录时加载        |
+| ~/.bashrc                   | 当前用户，适用于交互式终端 | 每次打开终端时加载    |
+| export VAR=xxx（直接运行）  | 仅当前 shell              | 立即生效，终端关闭后失效 |
+
+
+* 短期用 export（只在当前终端生效）。
+* 长期用 ~/.bashrc 或 ~/.profile（开机自动加载）。
+* 系统级变量放 /etc/environment（所有用户都能用）。
+
+* 注意, 在bash中`$(command)`是命令替换, 比如`$(pwd)`会被`/home/azazel`替换.  如果表示环境变量, 不加(), 即$NVBOARD_HOME, 会被这个环境变量值`/home/azazel/nvboard`替换. 
+* 而在编写Makefile时环境变量要加括号, $(NVBOARD_HOME)会被`/home/azazel/nvboard`替换.
 
 
 
 ## 8.4 关于Makefile
-	* 奶奶的, Makefile的注释必须单独成行,,,,诸如`TOPNAME = top	 # 这句话的意思xxx`会导致#前面的空格也被读进去然后就完蛋了....
+
+* 奶奶的, Makefile的注释必须单独成行,,,,诸如`TOPNAME = top	 # 这句话的意思xxx`会导致#前面的空格也被读进去然后就完蛋了....
+
+* **优先级**: Makefile中, 变量赋值加载顺序是语句先后. 后面覆盖前面. 可以用?=(最低优先级),  `override a=5`(最高优先级). 不过在bash里make命令行参数直接指定 `make a=5`无视Makefile有最高优先级
+
+* 关键词变量. Makefile有一些约定俗成的变量（常见的“内部变量”）. 这些变量虽然 不是 Makefile 的关键字，但 make 及编译工具默认会识别：
+* CC：指定 C 编译器（默认为 gcc）
+* CXX：指定 C++ 编译器（默认为 g++）
+* CFLAGS：C 编译选项
+* CXXFLAGS：C++ 编译选项
+* LDFLAGS：链接选项（影响最终生成的可执行文件）.
+	* `LDFLAGS`是Makefile内部参数, 用于指定`链接器`linker. +=表示在已有值上append新选项. -l库名表示链接该库.
+* CPPFLAGS：预处理选项（如 -I 头文件路径）
+* LDLIBS：库文件（通常是 -l 选项，但和 LDFLAGS 不同，它出现在链接命令的 最后）
 	
-	* **优先级**: Makefile中, 变量赋值加载顺序是语句先后. 后面覆盖前面. 可以用?=(最低优先级),  `override a=5`(最高优先级). 不过在bash里make命令行参数直接指定 `make a=5`无视Makefile有最高优先级
-	
-	* 关键词变量. Makefile有一些约定俗成的变量（常见的“内部变量”）. 这些变量虽然 不是 Makefile 的关键字，但 make 及编译工具默认会识别：
-		* CC：指定 C 编译器（默认为 gcc）
-		* CXX：指定 C++ 编译器（默认为 g++）
-		* CFLAGS：C 编译选项
-		* CXXFLAGS：C++ 编译选项
-		* LDFLAGS：链接选项（影响最终生成的可执行文件）.
-			* `LDFLAGS`是Makefile内部参数, 用于指定`链接器`linker. +=表示在已有值上append新选项. -l库名表示链接该库.
-		* CPPFLAGS：预处理选项（如 -I 头文件路径）
-		* LDLIBS：库文件（通常是 -l 选项，但和 LDFLAGS 不同，它出现在链接命令的 最后）
-			
-	* 下面是一些注释笔记.
-	```Makefile
-	# 那些在TARGET(:build)块外的等式, 意义是: 变量TOPNAME的值是"top", 可以用$(TOPNAME)得到字符串"top". 顺带, Makefile有严格的缩进要求, TARGET块内的命令必须缩进.
-	# `?=`意味着, 考虑`INC_PATH?=`, 如果INC_PATH变量还没有被定义, 则定义其值为""(空). 如果外部已传入, 比如用户输入命令`make INC_PATH=/somepath`, 则该行语句不执行.
-	#default 目标块在用户没有指定目标的时候执行. 比如用户输入`make`.  此处具体来说执行的是`./build/top`. 如果用户输入`make build`, 则执行build目标块.
-	# `$^`表示所有依赖文件的列表, `@(bash command)`表示执行之后的bash command但不在终端显示命令.
-	```
+* 下面是一些注释笔记.
+```Makefile
+# 那些在TARGET(:build)块外的等式, 意义是: 变量TOPNAME的值是"top", 可以用$(TOPNAME)得到字符串"top". 顺带, Makefile有严格的缩进要求, TARGET块内的命令必须缩进.
+# `?=`意味着, 考虑`INC_PATH?=`, 如果INC_PATH变量还没有被定义, 则定义其值为""(空). 如果外部已传入, 比如用户输入命令`make INC_PATH=/somepath`, 则该行语句不执行.
+#default 目标块在用户没有指定目标的时候执行. 比如用户输入`make`.  此处具体来说执行的是`./build/top`. 如果用户输入`make build`, 则执行build目标块.
+# `$^`表示所有依赖文件的列表, `@(bash command)`表示执行之后的bash command但不在终端显示命令.
+```
 
 
 
