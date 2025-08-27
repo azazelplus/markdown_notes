@@ -1048,7 +1048,7 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 # 6 git
 
-## 6.0 git的相关概念
+## 6.0 git的基础概念
 
 ![alt text](image-5.png)
 
@@ -1299,6 +1299,7 @@ git branch  #查看当前仓库的所有分支.
 ### 6.10.3 创建新分支和切换当前分支
 
 
+
 **创建分支**:
 ```bash
 git branch pa0 #创建一个新分支pa0, 但你仍然停留在当前分支.
@@ -1371,9 +1372,9 @@ git clone <url>
 #请使用ssh_url而不是http_url. 后者已经不支持了.
 ```
 
-## 6.12 远程仓库管理 
+## 6.12 远程仓库 
 
-### git remote
+### 6.12.1 git remote
 ```bash
 git remote -v #查看当前本地仓库的默认推送远程仓库.
 
@@ -1401,7 +1402,27 @@ git push --force  #强制推送[本地当前],覆盖远程分支上的内容, �
 git pull  #将当前本地仓库分支的默认upstream(如果有的话)拉取
 ```
 
-## 6.13 others
+## 6.13 网络问题和ssh
+
+github.com提供了两个主机来交互:
+
+`github.com`(port 22, 负责ssh协议, port 443, 负责http协议)
+`ssh.github.com`(port 22, 负责ssh协议, port 443, 负责http协议)
+
+有时github.com会出问题, 或者其22端口会出问题. 此时就要改config, 尝试换为443端口, 或者从备用主机ssh.github.com的22/443端口访问.
+
+
+使用git远程推送, 有两种通讯方式:
+1. http协议: 使用个人令牌
+2. ssh协议: 需要配置好本地ssh(windows地址在user/.ssh/):
+   1. `config`配置文件
+   2. `id_rsa`(私钥)
+   3. `id_rsa.pub`(公钥)
+   4. 在要访问的远程仓库里添加`id_rsa.pub`(公钥)
+
+config的配置:
+
+推荐双host写法
 
 
 ##
