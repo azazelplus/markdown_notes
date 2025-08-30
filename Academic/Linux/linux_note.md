@@ -1374,7 +1374,7 @@ git clone <url>
 
 ## 6.12 远程仓库 
 
-### 6.12.1 git remote
+### 6.12.1 远程仓库配置git remote
 ```bash
 git remote -v #查看当前本地仓库的默认推送远程仓库.
 
@@ -1382,6 +1382,8 @@ git push --set-upstream <remote_name> <branch_name> #更改当前本地仓库的
 
 ```
 ### 6.12.2 推送到远程仓库 git push
+
+`git push`命令会在bash中运行
 
 ```bash
 git push  #把本地仓库的[当前所在分支]提交到远程仓库的对应[上游分支]. 如果当前本地仓库没有设置[上游分支], 则失败并提示要
@@ -1420,9 +1422,71 @@ github.com提供了两个主机来交互:
    3. `id_rsa.pub`(公钥)
    4. 在要访问的远程仓库里添加`id_rsa.pub`(公钥)
 
-config的配置:
+----
 
-推荐双host写法
+**config的配置**: (config格式就是下面这种一段一段的. `#`注释. 第一行只是规则自定义名称)
+`./user/.ssh/config`用来设置**对于某个主机, ssh连接它的方式**.
+
+当我们`git push`的时候, git根据remote地址来决定选择哪个主机, 然后从config里寻找该主机的配置(找不到就默认).
+
+例如如果当前环境下查询:
+
+```bash
+azazel@DESKTOP-NJKSK6O MINGW64 /f/aza/notes_git (master)
+$ git remote -v
+origin  git@github.com:azazelplus/markdown_notes.git (fetch)
+origin  git@github.com:azazelplus/markdown_notes.git (push)
+```
+
+格式为`git@[host_name]:[user_name]/[repo_name]`
+
+这意味着, 该仓库的push和pull访问的主机名为`github.com`. 
+
+**它只是一个自定义名称****: 它对应config中的Host. git会在config中一段一段查找这个叫做`github.com`的配置. (所以大多数情况下你无需`git remote set-url`来更改实际要访问的主机. 当然为了解耦的精神, 我推荐你还是写成不同主机别名, 对应的主机配置固定.)
+
+
+-----
+-----
+-----
+**我们可以这样写config:**
+
+```bash
+#github.com主机的ssh连接配置. 当22端口因某种不可抗力出问题时, 尝试把Port从默认22换为443. 
+Host github.com
+  HostName github.com
+  Port 22
+  User git
+  IdentityFile ~/.ssh/id_rsa
+
+
+# 如果还不行, 可能`github.com`主机挂掉了. 
+# 这段配置使用备用主机`ssh.github.com`, 尝试其443端口. 需要运行命令`git remote origin set-url ssh.github.com`, 将当前远程仓库的remote主机设置, 将`连接的服务器别名`设置为`ssh.github.com`, 这样git就会来找这一段了.
+Host ssh.github.com
+  HostName ssh.github.com
+  Port 443
+  User git
+  IdentityFile ~/.ssh/id_rsa
+```
+
+这段配置的意思是:
+
+* 当访问别名为`github.com`的主机时(第二段同, 略):
+  * 将要访问的主机为`github.com`.
+  * 端口为`22`.
+  * 用户名为`git`.
+  * 所使用的ssh私钥文件为`~/.ssh/id_rsa`.
+
+-----
+-----
+-----
+
+默认行为:
+
+* 远程仓库的默认remote设置为访问一个叫做`github.com`的主机. 所以一般我们写config都向上面一样, 第一行为`Host github.com`, 第二行Hostname(真正要访问的地址)可以选择`github.com`或`ssh.github.com`
+* 当访问主机`github.com`时, 默认访问22端口.(但是一般443也可以用)
+* 当访问主机`ssh.github.com`时, 默认访问443端口.(但是一般22也可以用)
+
+
 
 
 ##
