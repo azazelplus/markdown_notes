@@ -1,6 +1,34 @@
 https://hdlbits.01xz.net/wiki/Main_Page
 
+# 1. device
 
+## 1.1 D-filp-flop
+
+最常见的触发器，用于存储一个二进制位。
+输入 D 在时钟上升沿或下降沿被采样，并存储为输出 Q
+
+```verilog
+module d_filp_flop(
+    input clk,      //时钟信号
+    input reset     //复位信号
+    input d         //数据输入
+    output reg q    //输出q
+);
+
+    always @(posedge clk or posedge reset) begin
+        if(reset)
+            q<=0;   //异步
+        else
+            q<=d;
+    end
+
+```
+
+## 1.2 FSM(finite state machine)有限状态机
+
+```verilog
+
+```
 
 # 2.verilog language
 
@@ -469,6 +497,7 @@ The following code contains incorrect behaviour that creates a latch. Fix the bu
 
 This is the circuit described by the code, not the circuit you want to build.
 这是代码描述的电路，而不是您要构建的电路。
+```
 always @(*) begin
     if (cpu_overheated)
        shut_off_computer = 1;
@@ -478,6 +507,8 @@ always @(*) begin
     if (~arrived)
        keep_driving = ~gas_tank_empty;
 end
+```
+
 ```verilog
 module top_module (
     input      cpu_overheated,
@@ -649,7 +680,7 @@ module top_module (
 endmodule
 ```
 
-### 2.4.8 避免always中出现latch
+### 2.4.8 避免组合逻辑中出现latch
 这需要留意给if或者case块的所有情况留出default. 一种方法是**先赋值再覆盖**.
 Suppose you're building a circuit to process scancodes from a PS/2 keyboard for a game. Given the last two bytes of scancodes received, you need to indicate whether one of the arrow keys on the keyboard have been pressed. This involves a fairly simple mapping, which can be implemented as a case statement (or if-elseif) with four cases.
 
@@ -977,9 +1008,9 @@ endmodule
 
 
 
-# 3 circuits
+# 3 circuits 电路
 
-## 3.1 combinational logiv
+## 3.1 combinational logiv 组合逻辑电路
 
   ### 3.1.1 basic gates
 
@@ -1196,17 +1227,19 @@ module top_module(
 endmodule
 ```
 
-## 3.2 sequential logic
+## 3.2 sequential logic 时序逻辑电路
 
   ### 3.2.1 latches and flip-flop 锁存器和触发器
 
    #### 3.2.1.1 DFF D触发器
-A D flip-flop is a circuit that stores a bit and is updated periodically, at the (usually) positive edge of a clock signal.
+AD flip-flop is a circuit that stores a bit and is updated periodically, at the (usually) positive edge of a clock signal.
+
 AD 触发器是一种存储位并在时钟信号（通常）正边沿定期更新的电路。
+
 ![D flip-flop](image-13.png)
 
 D flip-flops are created by the logic synthesizer when a clocked always block is used (See alwaysblock2). A D flip-flop is the simplest form of "blob of combinational logic followed by a flip-flop" where the combinational logic portion is just a wire.
-当使用时钟always块时，D触发器由逻辑合成器创建（参见alwaysblock2 ）。 D触发器是“组合逻辑块后面跟着一个触发器”的最简单形式，其中组合逻辑部分只是一条电线。
+当使用时钟always块时，D触发器由**逻辑合成器**创建（参见alwaysblock2 ）。 D触发器是“组合逻辑块后面跟着一个触发器”的最简单形式，其中组合逻辑部分只是一条电线。
 
 Create a single D flip-flop.
 创建单个 D 触发器。
@@ -1227,11 +1260,9 @@ module top_module (
     end
 
 endmodule
-
-endmodule
 ```
 
-   #### 3.2.1.2 DFF with byte enable
+   #### 3.2.1.2 DFF with byte enable 带使能开关的D触发器
 Create 16 D flip-flops. It's sometimes useful to only modify parts of a group of flip-flops. The byte-enable inputs control whether each byte of the 16 registers should be written to on that cycle. byteena[1] controls the upper byte d[15:8], while byteena[0] controls the lower byte d[7:0].
 创建 16 个 D 触发器。有时只修改一组触发器的一部分是有用的。字节使能输入控制是否应在该周期写入 16 个寄存器的每个字节。 byteena[1] 控制高字节 d[15:8] ， 尽管 byteena[0] 控制低字节 d[7:0] 。
 
@@ -1265,11 +1296,13 @@ endmodule
    #### 3.2.1.3 D latch D锁存器
 Implement the following circuit:
 
-
-
-Note that this is a latch, so a Quartus warning about having inferred a latch is expected.
 ![D latch](image-14.png)
+
+*Note that this is a latch, so a Quartus warning about having inferred a latch is expected.*
+
+
 Hint...
+
 Latches are level-sensitive (not edge-sensitive) circuits, so in an always block, they use level-sensitive sensitivity lists.
 * 锁存器是电平敏感的电路（而非边沿敏感）：
   * 电平敏感（level-sensitive）意味着锁存器根据控制信号（如 enable 或 clk）的电平状态工作，而不是对信号的边沿（如上升沿或下降沿）作出响应。
@@ -2799,42 +2832,14 @@ endmodule
 # 4 testbenches
 
 
-# **.device
 
-## 1.1 D-filp-flop
-
-最常见的触发器，用于存储一个二进制位。
-输入 D 在时钟上升沿或下降沿被采样，并存储为输出 Q
-
-```verilog
-module d_filp_flop(
-    input clk,      //时钟信号
-    input reset     //复位信号
-    input d         //数据输入
-    output reg q    //输出q
-);
-
-    always @(posedge clk or posedge reset) begin
-        if(reset)
-            q<=0;   //异步
-        else
-            q<=d;
-    end
-
-```
-
-## 1.2 FSM(finite state machine)有限状态机
-
-```verilog
-
-```
 
 
 # 杂项
 
-## if 和 else 块是否需要 begin 和 end (相当于C中的`{}`)包围，取决于代码块中是否包含多条语句, 单条语句的话可以省略begin和end. 即使只有一条语句，出于代码清晰性和可维护性的考虑，也推荐始终为 if 和 else 块添加 begin 和 end。
+* if 和 else 块是否需要 begin 和 end (相当于C中的`{}`)包围，取决于代码块中是否包含多条语句, 单条语句的话可以省略begin和end. 即使只有一条语句，出于代码晰性和可维护性的考虑，也推荐始终为 if 和 else 块添加 begin 和 end。
 
-## There is no logical-XOR operator!!!
+* There is no logical-XOR operator!!!
 
 
 #
