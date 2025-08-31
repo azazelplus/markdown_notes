@@ -9,7 +9,7 @@ if command -v uname >/dev/null 2>&1; then
 	git commit -m "autosave"
 	git push
 	echo "✅ operation complete，quiting in 2s..."
-	sleep 2
+	sleep 5
 else
 	# 关闭命令回显, 包括这条命令本身.
 	@echo off
