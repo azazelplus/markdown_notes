@@ -30,7 +30,7 @@ module d_filp_flop(
 
 ```
 
-# 2.verilog language
+# 2.verilog language 
 
 ## 2.3 modules:hierarchy
 
@@ -1031,7 +1031,7 @@ endmodule
 
 ## 3.1 combinational logiv 组合逻辑电路
 
-  ### 3.1.1 basic gates
+  ### 3.1.1 basic gates 基本门电路
 
    #### 3.1.1.14 thermo stat
 A heating/cooling thermostat controls both a heater (during winter) and an air conditioner (during summer). Implement a circuit that will turn on and off the heater, air conditioning, and blower fan as appropriate.
@@ -1128,9 +1128,10 @@ endmodule
 
 
 
-  ### 3.1.2 MULTIPLEXERS
+  ### 3.1.2 MULTIPLEXERS 多路复用器
 
-   #### 3.1.2.5 256-to-1 4bit mux
+   #### 3.1.2.5 256-to-1 4bit mux 
+
 请创建一个256选1, 四位多路复用器.
 
 该module涉及到一个细节问题: 向量指标必须是constant(过程常量). 这是因为切片索引存在非常量时, verilog无法确定步长是一个常量(即使这在我们看来很显然...)
