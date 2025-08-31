@@ -152,7 +152,7 @@ module multiplexer(
 endmodule
 ```
 
-### 2.3.6 module add
+### 2.3.6 module add 全加器
 You are given a module add16 that performs a 16-bit addition. Instantiate two of them to create a 32-bit adder. One add16 module computes the lower 16 bits of the addition result, while the second add16 module computes the upper 16 bits of the result, after receiving the carry-out from the first adder. Your 32-bit adder does not need to handle carry-in (assume 0) or carry-out (ignored), but the internal modules need to in order to function correctly. (In other words, the add16 module performs 16-bit a + b + cin, while your module performs 32-bit a + b).
 
 Connect the modules together as shown in the diagram below. The provided module add16 has the following declaration:
@@ -190,7 +190,7 @@ module top_module(
 endmodule
 ```
 
-### 2.3.7 Module fadd(full adder)
+### 2.3.7 Module fadd(full adder) 用多个一位全加器连接成多位全加器
 In this exercise, you will create a circuit with two levels of hierarchy. Your top_module will instantiate two copies of add16 (provided), each of which will instantiate 16 copies of add1 (which you must write). Thus, you must write two modules: top_module and add1.
 
 Like module_add, you are given a module add16 that performs a 16-bit addition. You must instantiate two of them to create a 32-bit adder. One add16 module computes the lower 16 bits of the addition result, while the second add16 module computes the upper 16 bits of the result. Your 32-bit adder does not need to handle carry-in (assume 0) or carry-out (ignored).
@@ -225,12 +225,31 @@ module add1(
 endmodule
 ```
 
-### 2.3.8 Module cseladd(carry-select adder)
+### 2.3.8 Module cseladd(carry-select adder, CSA, 选择进位加法器)
 
 之前的最简单的串联式加法器被称为纹波式加法器(ripple carry adder).
 One drawback of the ripple carry adder (See previous exercise) is that the delay for an adder to compute the carry out (from the carry-in, in the worst case) is fairly slow, and the second-stage adder cannot begin computing its carry-out until the first-stage adder has finished. This makes the adder slow. One improvement is a carry-select adder, shown below. The first-stage adder is the same as before, but we duplicate the second-stage adder, one assuming carry-in=0 and one assuming carry-in=1, then using a fast 2-to-1 multiplexer to select which result happened to be correct.
 
+纹波式加法器, 也就是一个一个的1bit全加器连起来. 缺点就是计算过程是串行的, 每个1bit全加器都要等上一个算完才能开始计算.
+
+
+
 In this exercise, you are provided with the same module add16 as the previous exercise, which adds two 16-bit numbers with carry-in and produces a carry-out and 16-bit sum. You must instantiate three of these to build the carry-select adder, using your own 16-bit 2-to-1 multiplexer.
+
+本练习搭建选择进位加法器. 
+
+-   思路：**并行提前算好两种情况**。 以空间换时间. 
+    -   假设第二段进位=0，算出一组结果。     
+    -   假设第二段进位=1，算出另一组结果.    
+-   等第一段真正算出进位后，用一个 **2选1多路选择器 (MUX)** 立即选择正确的结果。
+
+利用现成的16bit纹波加法器, 制作一个32bit选择加法器. 
+
+前16bit再用一个纹波加法器计算. 进位cout给到二选一MUX.
+
+后16bit用两个纹波加法器分别考虑cin为0,1的情况计算, 其结果由MUX决定用哪一个.
+
+
 
 Connect the modules together as shown in the diagram below. The provided module add16 has the following declaration:
 
