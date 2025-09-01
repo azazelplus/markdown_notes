@@ -1358,7 +1358,7 @@ endmodule
 
 ## 3.3 译码器
 
-该电路可以分辨n个输入信号的具体结果.  
+该电路可以分辨n个输入信号的具体结果. 也就是把一个编码翻译出来(one-hot向量).
 
 称为 **n-2^n dec** . 由下图可知, #T(n-2^n dec)=n#T(not) + 2^n#T(andn).
 
@@ -1371,7 +1371,7 @@ n个信号排列组合有2^n种可能, 所以需要2^n位的输出来表示.
 
 ## 3.4 编码器
 
-即译码器的相反作用电路.
+即译码器的相反作用电路. 把输入的one-hot信号(即只有一路输入有效的多路信号)给输出为二进制编码.
 
 ![alt text](image-136.png)
 
@@ -1383,12 +1383,48 @@ n个信号排列组合有2^n种可能, 所以需要2^n位的输出来表示.
 
 ## 3.5 优先编码器
 
+优先编码器允许输入的多路信号不是one-hot信号, **可以有多路高信号**.
+
+优先编码器只选择高信号的最高位, 忽略之后的高信号.
+
+其经常用在中断系统:
+* 多个外设分别发出一路中断请求信号, 按照重要优先级组合成一个多路信号, 最高路为最紧急的外设.
+* 优先编码器会选择最高优先级的中断信号, 将其对应二进制编号输出.
+
 ![alt text](image-138.png)
 
 
-## 3.6 多路选择器
+## 3.6 MUX 多路选择器
 
-![alt text](image-139.png)
+电路原理:
+
+利用一个1-2 decoder可以实现一个2-1 MUX.
+
+![alt text](image-158.png)
+
+***
+
+同样地, 利用一个2-4 decoder可以实现一个4-1 MUX.
+
+![alt text](image-159.png)
+
+***
+
+利用一个log₂N-N decoder可以实现一个N-1 MUX.
+
+
+***
+***
+***
+
+若考虑N个信号是多通道(位宽M, 作为一个整体被选择/不被选择)的, 则
+
+对于每个数据位宽M, 一共N个输入的N-1 MUX,
+
+控制信号S位宽为log₂N, 使用一个log₂N-N decoder, 其输出引出M条线复用即可.
+
+
+
 
 ### 3.6.1 多路选择器的verilog实现
 
@@ -1438,9 +1474,14 @@ endmodule
   
 ## 3.7 比较器
 
+下图是一个2输入, 4位宽的比较器.
+
 ![alt text](image-140.png)
 
 
+显然, 对于2输入, M位宽的比较器, 需要M个`XOR`.
+
+>2输入的比较器可以自行用思路`先两两比较, 再比较上一层`搭建.
 
 
 
@@ -1471,12 +1512,20 @@ endmodule
 
 用两个交叉耦合的`NOT`构建.
 
+不过这个双稳态电路完全没啥意义, 它甚至没有输入信号. 
+
+你把它搭出来后可以认为它会随机选择一种状态(比如Q=1, $\bar{Q}$=0), 然后保持 这种状态.
+
 ![alt text](<K(4CK`~V42DB@YVPZ](I_Q7.png>)
 
 
 ### 4.0.2 SR锁存器
 
-这是一个更好的双稳态电路. 用两个交叉耦合的`NOR`构建.
+这是一个有输入的双稳态电路. 用两个交叉耦合的`NOR`构建.
+
+用S和R输入信号来影响输出Q. 实际使用时, S和R平时都是0, 需要改变状态时输出一个方波即可! 
+
+方波R就可以实现reset, 方波S就可以实现set.
 
 ![alt text](image-145.png)
 
@@ -1510,7 +1559,69 @@ endmodule
 ---
 ---
 
-## 4.2 DFF D触发器
+
+
+## 4.2 D latch D锁存器
+
+### 4.2.0 从SR锁存器到D锁存器
+
+我们前面熟悉了SR锁存器. 在其电路结构上添加两个`AND`和一个`not`, 就制成了D锁存器. 
+
+* 两个与门保证了必须在使能信号`WE`置高时才能给SR锁存器输入(否则输入是S=0, R=0)
+* 同时, 输入D和其反被分别给到两个与门, 从而硬件层面保证只能给SR锁存器(S=0, R=1)或(S=1, R=0)的情况, 不会出现都为1, 避免了SR锁存器的亚稳态.
+
+![alt text](image-160.png)
+
+D锁存器在使能信号`WE`(有些地方也称`Ena`)为1时将`Q`输出调整为当前输入`D`的值. 这就好像`Q` 是 `D` 直接通过一根导线或一个非反相缓冲器连接到一起，毫无延迟。
+* D 锁存器在使能时像一根导线（或非反相缓冲器）.
+
+![alt text](image-14-1.png)
+
+*Note that this is a latch, so a Quartus warning about having inferred a latch is expected.*
+
+
+***
+
+*一种用四个与`NAND`搭建的更小的D锁存器*
+
+![alt text](image-162.png)
+
+***
+
+* 锁存器是电平敏感的电路（而非边沿敏感）：
+  * 电平敏感（level-sensitive）意味着锁存器根据控制信号（如 enable 或 clk）的电平状态工作，而不是对信号的边沿（如上升沿或下降沿）作出响应。
+  * 当控制信号为某个激活状态（例如高电平），锁存器的输出会随输入实时更新。
+  * 相反，边沿敏感（edge-sensitive）的电路（如触发器）只在控制信号发生边沿跳变时（如从 0→1 或 1→0）更新输出。
+
+
+
+
+
+### 4.2.1 Verilog实现D锁存器
+
+**Verilog实现**:
+
+* 锁存器**仍然是时序逻辑元件**，因此应使用非阻塞赋值（<=）. 因为**它可以存储状态**,而不是简单地输出逻辑函数（组合逻辑）.
+* 为了避免竞争条件（race condition）和确保数据更新的正确性，非阻塞赋值 (<=) 是推荐使用的赋值方式。
+  * 非阻塞赋值会等到所有的逻辑运算都完成后，才在时钟周期结束时更新信号值。
+
+```verilog
+module top_module (
+    input d, 
+    input ena,
+    output q);
+    always @(*)begin
+        if(ena)begin
+            q<=d;
+        end
+    end
+endmodule
+```
+
+
+## 4.5 D flipflop DFF D触发器
+
+### 4.5.0 D触发器速览&概述
 
 AD flip-flop is a circuit that stores a bit and is updated periodically, at the (usually) positive edge of a clock signal.
 
@@ -1518,8 +1629,37 @@ AD 触发器是一种存储位并在时钟信号（通常）正边沿定期更�
 
 ![alt text](image-156.png)
 
+它是由D锁存器演变而来:
 
-D触发器可以由两个**D锁存器**实现. 
+D锁存器无法实现同步电路特性. 我们希望一种上升沿触发并维持一个周期的器件.
+![alt text](image-163.png)
+
+
+![alt text](image-165.png)
+![alt text](image-167.png)
+***
+***
+**我们来尝试分析这个D触发器电路.**
+
+sr0接收$clk$和sr1的输出$Q_1$;
+
+sr1接收输入$\bar{D}$和$clk ~nand~ \bar{Q_1}$
+
+clk为1时, $R_0=0$, sr0 等待 $S_0=Q_1$的信号; $S_1=Q_0$, 
+
+此时看D. 
+* D给出1, $R_1=0$, sr1等待S_1的信号. $S_1=R_1=0$, 从而Q_1=0=S_0
+
+....
+***
+***
+(👇回忆`NOR`搭建的SR锁存器电路结构:)
+
+![alt text](image-166.png)
+***
+***
+
+### 4.5.1 D触发器可以由两个**D锁存器**实现. 
 
 verilog实现DFF:
 
@@ -1541,7 +1681,7 @@ module d_filp_flop(
 
 
 
-### 4.2.1 **主从式D触发器**
+### 4.5.2 **主从式D触发器**
 
 ![alt text](image-157.png)
 
@@ -1569,7 +1709,10 @@ module top_module (
 endmodule
 ```
 
-## 4.3 DFF with byte enable 带使能开关的D触发器
+### 4.5.3 DFF with byte enable / DFFE / 带使能开关的D触发器
+
+![alt text](image-168.png)
+
 Create 16 D flip-flops. It's sometimes useful to only modify parts of a group of flip-flops. The byte-enable inputs control whether each byte of the 16 registers should be written to on that cycle. byteena[1] controls the upper byte d[15:8], while byteena[0] controls the lower byte d[7:0].
 创建 16 个 D 触发器。有时只修改一组触发器的一部分是有用的。字节使能输入控制是否应在该周期写入 16 个寄存器的每个字节。 byteena[1] 控制高字节 d[15:8] ， 尽管 byteena[0] 控制低字节 d[7:0] 。
 
@@ -1600,46 +1743,7 @@ module top_module (
 endmodule
 ``` 
 
-## 4.2 latch D锁存器
-
-D锁存器在`Ena`为1时将`Q`输出调整为当前输入`D`的值. 这就好像`Q` 是 `D` 直接通过一根导线或一个非反相缓冲器连接到一起，毫无延迟。
-* D 锁存器在使能时像一根导线（或非反相缓冲器）.
-
-![alt text](image-14-1.png)
-
-*Note that this is a latch, so a Quartus warning about having inferred a latch is expected.*
-
-
-
-* 锁存器是电平敏感的电路（而非边沿敏感）：
-  * 电平敏感（level-sensitive）意味着锁存器根据控制信号（如 enable 或 clk）的电平状态工作，而不是对信号的边沿（如上升沿或下降沿）作出响应。
-  * 当控制信号为某个激活状态（例如高电平），锁存器的输出会随输入实时更新。
-  * 相反，边沿敏感（edge-sensitive）的电路（如触发器）只在控制信号发生边沿跳变时（如从 0→1 或 1→0）更新输出。
-
-
-However, they are still sequential elements, so should use non-blocking assignments.
-* 锁存器**仍然是时序逻辑元件**，因此应使用非阻塞赋值（<=）. 因为**它可以存储状态**,而不是简单地输出逻辑函数（组合逻辑）.
-* 为了避免竞争条件（race condition）和确保数据更新的正确性，非阻塞赋值 (<=) 是推荐使用的赋值方式。
-  * 非阻塞赋值会等到所有的逻辑运算都完成后，才在时钟周期结束时更新信号值。
-
-
-
-**Verilog实现**:
-
-```verilog
-module top_module (
-    input d, 
-    input ena,
-    output q);
-    always @(*)begin
-        if(ena)begin
-            q<=d;
-        end
-    end
-endmodule
-```
-
-### D触发器例题:
+### 4.5.4 一道D触发器例题:
 
 Given the **finite state machine** circuit as shown, assume that the D flip-flops are initially reset to zero before the machine begins.
 
@@ -1685,7 +1789,6 @@ module dff(
     end
 endmodule
    ```
-
 
 ## 4.6 JK flip flop JK触发器
 
@@ -2779,6 +2882,62 @@ endmodule
 
 
 
+## 4.12 寄存器
+
+### 4.12.0 寄存器概述:
+
+**寄存器就是一组 触发器 构成的存储单元。**
+
+
+![alt text](image-169.png)
+
+* 
+
+-   **RV32** = RISC-V 指令集架构 (ISA) 中的 **32位指令集变体**。 
+    -   RISC-V 有不同位宽的变体：    
+        -   RV32 → 寄存器宽度 32 位     
+        -   RV64 → 寄存器宽度 64 位      
+        -   RV128 → 寄存器宽度 128 位           
+-   RV32 中，所有通用寄存器（包括 PC）都是 **32 位宽**。
+- PC(Program Counter), 程序计数器, 存放下一条将要执行指令的addr. RV32的PC是一个32位寄存器.
+
+
+## 4.13 存储器
+
+### 4.13.0 存储器概述
+
+-   **定义**：存储器是一大块 **可寻址的存储单元集合**. 它是一个由比特构成的**矩阵**. 每一**行**称为一个**存储字（word）**. 
+    
+-   **组织方式**： 
+    -   **深度 (depth)**：有多少行（多少个地址）。   
+    -   **宽度(位宽)(width)**：每行能存多少位（比如 32 位，64 位）。       
+-   **寻址方式**：通过地址总线选中一行，然后对这一行的数据进行读/写。   
+-   **规模**：存储器很大（如几 KB ~ GB 级别）。
+
+**用D触发器可以实现存储器的读操作:**
+
+![alt text](image-170.png)
+
+***
+***
+**寄存器和存储器的区别?**
+| 特性   | 存储器 (Memory)        | 寄存器 (Register)     |
+| ---- | ------------------- | ------------------ |
+| 容量   | 大（KB \~ GB）         | 小（个位数 \~ 几十个 word） |
+| 结构   | 行列矩阵 (深度×宽度)        | 一般就是几个触发器组成        |
+| 访问方式 | 通过地址选择一行            | 直接点名寄存器编号          |
+| 速度   | 较慢（通常需要多个周期，甚至还要缓存） | (理想模型)**单CPU时钟周期**     |
+| 位置   | CPU 外部（主存、cache）    | CPU 内部             |
+***
+***
+
+### 4.13.1 
+
+##
+
+
+
+##
 
 # 6.脉冲产生与整形电路
 
