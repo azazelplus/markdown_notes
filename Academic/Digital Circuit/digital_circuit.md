@@ -2224,9 +2224,7 @@ In this question, you will design a circuit for an 8x1 memory, where writing to 
 First, create an 8-bit shift register with 8 D-type flip-flops. Label the flip-flop outputs from Q[0]...Q[7]. The shift register input should be called S, which feeds the input of Q[0] (MSB is shifted in first). The enable input controls whether to shift. Then, extend the circuit to have 3 additional inputs A,B,C and an output Z. The circuit's behaviour should be as follows: when ABC is 000, Z=Q[0], when ABC is 001, Z=Q[1], and so on. Your circuit should contain ONLY the 8-bit shift register, and multiplexers. (Aside: this circuit is called a 3-input look-up-table (LUT)).
 首先，创建一个带有 8 个 D 型触发器的 8 位移位寄存器。标记 Q[0]...Q[7] 的触发器输出。移位寄存器输入应称为S ，它馈入 Q[0] 的输入（MSB 首先移入）。使能输入控制是否移位。然后，扩展电路以具有 3 个附加输入A 、 B 、 C和一个输出Z 。电路的行为应如下：当 ABC 为 000 时，Z=Q[0]，当 ABC 为 001 时，Z=Q[1]，依此类推。您的电路应仅包含 8 位移位寄存器和多路复用器。 （旁白：该电路称为 3 输入查找表 (LUT)）。
 
-补充: RAM中的"random"并不是随机的意思, 而是可以"访问任意位置".
-* **随机访问（Random Access）**：就像你可以直接通过一个地址读取任何一块内存，不管它是存储在内存的开始位置还是末尾位置。
-* **顺序访问（Sequential Access）**：则要求你必须从某个起始位置开始，依次读取每个位置，直到你找到所需的数据（比如老式的磁带存储）。
+
 
 ![alt text](image-152.png)
 
@@ -2908,18 +2906,26 @@ endmodule
 
 -   **定义**：存储器是一大块 **可寻址的存储单元集合**. 它是一个由比特构成的**矩阵**. 每一**行**称为一个**存储字（word）**. 
     
+- 存储器又可以分为ROM, RAM两大类.
+
+***
+***
+补充: RAM中的"random"并不是随机的意思, 而是可以"访问任意位置".
+* **随机访问（Random Access）**：就像你可以直接通过一个地址读取任何一块内存，不管它是存储在内存的开始位置还是末尾位置。**RAM, ROM都是随机访问存储器.**
+* **顺序访问（Sequential Access）**：则要求你必须从某个起始位置开始，依次读取每个位置，直到你找到所需的数据（比如老式的磁带存储）。
+***
+***
+
 -   **组织方式**： 
     -   **深度 (depth)**：有多少行（多少个地址）。   
     -   **宽度(位宽)(width)**：每行能存多少位（比如 32 位，64 位）。       
 -   **寻址方式**：通过地址总线选中一行，然后对这一行的数据进行读/写。   
 -   **规模**：存储器很大（如几 KB ~ GB 级别）。
 
-**用D触发器可以实现存储器的读操作:**
-
-![alt text](image-170.png)
 
 ***
 ***
+
 **寄存器和存储器的区别?**
 | 特性   | 存储器 (Memory)        | 寄存器 (Register)     |
 | ---- | ------------------- | ------------------ |
@@ -2930,6 +2936,45 @@ endmodule
 | 位置   | CPU 外部（主存、cache）    | CPU 内部             |
 ***
 ***
+
+***
+***
+### 4.13.1 用DFF作为存储单元, 搭建存储器
+
+#### 4.13.1.1用D触发器可以实现存储器的读操作:
+
+![alt text](image-170.png)
+
+* 假设我们要读一个位宽为3bit, 深度为2^1=2行(地址宽度为)的存储器.
+  
+* $b_{00}$即第0行第0列存储单元(DFF)存的比特. 如果$b_{00}=1$, 意味着**此时该DFF处于set状态, 输出Q=1**.
+
+* 想要read, 首先选择一个一位地址. 比如`1b'1`, 表示想读第1(**从0开始数**)行. `1b'1` 经过一个1-2decoder, 得到onehot向量`10`. 
+  * 其中的低位`0`通过第行, 和每个DFF的输出Q一起连到与门-->第0行与门输出都是0.
+  * 高位`1`通过第1行.--->第1行与门输出即为$(b_{1,2}​,b_{1,1}​,b_{1,0​})$. 即第1行储存的**数据字**: $Word_1=(b_{1,2}​,b_{1,1}​,b_{1,0​})$
+* 两行的`AND`输出通过`OR`筛一遍(实际上此处完全可以把上下两个`AND`的输出连起来, 不需要`OR`), 得到的输出: $Q([2],Q[1],Q[0])=(b_{1,2}​,b_{1,1}​,b_{1,0​})$ 这即为读到的第一行.
+
+***
+***
+#### 4.13.1.2 用D触发器可以实现存储器的写操作:
+
+
+![alt text](image-171.png)
+
+* 同样看上述位宽3bit, 深度2行的DFF存储器.
+* 仍然假设我们要写第1(**从0开始数**)行. `1b'1` 经过一个1-2decoder, 得到onehot向量`10`. 
+* 写操作电路: 首先decoder得到的onehot向量每一位通过一个和EN的与门, 其结果作为每行的实际`EN`.
+* 于是我们要写的第1行DFF得到`EN=1`, 而第0行DFF`EN=0`, 维持自身输出状态不改变.
+* 想要写入的数据为$(D[2],D[1],D[0])$, 其每一位连接着对应列每一个DFF. 
+* 于是实现对第1行位宽3的3个DFF的`D`端分别输入$(D[2],D[1],D[0])$, 它们将在下一次`clk`上升沿同步给其输出端$Q([2],Q[1],Q[0])$, 实现写入.
+
+#### 4.13.1.3 完整结构
+
+![alt text](image-172.png)
+
+
+
+
 
 ### 4.13.1 
 
