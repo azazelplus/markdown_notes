@@ -87,6 +87,7 @@ azazel@DESKTOP-NJKSK6O:~/test/test$ find . | grep ".c" | xargs wc -l
 - 选项 -r(reverse), 降序. 
 
 ### 1.9 more & less
+
 - more, 用于分页显示文件内容或输入。它一次显示一页内容，用户可以按空格键查看下一页，按 q 键退出。
 - 格式: **more filename**
 - 示例: 
@@ -94,14 +95,31 @@ azazel@DESKTOP-NJKSK6O:~/test/test$ find . | grep ".c" | xargs wc -l
 more AVeryVeryLongDocument.txt
 ```
 
-- less,比 more 更强大的逐屏查看文件内容工具。其命名是一个笑话(less>more). 常用操作：
+**less,比 more 更强大的逐屏查看文件内容工具。其命名是一个笑话(less>more). 常用操作：**
 
-    - 按空格键（Space）滚动到下一屏。
-    - 按 b(back) 键滚动到上一屏。
-    - 按回车键（Enter）滚动一行。
-    - 按 k 键向上滚动一行。
-    - 按 j 键向下滚动一行。
-    - 按 / 键进入搜索模式，输入要搜索的字符串，按 Enter 键搜索。
+  - 按空格键（Space）滚动到下一屏。
+  - 按 b(back) 键滚动到上一屏。
+  - 按回车键（Enter）滚动一行。
+  - 按 k 键向上滚动一行。
+  - 按 j 键向下滚动一行。
+* 📜 翻页
+-   `Space` → 向下翻一页    
+-   `b` → 向上翻一页    
+-   `d` → 向下翻半页 (down half)    
+-   `u` → 向上翻半页 (up half)    
+* * *
+* 🎯 跳转
+-   `g` → 跳到文档开头    
+-   `G` → 跳到文档末尾    
+-   `:n` → 跳到第 _n_ 行 (比如 `:100`)   
+* * *
+* 👀 查看
+-   `=` → 显示当前行号和总行数    
+-   `-N` → 打开行号显示（输入 `-N` 再按回车）
+    -   `/pattern` → 从当前位置往下搜索 `pattern`
+    -   `?pattern` → 从当前位置往上搜索 `pattern` 
+    -   `n` → 跳到下一个匹配结果   
+    -   `N` → 跳到上一个匹配结果
     - 按 q 键退出。
 
 
@@ -1044,7 +1062,67 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 
 
-# 5 一些实例   
+# 5 程序调试: gdb 
+
+## 🔹 启动 & 基本操作
+
+
+| 命令            | 作用                     |
+| ------------- | ---------------------- |
+| `gdb ./a.out` | 启动 gdb，加载目标程序          |
+| `run` / `r`   | 运行程序                   |
+| `start`       | 从 `main` 开始执行并停在第一行    |
+| `starti`      | 从入口 `_start` 指令开始执行并停下 |
+| `quit`        | 退出 gdb                 |
+
+
+## 🔹 源码级调试 (C/C++ 等)
+
+
+
+
+| 命令                          | 作用                |
+| --------------------------- | ----------------- |
+| `list` / `l`                | 查看源码              |
+| `break <func>` / `b <line>` | **在函数入口处或行号设置断点**        |
+| `delete <n>`                | 删除断点              |
+| `disable/enable <n>`        | 禁用/启用断点           |
+| `info break`                | 查看断点信息            |
+| `step` / `s`                | 单步进入函数 (源码级)      |
+| `next` / `n`                | 单步执行 (不进入函数)      |
+| `continue` / `c`            | 继续运行，直到下一个断点或程序结束 |
+| `finish`                    | 运行到当前函数返回         |
+| `print <expr>` / `p <expr>` | 打印变量或表达式的值        |
+| `display <expr>`            | 每次停下时自动显示变量       |
+| `backtrace` / `bt`          | 查看函数调用栈           |
+| `frame <n>`                 | 切换栈帧              |
+| `info locals`               | 查看局部变量            |
+
+## 🔹 汇编级调试
+| 命令                             | 作用                                                 |
+| ------------------------------ | -------------------------------------------------- |
+| `disassemble` / `disas`        | 反汇编当前函数                                            |
+| `disassemble <addr>`           | 反汇编指定地址附近代码                                        |
+| `set disassembly-flavor intel` | 设置反汇编为 Intel 风格                                    |
+| `si` (stepi)                   | **单步执行一条指令**                                           |
+| `ni` (nexti)                   | 单步执行一条指令 (不进入 call)                                |
+| `info registers` / `i r`       | 查看寄存器                                              |
+| `x/<n><f> <addr>`              | 查看内存 (n = 数量, f = 格式) <br> 例：`x/8x $rsp` 显示栈顶 8 个字 |
+| `x/s <addr>`                   | 以字符串形式查看内存                                         |
+| `set $eax=5`                   | 修改寄存器值                                             |
+| `break *<addr>`                | 在某条指令地址处设置断点                                       |
+
+## 🔹 调试小技巧
+
+-   `layout asm` → 打开 TUI 界面显示汇编和寄存器
+    
+-   `layout src` → 打开源码视图
+    
+-   `info files` → 查看程序入口点 `_start` 地址
+    
+-   `x/20i $rip` → 查看从当前指令指针开始的 20 条指令
+
+
 
 # 6 git
 
