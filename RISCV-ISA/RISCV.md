@@ -12,6 +12,9 @@
 
 # 1. 计算机抽象.
 
+
+## 1.1 概述
+
 组成计算机的5个经典部件:
 
 * **输入**(键盘, 鼠标, LCD(带电容来触摸), 摄像头...)和**输出**(LCD(带电容来触摸), 音响...). 统称为**I/O设备**
@@ -142,11 +145,11 @@ main函数的第一次调用来自OS/运行时环境, 这个就是宿主环境.
 
 ## 1.5 程序的执行和模拟器
 
-
+### 1.5.0 引言
 ![alt text](image-9.png)
 
 
-### 1.5.-1 交叉编译
+### 1.5.1 交叉编译器 riscv64-unknown-elf-gcc交叉编译器
 
 它是相对于**本地编译**来说的.
 
@@ -197,7 +200,13 @@ riscv64-unknown-elf-gcc a.c -o a.elf
 sudo apt install gcc-riscv64-unknown-elf
 ```
 
-### 1.5.0 QEMU(Quick EMUlator)
+使用它.
+
+```bash
+riscv64-unknown-elf-gcc a.c -o a.elf
+```
+
+### 1.5.2 架构模拟器 QEMU(Quick EMUlator)
 
 就是一个开源的 **硬件模拟器**。
 
@@ -237,10 +246,9 @@ Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
 ```
 
 
-### 1.5.1 程序运行在什麽环境??
+### 1.5.3 程序运行在什麽环境?? 一个例子: 一个裸机(freestanding)环境C程序
 
-
-#### 1.5.1.1 一个例子: 一个逻辑开发C程序
+程序运行在裸机环境(freestanding)或操作系统环境.
 
 ***
 
@@ -251,7 +259,11 @@ riscv64-unknown-elf-gcc作为交叉编译器.**
 
 0x10000000是qemu-system-riscv32中virt机器模型的串口地址.
 
-写一个在逻辑环境中运行的_start()函数`a.c`
+
+***
+**实验步骤:**
+***
+1. 写一个在逻辑环境中运行的_start()函数`a.c`
 ```c
 #include <stdio.h>
 void _start(){
@@ -261,7 +273,7 @@ void _start(){
 }
 ```
 
-使用编译指令:
+2. 使用编译指令:
 ```bash
 riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 \
     -ffreestanding -nostdlib -Wl,-Ttext=0x80000000 -O2 \
@@ -279,7 +291,7 @@ riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 \
 
 
 
-交叉编译完成后, 我们使用qemu模拟一个riscv32架构来运行它:
+3. 使用qemu模拟一个riscv32架构来运行它:
 
 
 ```bash
@@ -300,10 +312,10 @@ qemu-system-riscv32 -nographic -M virt -bios none -kernel a.out
 
 ***
 
-然后我们来看看这个程序的汇编指令: (使用`riscv64-unknown-elf`交叉编译器工具链(安装见1.5.-1)内提供的objdump命令)
+4. 然后我们来看看这个程序的汇编指令: (使用`riscv64-unknown-elf`交叉编译器工具链(安装见1.5.-1)内提供的objdump命令)
 
 ```bash
-azazel@DESKTOP-NJKSK6O:~/test$ riscv64-unknown-elf-objdump -d a.out
+riscv64-unknown-elf-objdump -d a.out
 ```
 
 输出:
@@ -348,7 +360,8 @@ Disassembly of section .text:
 
 ***
 ***
-### 程序入口 `_start` 在 `0x80000000`
+
+**三条指令的意思:**
 
 * 1\. `80000000: 100007b7 lui a5,0x10000`
   -   `lui` = Load Upper Immediate    
@@ -397,7 +410,62 @@ Disassembly of section .text:
 
 
 
+### 1.5.4 程序怎麽结束? 一个例子:
 
+阅读C99手册:
+***
+5.1.2.1 Freestanding environment
+2 The effect of program termination in a freestanding environment is implementation-defined(由实现定义的).
+***
+在裸机环境下, 程序终止并没有一个标准的函数来结束, 需要根据具体硬件提供的方式来退出.
+
+
+我们同样使用`riscv-unknown-elf-gcc`作为交叉编译器, `QEMU`作为架构模拟器, 进行裸机C开发.
+
+**QEMU virt 机器的退出机制**
+- 在 QEMU 的 `virt` 机器模型上，提供了一个**模拟的硬件设备(映射到32bit宽寄存器)**来接收退出信号。
+- 这个设备被映射到内存中的一个特殊地址`0x100000`。向这个地址写入一个特定的“魔法数字 (magic number)(`0x5555`)”，QEMU 监视器就会捕获到这个操作，并认为用户请求退出，从而优雅地关闭整个模拟器.
+-  它检测其32位寄存器的低16位是否为0x5555(即`if ((written_value & 0xFFFF) == 0x5555)`)
+
+
+
+
+
+
+1. 我们写一个`b.c`
+```c
+#include <stdin.h>
+
+void_start(){
+  //向QEMU的串口地址的第一个8字节写一个"A". 注意到该模拟串口是8bit位宽的设备(只支持8bit的ASCII码).
+  volatile uint8_t *p = (uint8_t *)(uintptr_t)0x10000000;
+  *p = 'A';
+
+  //向虚拟退出设备对应内存写一个0x5555. 该虚拟机是32位的, 
+  volatile uint32_t *exit = (uint32_t *)(uintptr_t)0x100000;
+  *exit = 0x5555; //对该地址写入魔法数字0x5555
+
+  _start();//正常情况下, 不会执行到这一句. 因为上一条指令已经导致 QEMU 退出了。如果因为某种原因退出失败，这会导致程序无限递归，重新尝试退出。
+}
+
+```
+
+2. 然后交叉编译它得到可以在rv32架构上跑的可执行文件:
+```bash
+riscv64-unknown-elf-gcc -ffreestanding -nostdlib -Wl,-Ttext=0x80000000 -O2 b.c -o b.out
+```
+* 注意如果没有加freestanding选项, 编辑器就不会自带一个最小的内置头文件集合, 会报错找不到stdint.h.
+
+3. 然后再QEMU上运行它:
+```bash
+qemu-system-riscv32 -nographic -M virt -bios none -kernel b.out
+```
+
+
+4. 看看反汇编:
+```bash
+
+```
 
 
 # 2. 指令

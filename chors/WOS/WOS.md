@@ -42,11 +42,19 @@
 选择数据库为
 Web of Science Core Collection
 
-**字段**可以选择
-* topic: 检索的范围为: 标题+摘要+作者关键词
-* title
-* 出版物(期刊)
-* 作者
+基础的检索是以**n个字段**进行检索的.
+
+**字段**可以选择:
+  * topic: 检索的范围为: 标题+摘要+作者关键词
+  * title
+  * 出版物(期刊)
+  * 作者
+
+例如这样: 两个主题: 
+* "piezoelectric energy harvesting"
+* "power management circuit"
+
+![alt text](image-5.png)
 
 例如:
 ![alt text](image-2.png)
