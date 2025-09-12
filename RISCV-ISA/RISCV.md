@@ -464,7 +464,7 @@ qemu-system-riscv32 -nographic -M virt -bios none -kernel b.out
 
 4. 看看反汇编:
 ```bash
-
+riscv64-unknown-elf-objdump -d b.out
 ```
 
 
@@ -599,6 +599,29 @@ java程序多种运行方式:
 
 
 ## 5.0
+
+
+# 6. ARM架构
+
+
+
+
+
+
+
+### CPSR(current program status reg)寄存器(当前程序状态寄存器)
+
+它定义cpu现在在做什麽.
+
+### SPSR(saved)寄存器(保存的程序状态寄存器)
+
+它是一个影子寄存器.[ ]
+R13一般用于栈指针;
+
+
+
+
+
 
 
 
