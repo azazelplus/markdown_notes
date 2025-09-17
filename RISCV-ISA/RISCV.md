@@ -587,8 +587,9 @@ QEMU 虽然是个开源项目，但还挺复杂，不利于我们理解细节
     - 寄存器 a0 = 1 时，结束运行  
     - ABI Mnemonic
 
+我们尝试写一个运行在这个环境上的程序.
 
-freestanding.c
+prog.c
 ```c
 
 //ebreak()接受两个立即数arg0, arg1, 并把它们分别放进寄存器a0, a1, 然后执行ebreak指令.(注意不是递归执行自己这个函数而是RV的ebreak指令)
@@ -620,6 +621,8 @@ void _start(){
 }
 
 ```
+
+这程序显然不能在qemu模拟器上直接运行, 也不能在windows/linux上直接运行.
 
 
 ### 1.7.2 搭配我们的蜜汁Makefile!
@@ -797,6 +800,11 @@ void inst_cycle() {
 
 ### 1.7.4 YEMU V1.0!!
 
+
+内存M中存储的指令:
+
+![alt text](image-26.png)
+
 ```c
 #include <stdio.h>
 #include <stdint.h>
@@ -806,6 +814,7 @@ void inst_cycle() {
 uint32_t R[32], PC;
 
 //我们分配出64byte的内存. 是的, 这非常小.
+//它存放的数据就是那个最简单的_start()函数的汇编指令, 一共7条. 它输出一个A然后结束.
 uint8_t M[64] = {
     0x13, 0x05, 0x00, 0x00, 0x93, 0x05, 0x10, 0x04, 0x73, 0x00, 0x10, 0x00,
     0x13, 0x05, 0x10, 0x00, 0x93, 0x05, 0x00, 0x00, 0x73, 0x00, 0x10, 0x00,
@@ -837,9 +846,9 @@ void inst_cycle() {
 
 int main() {
     PC = 0; 
-    R[0] = 0; // can be omitted since uninitialized global variables are initialized with 0
+    R[0] = 0; // can be omitted since uninitialized global variables are initialized with 0 in C.
     while (!halt) { 
-        inst_cycle(); 
+        inst_cycle(); //指令循环
     }
     return 0;
 }
