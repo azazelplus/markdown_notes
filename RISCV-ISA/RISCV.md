@@ -545,23 +545,29 @@ Disassembly of section .text:
 
 **它们有约定的用途.**
 
-| 名称        | 寄存器编号(别名)    | 用途                             |
-| --------- | -------- | ------------------------------ |
-| `x0`      | `zero`   | 永远为 0                          |
-| `x1`      | `ra`     | return address，函数返回地址          |
-| `x2`      | `sp`     | stack pointer，栈指针              |
-| `x3`      | `gp`     | global pointer，全局指针            |
-| `x4`      | `tp`     | thread pointer，线程指针            |
-| `x5–x7`   | `t0–t2`  | 临时寄存器（调用者保存）                   |
-| `x8`      | `s0/fp`  | saved register / frame pointer |
-| `x9`      | `s1`     | saved register                 |
-| `x10–x17` | `a0–a7`  | 参数/返回值寄存器                      |
-| `x18–x27` | `s2–s11` | 被调用者保存寄存器                      |
-| `x28–x31` | `t3–t6`  | 临时寄存器                          |
+| 名称        | ABI Mnemonic/注记符/别名    | 用途  | preserved across calls?       |
+| --------- | -------- | ------------------------------ |-- |
+| `x0`      | `zero`   | 永远为 0      |   --(immutable)      |
+| `x1`      | `ra`     | return address，函数返回地址|no          |
+| `x2`      | `sp`     | stack pointer，栈指针   | yes          |
+| `x3`      | `gp`     | global pointer，全局指针    |--(unallocatable)        |
+| `x4`      | `tp`     | thread pointer，线程指针  |--(unallocatable)          |
+| `x5–x7`   | `t0–t2`  | 临时寄存器（调用者保存） |no                  |
+| `x8`      | `s0/fp`  | saved register / frame pointer |yes|
+| `x9`      | `s1`     | saved register   |yes      |
+| `x10–x17` | `a0–a7`  | 参数/返回值寄存器       |no               |
+| `x18–x27` | `s2–s11` | 被调用者保存寄存器   | yes                   |
+| `x28–x31` | `t3–t6`  | 临时寄存器           | no               |
+
+preserved across calls? 这一项描述一个函数(caller)调用另一个函数(callee)时, 对该寄存器的操作/
+
+* yes: callee-saved, 被调用者保存. 
+  * 如果callee想用这个寄存器, 必须先把它的原先值保存(写到栈内存里维护起来)再覆写. 该callee函数运行结束后, **必须将其恢复原状**, 以供回到caller函数继续运行时使用.
+* no: caller-saved, 调用者保存.
+  * 调用一个子函数后, callee可能直接覆写这个寄存器, 把里面的内容抹除. caller必须保证不往里面存储调用callee结束后自己可能还要使用的数据, 或者自己做好内容保存后再调用callee.
+* x3, x4不可以随便分配覆写, 故不讨论. x0≡0没有讨论意义. 
 
 
-
-##
 
 
 
@@ -570,6 +576,8 @@ Disassembly of section .text:
 QEMU 虽然是个开源项目，但还挺复杂，不利于我们理解细节  
 - 25000+ 个源文件，110000+ 行源代码  
 
+
+### 1.7.1 先设计框架:
 让我们来设计一个面向 RISC-V 程序的简单 freestanding 运行时环境！  
 - 程序从地址 0 开始执行  
 - 只支持两条指令  
@@ -580,15 +588,264 @@ QEMU 虽然是个开源项目，但还挺复杂，不利于我们理解细节
     - ABI Mnemonic
 
 
+freestanding.c
+```c
+
+//ebreak()接受两个立即数arg0, arg1, 并把它们分别放进寄存器a0, a1, 然后执行ebreak指令.(注意不是递归执行自己这个函数而是RV的ebreak指令)
+static void ebreak(long arg0, long arg1){
+  //asm()内联汇编函数. 每一行""内是一条汇编指令. volatile关键字不允许编译器优化掉这断汇编.
+  //%0, %1是占位符, 代表后面输入的参数arg0, arg1.
+  //汇编代码之后, 第一个`:`后面是输出操作数, 第二个`:`后面是输入操作数.
+  //"i"表示立即数约束: 要求该参数是一个编译时常量.
+  //"r"表示寄存器约束: 该参数可以放在任意寄存器中.
+  asm volatile(
+    "addi a0, x0, %0;"
+    "addi a1, x0, %1;"
+    "ebreak"
+    : 
+    : "i"(arg0), "i"(arg1)
+  );
+}
+
+
+//即令a0=0, a1=ch, 然后执行ebreak指令. 约定当a0=0时表示打印字符.  
+static void putch(char ch){ebreak(0, ch);}
+
+//即令a0=1, a1=code, 然后执行ebreak指令. 约定当a0=1时表示程序结束, a1是返回码. 之后进入死循环.
+static void halt(char code){ebreak(1, code); while(1);}
+
+void _start(){
+  putch('A');
+  halt(0);
+}
+
+```
+
+
+### 1.7.2 搭配我们的蜜汁Makefile!
+```Makefile
+# 给riscv'-unknown-elf-gcc写的Makefile. 
+# 裸机开发QEMU模拟RISC-V环境下的freestanding程序.
+
+# 用法: make SRC=your_source.c OUT=your_output.out
+# Makefile - RISC-V freestanding: 支持编译当前目录下的多个 .c 文件
+
+
+# 用法举例：
+#   make                # 编译所有 *.c -> *.out
+#   make SRC=foo.c      # 只编译 foo.c -> foo.out
+#   make foo.out        # 直接以目标名编译
+#   make clean          # 删除所有 *.out
+#   make clean SRC=foo.c    # 删除 foo.out
+#   make clean FILE=foo.out # 删除 foo.out
+#   make -B SRC=foo.c   # 强制重建
+#   make -n SRC=foo.c   # 只显示将执行的命令（dry-run）
+
+
+CC = riscv64-unknown-elf-gcc
+
+# 编译选项
+CFLAGS = -march=rv32i -mabi=ilp32 -ffreestanding -nostdlib -O2
+CFLAGS_qemu = -march=rv32i -mabi=ilp32 -ffreestanding -nostdlib -O2
+
+# 链接选项
+# 裸机开发必须指定程序的起始地址, 0x80000000是QEMU默认的加载地址.
+LDFLAGS = -Wl,-Ttext=0x80000000
+LDFLAGS_qemu = -Wl,-Ttext=0x80000000
+LDFLAGS_yemu = -Wl,-Ttext=0x80000000
+
+
+
+# 如果在命令行传入 SRC=xxx.c 则只编译那个文件，否则编译当前目录下所有 .c
+SRC ?=
+# wildcard *.c 得到所有.c文件名字, 用空格连接.
+C_SOURCES := $(wildcard *.c)
+
+# 如果SRC是空的(输入命令没指定SRC), 则SRCS表示所有.c文件.
+# strip()去掉变量值的前后空格.
+# :=表示立即替换. =表示用到这个变量的时候才替换.
+ifeq ($(strip $(SRC)),)
+  SRCS := $(C_SOURCES)
+# 如果指定了SRC, SRCS=SRC, 只编译这个文件.
+else
+  SRCS := $(SRC)
+endif
+
+# patsubst()替换函数. 把SRCS字符串中的`.c`替换成`.out`
+OUTS := $(patsubst %.c,%.out,$(SRCS))
 
 
 
 
+.PHONY: all 
+all: $(OUTS)
+# 通用模式规则. 
+%.out: %.c
+	$(CC) $(CFLAGS) $(LDFLAGS) $< -o $@
+
+
+
+.PHONY: gcc_rv32_qemu
+gcc_rv32_qemu: $(OUTS)
+	$(CC) $(CFLAGS_qemu) $(LDFLAGS_qemu) $< -o $@
+
+
+.PHONY: gcc_rv32_2
+gcc_rv32_yemu: $(OUTS)
+	$(CC) $(CFLAGS_qemu) $(LDFLAGS_yemu) $< -o $@
 
 
 
 
+# clean 规则：
+# - 若指定 FILE=xxx 则删除 FILE
+# - 否则若指定 SRC=foo.c 则删除 foo.out
+# - 否则删除所有 *.out
+.PHONY: clean
+clean:
+#如果 FILE 变量非空, 则删除 FILE 指定的文件.
+ifneq ($(strip $(FILE)),)
+	rm -f $(FILE)
+else
+# 如果SRC变量非空, 则删除对应的.out文件. 对应命令`make clean SRC=foo.c`
+ifneq ($(strip $(SRC)),)
+	rm -f $(patsubst %.c,%.out,$(SRCS))
+# 如果只运行`make clean`没有指定SRC或FILE, 则删除所有.out
+else
+	rm -f *.out
+endif
+endif
 
+
+
+
+# 反汇编规则.
+# 使用方法: make dump BIN=yourfile.out 或者 make dump BIN=yourfile.out ALIASES=no(不使用别名, 展示原生指令)
+BIN ?=
+# 默认不使用-M no-aliases选项.
+ALIASES ?= yes
+.PHONY: dump
+dump:
+# 如果没有指定 BIN 变量, 则提示用户如何使用.
+ifeq ($(strip $(BIN)),)
+	@echo "请使用: make dump BIN=yourfile.out"
+else
+ifeq ($(ALIASES),no)
+	riscv64-unknown-elf-objdump -M no-aliases -d $(BIN)
+else
+	riscv64-unknown-elf-objdump -d $(BIN)
+endif
+endif
+
+
+#QEMU规则. 用法: make qemu BIN=yourfile.out
+.PHONY: qemu
+qemu:  qemu-system-riscv32 -nographic -M virt -bios none -kernel $(BIN)
+
+
+
+.PHONY: help
+help:
+	@echo "Makefile usage:"
+	@echo "  make                 # build all .c -> .out"
+	@echo "  make SRC=foo.c       # build only foo.c -> foo.out"
+	@echo "  make foo.out         # build by target"
+	@echo "  make clean           # remove all .out"
+	@echo "  make clean SRC=foo.c # remove foo.out"
+	@echo "  make clean FILE=foo.out # remove foo.out"
+	@echo "  make -B SRC=foo.c    # force rebuild"
+	@echo "  make -n SRC=foo.c    # dry-run (show commands)"
+
+```
+
+### 1.7.3 两条指令的程序实现
+
+![alt text](image-25.png)
+
+
+
+指令循环函数实现: 
+```c
+void inst_cycle() {
+    uint32_t inst = *(uint32_t *)&M[PC];  //取出一条32bit指令
+    if (
+      ((inst & 0x7f) == 0x13) && ((inst >> 12) & 0x7) == 0  // 判断是addi
+      ) { 
+      //第二操作数是否为x0, 是的话忽略写入x0.
+        if (((inst >> 7) & 0x1f) != 0) {
+            R[(inst >> 7) & 0x1f] = R[(inst >> 15) & 0x1f] + 
+                (((inst >> 20) & 0x7ff) - ((inst & 0x80000000) ? 4096 : 0));
+        }
+    } else if (inst == 0x00100073) { // 判断是ebreak
+        if (R[10] == 0) {
+            putchar(R[11] & 0xff);
+        } else if (R[10] == 1) {
+            halt = true;
+        } else {
+            printf("Unsupported ebreak command\n");
+        }
+    } else {
+        printf("Unsupported instruction\n");
+    }
+    pc += 4;
+}
+```
+
+初始状态:
+![alt text](image-24.png)
+
+
+### 1.7.4 YEMU V1.0!!
+
+```c
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+//PC寄存器.
+uint32_t R[32], PC;
+
+//我们分配出64byte的内存. 是的, 这非常小.
+uint8_t M[64] = {
+    0x13, 0x05, 0x00, 0x00, 0x93, 0x05, 0x10, 0x04, 0x73, 0x00, 0x10, 0x00,
+    0x13, 0x05, 0x10, 0x00, 0x93, 0x05, 0x00, 0x00, 0x73, 0x00, 0x10, 0x00,
+    0x67, 0x00, 0x00, 0x00
+};
+
+bool halt = false;
+
+void inst_cycle() {
+    uint32_t inst = *(uint32_t *)&M[PC];
+    if ((inst & 0x7f) == 0x13 && ((inst >> 12) & 0x7) == 0) { // addi
+        if (((inst >> 7) & 0x1f) != 0) {
+            R[(inst >> 7) & 0x1f] = R[(inst >> 15) & 0x1f] + 
+                (((inst >> 20) & 0x7ff) - ((inst & 0x80000000) ? 4096 : 0));
+        }
+    } else if (inst == 0x00100073) { // ebreak
+        if (R[10] == 0) { 
+            putchar(R[11] & 0xff); 
+        } else if (R[10] == 1) { 
+            halt = true; 
+        } else { 
+            printf("Unsupported ebreak command\n"); 
+        }
+    } else { 
+        printf("Unsupported instruction\n"); 
+    }
+    PC += 4;
+}
+
+int main() {
+    PC = 0; 
+    R[0] = 0; // can be omitted since uninitialized global variables are initialized with 0
+    while (!halt) { 
+        inst_cycle(); 
+    }
+    return 0;
+}
+
+
+```
 
 # 2. 指令
 
@@ -717,9 +974,9 @@ java程序多种运行方式:
 
 ## 2.2 常用指令
 
-### B-type指令 分支跳转
+### 2.2.1 B-type指令 分支跳转
 
-### UJ-type指令 长跳转
+### 2.2.2 UJ-type指令 长跳转
 
 
 
@@ -748,7 +1005,7 @@ java程序多种运行方式:
 
 
 
-### S-type指令 储存
+### 2.2.3 S-type指令 储存
 
 包括
     * sb
@@ -789,7 +1046,7 @@ sb x3, 1(x1)
 
 
 
-### I-type指令 立即数运算
+### 2.2.4 I-type指令 立即数运算
 
 包括
     * addi
@@ -801,14 +1058,14 @@ sb x3, 1(x1)
 格式: 
 `addi rd, rs1, imm12`
 
-### U-type指令 大立即数加载类
+### 2.2.5 U-type指令 大立即数加载类
 
 包括
     * lui
     * auipc
 
 
-#### lui
+#### lui(load upper immediate)
 
 将这个 *低12bit补零的32bit立即数* 放到指定寄存器. 
 
@@ -858,11 +1115,20 @@ imm[31:12] | rd[11:7] | opcode[6:0]
 
 
 
-### 其他
+### 2.2.6 其他
 
 #### ret(return) [伪指令]
 
 它会被展开为`jal`或`jalr`, 把返回地址存进寄存器ra
+
+#### ecall(environment call)
+
+RISCV架构定义的系统控制指令. 触发一个系统调用.
+
+
+#### ebreak(environment break)
+
+RISCV架构定义的系统控制指令. 触发一个断点异常.
 
 
 ###
@@ -956,7 +1222,7 @@ void myfun(){
 }
 ```
 
-最后一句调用自己, 本来应该翻译为:
+最后一句调用自己, 本来应该处理为:
 `jal ra, _start   #跳转到 _start，同时把返回地址写到 ra`
 
 如果编译器发现这是当前函数最后一句, 没有别的操作了. 就会把这条指令优化为j指令`j _start`, 直接跳转, 不保存返回地址.
