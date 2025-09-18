@@ -893,12 +893,88 @@ int main() {
 
 ### 1.9.0 概述
 
+
+#### 1.9.0.1 arm架构的寄存器: 15个通用寄存器 + 1个PC + CSPR + SPSR
+
 ARM A32有16个通用寄存器(R0~R15). 不同于riscv32, 现在寄存器只需要4bit来寻址了.
 
 
+| 寄存器  | 用途 / 特性  | 备注   |calling convention函数调用约定|
+| ------- | -------- | ------ |--|
+| **R0–R3**    | 通用寄存器 | 用于函数参数传递、临时运算，可自由使用  | caller-saved |
+| **R4–R11**   | 通用寄存器 / 保存寄存器  | 一般在函数调用中用于保存局部变量，调用者负责保存  | callee-saved|
+| **R12 (IP)** | Intra-Procedure-call scratch register | 用作函数调用中间寄存器（临时），可用于跳转地址计算  |caller-saved|
+| **R13 (SP)** | Stack Pointer（栈指针）  | 指向当前堆栈顶，用于 push/pop、堆栈操作     |--|
+| **R14 (LR)** | Link Register（返回地址寄存器）   | 函数调用返回地址保存寄存器，执行 `BL` 指令会自动写入   |--|
+| **R15 (PC)** | Program Counter（程序计数器）  | 指向下一条要执行的指令，读取写入时要注意流水线偏移 (+8)  |--|
+| **CPSR**  | Current Program Status Register   | 包含 NZCV 条件标志位、模式位、中断屏蔽等，不是通用寄存器. |--|
+| **SPSR**     | Saved Program Status Register  | 保存模式切换前的 CPSR，用于异常/中断返回，只有特权模式有. |--|
+
+* callee saved: 被调用的函数必须负责在返回前恢复原状.
+* caller saved: 父函数必须负责里面东西自己保存好.(被调用函数可以随便改)
 
 
-### 1.9.1 数据处理指令
+#### 1.9.0.2  ① ARM 汇编的大小写敏感性
+-   **ARM 汇编指令（Mnemonic）本身是大小写不敏感的**。   
+    -   `ADD r0, r1, r2` ✅        
+    -   `add r0, r1, r2` ✅        
+    -   `AdD r0, r1, r2` ✅        
+-   汇编器（比如 GNU as，或者 ARM 自家的 armasm）都会接受大小写混用。    
+-   但 **寄存器名** 也一样大小写不敏感：`R0` 和 `r0` 都行。    
+-   **符号/标签** 则依赖汇编器：GNU as 默认是大小写敏感的（`Label` ≠ `label`）。
+
+
+#### 1.9.0.3 条件执行码{cond}
+
+虽然不同类型的arm指令结构不同, **但每条arm指令都分配了4bit的`{cond}`域.** 可以在指令名之后加上如下的条件执行码字母, 手动设置`{cond}`域, 从而实现条件执行该指令. 
+
+当运行到该指令时, 查看CPSR寄存器的NZCV四个位, 从而判断是否执行该指令.
+
+如果没有设置, 默认{cond}=AL=`1110`.
+
+
+| 条件码     | 二进制编码  | 含义    | 触发条件                     |
+| ------- | ------ | ---------- | ------ |
+| `EQ`    | `0000` | equal  | Z=1     |
+| `NE`    | `0001` | not equal   | Z=0      |
+| `CS/HS` | `0010` | carry set / higher or same | C=1   |
+| `CC/LO` | `0011` | carry clear / lower        | C=0|
+| `MI`    | `0100` | negative                   | N=1 |
+| `PL`    | `0101` | positive (plus)            | N=0                      |
+| `VS`    | `0110` | overflow set               | V=1                      |
+| `VC`    | `0111` | overflow clear             | V=0                      |
+| `HI`    | `1000` | higher (unsigned)          | C=1, Z=0                 |
+| `LS`    | `1001` | lower or same (unsigned)   | C=0 or Z=1               |
+| `GE`    | `1010` | greater or equal (signed)  | N=V                      |
+| `LT`    | `1011` | less than (signed)         | N≠V                      |
+| `GT`    | `1100` | greater than (signed)      | Z=0 and N=V              |
+| `LE`    | `1101` | less or equal (signed)     | Z=1 or N≠V               |
+| `AL`    | `1110` | always                     | 无条件（默认）                  |
+| （保留）    | `1111` | 通常未定义/保留                   | ARMv7 里 `NV`（never），后来弃用 |
+
+
+示例:
+```
+TST     r0, #1      ; 无条件，测试最低位是否为1
+TSTEQ   r0, #1      ; 只有 Z=1 时才测试（即前一条指令结果为0时）
+TSTNE   r0, #1      ; 只有 Z=0 时才测试
+```
+
+#### 1.9.0.4 CPSR寄存器 NZCV标志位 {S}后缀
+
+* NZCV是 **CPSR（Current Program Status Register）** 里的四个条件标志位.
+
+* CPSR在**带{S}后缀的指令**或者**比较/测试类指令(CMP, TST, CMN, TEQ, ...)**
+
+| 标志     | 含义    | 在减法里什么时候置位？  |
+| ---- | -------- | ------------------------------ |
+| **N** (Negative) | 结果是否为负数           | 如果结果最高位=1                      |
+| **Z** (Zero)     | 结果是否为零            | 如果结果=0                         |
+| **C** (Carry)    | 减法时其实是 **无借位** 标志 | 如果 `Rn >= Operand2`，C=1；否则 C=0 |
+| **V** (Overflow) | 有符号溢出             | 如果减法结果超出有符号范围                  |
+
+
+### 1.9.1 数据处理 指令
 
 
 -   \[31:28\] 条件码 (cond)    
@@ -910,9 +986,45 @@ ARM A32有16个通用寄存器(R0~R15). 不同于riscv32, 现在寄存器只需�
 -   \[15:12\] Rd → 结果寄存器   
 -   \[11:0\] Operand2 → 第二个操作数（寄存器或立即数）
 
+| 指令名   | 指令语法  | 作用 | 主要字段（编码概要） | 常见示例 | 说明 / 注意  |  
+|--|--|---| -- |-- |--- |
+| **ADD**| `ADD{cond}{S} Rd, Rn, Operand2` | `Rd = Rn + Operand2` | data-processing（如上） `opcode=0100`  | `ADD r0, r1, r2` ; `ADD r0, r0, #1` | `S=1` 时更新 NZCV；Operand2 可为移位寄存器或立即数（imm8+rotate） | 
+| **ADC** (Add with Carry, 带进位加)| `ADC{cond}{S} Rd, Rn, Operand2` |              `Rd = Rn + Operand2 + C` | data-processing `opcode=0101`                 | `ADC r2, r3, r4`                    | 用于多字长加法（结合 C 标志）                                  |
+| **SUB**（Subtract，减法）              | `SUB{cond}{S} Rd, Rn, Operand2` |                  `Rd = Rn - Operand2` | data-processing `opcode=0010`                 | `SUB r0, r1, #4`                    | `S=1` 时影响 NZCV                                   |
+| **SBC**（Subtract with Carry，带借位减） | `SBC{cond}{S} Rd, Rn, Operand2` |        `Rd = Rn - Operand2 - (1 - C)` | data-processing `opcode=0110`                 | `SBC r0, r1, r2`                    | 用于多字长减法                                          |
+| **RSB**（Reverse Subtract，反向减）     | `RSB{cond}{S} Rd, Rn, Operand2` |                  `Rd = Operand2 - Rn` | data-processing `opcode=0011`                 | `RSB r0, r1, #0`（可做取反）              | 常用于快速求 `-Rn`（例如 `RSB r0, r0, #0` 得到 `-r0`）       |
+| **RSC**（Reverse SBC，反向带借位减）       | `RSC{cond}{S} Rd, Rn, Operand2` |        `Rd = Operand2 - Rn - (1 - C)` | data-processing `opcode=0111`                 | `RSC r0, r1, r2`                    | 较少用，配合 C 标志做多字长运算                                 |
+| **AND**（按位与）                      | `AND{cond}{S} Rd, Rn, Operand2` |                  `Rd = Rn & Operand2` | data-processing `opcode=0000`                 | `AND r0, r1, r2`                    | `S=1` 可用于测试位（但 TST 更常用）                           |
+| **ORR**（Logical OR，按位或）           | `ORR{cond}{S} Rd, Rn, Operand2` |                             \`Rd = Rn | Operand2\`                                    | data-processing `opcode=1100`       | `ORR r0, r1, #0xFF`                               |
+| **EOR**（Exclusive OR，按位异或）        | `EOR{cond}{S} Rd, Rn, Operand2` |                  `Rd = Rn ^ Operand2` | data-processing `opcode=0001`                 | `EOR r0, r1, r2`                    | 常用于翻转掩码位                                          |
+| **BIC**（Bit Clear，位清除）            | `BIC{cond}{S} Rd, Rn, Operand2` |                 `Rd = Rn & ~Operand2` | data-processing `opcode=1110`?（注：实际opcode固定）  | `BIC r0, r1, #0x1`                  | 用于清除位，等价 `AND Rn, ~Op2`                           |
+| **MOV**（Move，寄存器/立即数传送）           | `MOV{cond}{S} Rd, Operand2`     |             `Rd = Operand2`（忽略 Rn 字段） | data-processing `opcode=1101`，Rn 通常不使用        | `MOV r0, r1` ; `MOV r0, #0xFF`      | `S=1` 时会更新标志（注意影响 CPSR）                           |
+| **MVN**（Move Not，取反并传送）           | `MVN{cond}{S} Rd, Operand2`     |               `Rd = ~Operand2`（忽略 Rn） | data-processing `opcode=1111`                 | `MVN r0, r1`                        | 等同 `Rd = NOT Op2`                                 |
+| **CMP**（Compare，比大小）              | `CMP{cond} Rn, Operand2`        | 计算 `Rn - Operand2`，**只更新 NZCV，不写 Rd** | data-processing `opcode=1010`，S 位隐含为 1（不写 Rd） | `CMP r0, #0`                        | 用于条件分支判断（BEQ/BNE/…）                               |
+| **CMN**（Compare Negative，加对比）     | `CMN{cond} Rn, Operand2`        |           计算 `Rn + Operand2`，只更新 NZCV | data-processing `opcode=1011`                 | `CMN r0, #1`                        | 常用于检测溢出/相加后的标志                                    |
+| **TST**（Test，按位与测试）               | `TST{cond} Rn, Operand2`        |           计算 `Rn & Operand2`，只更新 NZCV | data-processing `opcode=1000`                 | `TST r0, #1`                        | 用于测试某些位是否为 1                                      |
+| **TEQ**（Test Equivalence，按位异或测试）  | `TEQ{cond} Rn, Operand2`        |           计算 `Rn ^ Operand2`，只更新 NZCV | data-processing `opcode=1001`                 | `TEQ r0, #0xFF`                     | 用于测试相等性的位层面差异                                     |
 
 
-### 1.9.2 单数据传输格式(load/store)
+
+#### SWP
+
+```
+`SWP{B}{cond} Rd, Rm, [Rn]`
+```
+-   `SWP`：交换 word (32-bit)   
+-   `SWPB`：交换 byte (8-bit)   
+-   `Rd` ← 从内存 `[Rn]` 读出的数据   
+-   `[Rn]` ← 写入 `Rm` 的数据   
+-   `cond`：条件执行码
+
+**SWP实现信号量操作**
+
+-   `SWP` 常用于 **多处理器 / 中断环境下的原子操作**（比如实现自旋锁）。  
+-   在 ARMv6 之后，`SWP/SWPB` 被 **弃用 (deprecated)**，推荐使用新的 **LDREX / STREX** 指令对来实现原子交换。
+
+
+### 1.9.2 单数据传输 指令(load/store)
 
 -   \[31:28\] cond   
 -   \[27:26\] `01` → 表示 load/store   
@@ -938,18 +1050,44 @@ ARM A32有16个通用寄存器(R0~R15). 不同于riscv32, 现在寄存器只需�
 
 
 
-### 1.9.3 块数据传输格式(LDM/STM)
+### 1.9.3 块数据传输 指令(LDM/STM)
 
-| 指令名（缩写/中文）                    | 指令                                 |                           作用 | 主要字段（编码概要）                                                                                             | 语法（示例）                                  | 说明 / 注意                                                                                    |
-| ----------------------------- | ---------------------------------- | ---------------------------: | ------------------------------------------------------------------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 指令名（缩写/中文）    | 指令   |作用 | 主要字段（编码概要）| 语法（示例）       | 说明 / 注意  |
+| ---------- | ------- | ------: | --------- | ------- | ---- |
 | **LDM**（Load Multiple，多寄存器加载） | `LDM{cond} Rn{!}, <register_list>` |  从内存一次加载多个寄存器（load multiple） | `cond(31:28)` `100(27:25)` `P(24)` `U(23)` `S(22)` `W(21)` `L(20)=1` `Rn(19:16)` `register_list(15:0)` | `LDM r13!, {r0-r3, r12, pc}`            | `register_list` 是 16-bit 掩码 (bit0->R0 ... bit15->R15)；`W`=1 表示写回（常用于弹栈）                    |
 | **STM**（Store Multiple，多寄存器存） | `STM{cond} Rn{!}, <register_list>` | 把一组寄存器一次写回内存（store multiple） | 与 `LDM` 类似，`L(20)=0`                                                                                   | `STM r13!, {r4-r7, lr}`                 | 常用于函数前保存寄存器（入栈）                                                                            |
 | **寻址顺序 IA/IB/DA/DB**（寻址模式说明）  | —                                  |                 决定传输的地址计算和顺序 | 映射：IA (P=0,U=1), IB (P=1,U=1), DA (P=0,U=0), DB (P=1,U=0)                                              | `LDMIA r0!, {...}` 等价于 `LDM r0!, {...}` | IA = Increment After；IB = Increment Before；DA/DB = Decrement variants。影响寄存器传输的先后顺序（关键于栈操作） |
 | **PUSH / POP**（伪指令，栈操作）       | `PUSH {regs}` / `POP {regs}`       |            汇编伪指令：把寄存器推入/从栈弹出 | `PUSH {regs}` -> `STMDB sp!, {regs}` ; `POP {regs}` -> `LDMIA sp!, {regs}`                             | `PUSH {r4-r7,lr}` ; `POP {r4-r7,pc}`    | `POP` 中包含 `pc` 时会把 `pc` 载入并跳转（作为返回）；DB/IA 组合常用于约定的栈生长方向                                    |
 
-### 1.9.4 分支格式
+### 1.9.4 分支/控制流转移 指令
 
-### 1.9.5 协处理器格式
+控制流转移, 指的是会改变PC值的指令.
+
+| 指令名 | 指令格式 | 功能说明  | 常见语法 | 主要编码概要   |
+| ----- | ---- | ------- | --- | --------- |
+| **B(branch)**                        | `B{cond}`      | 跳转到指定 PC 相对偏移                      | `B label` ; `BEQ loop` | `cond(31:28)` + `101` + `offset(23:0)` |
+| **BL(Branch with Link)**              | `BL{cond}`     | 跳转并保存返回地址到 `LR`（子程序调用）             | `BL func`              | 同 `B`，但 `L(24)=1`                      |
+| **Branch and Exchange**           | `BX Rm`        | 跳转到寄存器 `Rm` 指定的地址，并切换 ARM/Thumb 状态 | `BX lr` ; `BX r3`      | `cond` + `000100101111111111110001 Rm` |
+| **Branch with Link and Exchange** | `BLX`          | 子程序调用，跳转到寄存器或立即数地址，同时可能切换 Thumb    | `BLX r3` ; `BLX label` | 两种编码变体（寄存器型/立即数型）                      |
+| **Supervisor Call**               | `SVC` (以前 SWI) | 触发软中断，陷入内核/OS 调用                   | `SVC #imm`             | `cond` + `1111` + `imm24`              |
+| **MOV PC, Rm**                    | -              | 把寄存器值装进 `PC`，相当于间接跳转               | `MOV pc, r0`           | 数据处理类，目的寄存器是 `PC`                      |
+| **LDR PC, \[addr]**               | -              | 从内存加载地址到 `PC`，相当于间接跳转              | `LDR pc, [r0]`         | 单数据传输类，目的寄存器是 `PC`                     |
+| **POP {..., PC}**                 | -              | 从栈中弹出 PC，实现子程序返回                   | `POP {r4-r7, pc}`      | 多寄存器加载（LDM/POP 的语法糖）                   |
+
+* 
+
+
+
+### 1.9.5 协处理器 指令
+
+
+
+
+
+
+
+
+
 
 ### 1.9.6 四种指令寻址
 
