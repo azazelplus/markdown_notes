@@ -1064,7 +1064,7 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 # 5 程序调试: gdb 
 
-## 🔹 启动 & 基本操作
+## 5.1 🔹 启动 & 基本操作
 
 
 | 命令            | 作用                     |
@@ -1075,6 +1075,17 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 | `starti`      | 从入口 `_start` 指令开始执行并停下 |
 | `quit`        | 退出 gdb                 |
 
+* 注意: 如果要运行的main函数需要传递参数, 必须使用`--args`.
+  * 比如原来要运行`./yemu.out prog.bin`, 其中prog.bin是要传进main的argv[],
+  *  直接写`gdb./yemu.out prog.bin`, `prog.bin`会被当成gdb命令的参数, 报错.
+  *  应该写为: `gdb --args ./yemu_v1.0.out prog.bin`
+  *  或者进入gdb后再设置:
+```gdb
+(gdb) file ./yemu_v1.0.out
+(gdb) set args prog.bin
+(gdb) run
+
+```
 
 ## 🔹 源码级调试 (C/C++ 等)
 
