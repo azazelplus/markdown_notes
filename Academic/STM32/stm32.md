@@ -1,5 +1,8 @@
 ## 9 STM32CubeMX
 
+
+### 9.0 简单入门示例
+
 我们使用型号:野火指南者. 它使用的MCU是
 `stm32f103vet6`
 
@@ -13,7 +16,7 @@
 
 
 
-### 1. 创建项目流程:
+#### 9.0.1. 创建项目流程:
 使用三种方式创建新工程: 
 * 1.选择MCU
 * 2.选择板子
@@ -25,7 +28,7 @@
 
 至此创建了一个新的cube工程.
 
-### 2. Pinouts&Configuration
+#### 9.0.2. Pinouts&Configuration
 
 
 
@@ -50,7 +53,7 @@
 
 >可以方便看到PC14和PC15分别有一个`RCC_OSC32_IN`和`RCC_OSC32_OUT`. 这两个复用引脚用于连接`LSE`外部低速晶振的输入输出端. 启用LSE的时候, PC14和PC15会被占用. 所以一般PC14和PC15不经常用作其他用途了.
 
-#### 2.1 配置gpio
+#### 9.0.3 配置gpio
 
 我们以配置PC13为gpio输出模式然后用来点灯为例.
 
@@ -67,7 +70,7 @@
 | **User Label**             | 你可以给这个引脚起个名字，生成代码时自动加宏 | 可选，如命名为 `LED1`                  |
 
 
-#### 2.2 配置RCC:
+#### 9.0.4 配置RCC:
 
 在Pinout&Configuration -> System Core -> RCC 处配置.
 
@@ -89,7 +92,7 @@ HSE和LSE在这里配置, 选项都一样.
 
 
 
-### 9.3 配置SYS(系统)
+#### 9.0.5 配置SYS(系统)
 
 在Pinout&Configuration -> System Core -> SYS 处配置.
 
@@ -114,15 +117,15 @@ HSE和LSE在这里配置, 选项都一样.
 
 
 
-### 9.4 配置其他各种外设
+#### 9.0.6 配置其他各种外设
 
 在Pinout&Configuration->Analog(配置ADC和DAC); Timers(配置TIM)...
 
-#### GPIO口的配置
 
 
 
-### 9.5 Clock Configuration
+
+#### 9.0.7 Clock Configuration
 
 
 Clock Configuration界面如下图, 其中采用了常用的配置.
@@ -162,6 +165,150 @@ AHB和APB1分频. 分频的结果必须保证不超过该时钟线允许的最�
 ![alt text](image-86.png)
 
 
+
+### 9.1 HAL库的中断实现:
+
+在MX图形化配置界面->NVIC配置, 在这里可以勾选你想要用的中断.
+
+勾选的外设中断会导致在`stm32f1xx_it.h`中自动生成对应的中断函数. 它们都会调用一个很复杂的中断处理函数, 其中有非常多的弱定义. 根据你的实际中断类型, 在某个地方(main.c 或者对应外设.c)实现你的业务逻辑.
+
+举个例子.
+
+勾选rtc中断后, 在`stm32f1xx_it.h`中会自动生成这一段:
+
+```c
+void RTC_IRQHandler(void)
+{
+  /* USER CODE BEGIN RTC_IRQn 0 */
+//这里是让你写触发中断之前的抢先逻辑. 一般可以不写
+  /* USER CODE END RTC_IRQn 0 */
+  HAL_RTCEx_RTCIRQHandler(&hrtc);
+  /* USER CODE BEGIN RTC_IRQn 1 */
+//中断之后的逻辑. 一般可以不写.
+  /* USER CODE END RTC_IRQn 1 */
+}
+```
+
+其中, `HAL_RTCEx_RTCIRQHandler`非常长, 其中弱定义了很多函数, 比如
+```c
+__weak void HAL_RTCEx_RTCEventCallback(RTC_HandleTypeDef *hrtc)
+__weak void HAL_RTCEx_RTCEventErrorCallback(RTC_HandleTypeDef *hrtc)
+__weak void HAL_RTCEx_Tamper1EventCallback(RTC_HandleTypeDef *hrtc)
+//...
+```
+
+它们对应不同的中断情况, 会根据具体发生的中断执行其中一个. 需要自己查你用的中断是哪个.  下面是一些例子.
+-   **定时器更新中断 (Update event)** → `HAL_TIM_PeriodElapsedCallback`   
+-   **定时器输入捕获事件** → `HAL_TIM_IC_CaptureCallback`   
+-   **定时器输出比较事件** → `HAL_TIM_OC_DelayElapsedCallback`   
+-   **RTC Alarm** → `HAL_RTC_AlarmAEventCallback`   
+-   **UART 接收完成** → `HAL_UART_RxCpltCallback`
+
+我们这个例子要用RTC触发alarm中断, 所以要实现的回调函数是:
+```c
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
+```
+
+下面我们去`rtc.c`, 找个地方实现这个函数, 里面就是我们的中断逻辑.
+
+注意:
+
+在标准库 SPL 里，IRQHandler 必须你手动做三件事：
+1.  **判断中断源** (`RTC_GetITStatus`)   
+2.  **清除中断标志** (`RTC_ClearITPendingBit`, `RTC_WaitForLastTask`, `EXTI_ClearITPendingBit`)   
+3.  **执行用户逻辑** (`rtc_alarm_triggered = 1;` 等)
+
+而在HAL库开发, 1,2已经在这个`HAL_RTC_AlarmAEventCallback()`函数里全都安排好了. 你只需要写业务逻辑.
+
+
+```c
+//原来标准库写的RTC中断函数:
+void RTCAlarm_IRQHandler(void)
+{
+    if (RTC_GetITStatus(RTC_IT_ALR) != RESET)
+    {
+				//清除中断标志
+        RTC_ClearITPendingBit(RTC_IT_ALR);
+			
+				//清除外部中断线
+        RTC_WaitForLastTask();
+			
+				//设置闹钟触发变量为1
+
+        rtc_alarm_triggered = 1;
+			
+		/*****************red闪烁******************************/
+		//GPIO_ResetBits(GPIOB, GPIO_Pin_5);				Delay(0x0FFFFF);
+		//GPIO_SetBits(GPIOB, GPIO_Pin_5);					Delay(0x0FFFFF);
+		//GPIO_ResetBits(GPIOB, GPIO_Pin_5);					Delay(0x0FFFFF);
+		//GPIO_SetBits(GPIOB, GPIO_Pin_5);					Delay(0x0FFFFF);
+		/*****************red闪烁******************************/
+						
+				EXTI_ClearITPendingBit(EXTI_Line17);
+    }
+}
+
+
+
+//现在你在HAL库开发中只需要在tim.c(你要是想也可以在main.c)里实现这个名字的回调函数:
+void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
+
+    // 设置闹钟触发标志
+    rtc_alarm_triggered = 1;
+
+    /*****************red闪烁******************************/
+    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET); Delay(0x0FFFFF);
+    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);   Delay(0x0FFFFF);
+    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET); Delay(0x0FFFFF);
+    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);   Delay(0x0FFFFF);
+    /*****************red闪烁******************************/	
+}
+
+```
+
+
+### 9.2 HAL库FATFS读取SD卡的实现
+
+
+图形化界面开启FATFS后, 产生了很多文件:
+
+* ./FATFS/App下有: 
+  * fatfs.c, 
+  * fatfs.h 
+
+* ./FATFS/Target下有
+  * ffcon.h, 
+  * user_diskio.c, 
+  * user_diskio.h
+
+* ./Middlewares/Third_Party/FatFs/src/下有
+  * diskio.c, 
+  * ff.c, 
+  * diskio.h, 
+  * integer.h...
+
+**这些目录/文件的角色...先看懂再改.**
+
+-   `Middlewares/Third_Party/FatFs/src/`  
+    这是 FatFs 的**上层中间件实现**（核心库文件：`ff.c`、`ff.h`、以及一个通用的 `diskio.c` ）。通常 `diskio.c` 是 FatFs 和硬件驱动之间的“接口层”模板（有时里面会调用你在 Target 下实现的低层函数）。不要盲改核心库，除非你知道在做什么。
+    
+-   `./FATFS/Target/`（或 `App/FATFS/Target`）  
+    这个目录通常是放**板级/目标平台的实现**（低层磁盘驱动、GPIO/CS 具体实现）的地方，CubeMX 有时会生成 `user_diskio.c` 在这里，目的是让你把具体的硬件实现放这里以避免改动中间件。优先在这里实现 SPI 版本的磁盘驱动。
+    
+-   `./FATFS/App`（fatfs.c/h）  
+    这是示例应用层（how to use FatFs）。通常不需要动它，除非你要改变 mount/路径/行为。
+
+
+
+
+
+
+
+
+
+
+
+
 ## 0 上版流程 & STM32项目结构:
 
 ### 0.1 上板流程
@@ -191,7 +338,7 @@ keil里新建一个μvision project后, 在当前目录:
 	选择下载时的程序文件为生成的hex文件.(在项目文件夹的objects里)
 	选择DTR低电平复位; RTS高电平进bootloader.(这个的原理可以参考野火文档-isp一键下载原理分析.)
 
-### 0.2 STM32项目结构
+### 0.2 标准库STM32项目结构
 ```
 azazel@DESKTOP-NJKSK6O:/mnt/f/aza/WOKWOK/STM32/my_projects/ADC_DMA_TIM_interrupt$ tree
 .
@@ -1086,7 +1233,7 @@ void  BASIC_TIM_IRQHandler (void)
 }
 ```
 
-## 5. 编程经验
+## 5. 标准库...编程经验
 
 ### 5.1 头文件
 ---
@@ -1108,7 +1255,7 @@ void  BASIC_TIM_IRQHandler (void)
 
 
 
-### 5.3 初始化结构体, 以USART为例
+### 5.3 标准库...初始化结构体, 以USART为例
 有两个结构体. 它们在固件库FWLB的stm32f10x_usart.c中
 
 ```c
@@ -1933,8 +2080,13 @@ Stack_Size      EQU     0x00000400  ;当前设置为1KB
 
 ## 9 SD卡
 
-注意: `SD总线协议(简称SD)`和USB协议一样, 区分主机(控制器)和从机.
-指南者板子搭载了SDIO外设, 可以和SD卡交互.
+注意: `SD总线协议(简称SD)`和USB协议一样, **区分主机(控制器)和从机**.
+F10X系列只有大容量才有SDIO外设.
+
+指南者板子(F103VET6)搭载了SDIO外设, 可以和SD卡交互.
+
+核心板F103C8T6没有.
+
 
 * `SDIO协议`: 是扩展自`SD总线协议`的扩展标准, 它允许主机通过 `SD卡接口` 访问非存储类外设, 比如SDIO-wifi芯片之类的. *SDIO协议在电气和时序上与SD存储协议兼容，但增加了对非存储设备的命令集。*
 
@@ -2125,11 +2277,13 @@ NAND闪存用**浮栅晶体管**串联制作. 这种晶体管是改进版的MOSF
 * 因为尺寸太小, 没有办法容纳第二排UHS-II接口引脚, 所以**所有的micro SD(TF)卡都最多只支持UHS-I**, 只有9个针脚"金手指". 具体引脚说明见9.4 SD卡结构.
 
 
-### 9.2 读写速度测试?
+#### 9.1.3 读写速度测试?
 
 CDM(crystal disk mark)软件测速
 
-##### SD卡的两种协议: SPI&SDIO
+### 9.2 SD卡通讯的最简单的协议: SPI协议
+
+
 
 SPI模式也称为SD卡的兼容模式. UHS-I和UHS-II协议都向下支持, 只使用四根引脚通信:
 | 名称         | 说明         |
@@ -2150,7 +2304,7 @@ SPI模式也称为SD卡的兼容模式. UHS-I和UHS-II协议都向下支持, 只
 | -------- | -------------------------------- | ------------- | ----------- | ------- 		| ------------- |
 | **SDSC** | Secure Digital Standard Capacity | ≤ 2 GB        | FAT12/FAT16 | SD v1.x 				| 通常写 “SD”      |
 | **SDHC** | Secure Digital High Capacity     | 4 GB ～ 32 GB  | FAT32       | SD v2.0 				| 带 “HC” 标志     |
-| **SDXC** | Secure Digital eXtended Capacity | 64 GB ～ 2 TB  | exFAT       | SD v3.0 				| 带 “XC” 标志     |
+| **SDXC** | Secure Digital eXtended Capacity | 64 GB ～ 2 TB  | exFAT       | SD **v3.0** 				| 带 “XC” 标志     |
 
 stm32F4系列只能支持SD2.0协议, 也就是说如果用SDIO协议, 只能选择SDSC, SDHC卡.
 
@@ -2163,7 +2317,7 @@ stm32F4系列只能支持SD2.0协议, 也就是说如果用SDIO协议, 只能选
 
 其中, 图中的`控制单元`和`存储单元接口`之间有一个FIFO数据缓冲器. 
 
-##### 1.寄存器结构:
+#### 9.4.1.SD卡的寄存器结构:
 
 | 名称      | 位宽  | 中文说明                                    | 通俗解释                                                            |
 | ------- | --- | --------------------------------------- | --------------------------------------------------------------- |
@@ -2178,31 +2332,49 @@ stm32F4系列只能支持SD2.0协议, 也就是说如果用SDIO协议, 只能选
 
 ![alt text](image-98.png)
 
-##### 2.SD总线协议:
+#### 9.4.2 SD总线协议:
 
-![alt text](image-100.png)
+>请注意区分. 这里的**SD总线协议**指的是**标准SD协议**. 
 
-![alt text](image-101.png)
-
-![alt text](image-102.png)
+>**SDIO协议**是它的超集. 但是它们共享物理层, 讨论原理和物理结构的时候几乎是一回事(SDIO有更丰富的指令集而已)
 
 
- 
-  - 起始位: 4根线同时传输一个`0`
-  - 终止位: 4根线同时传输一个`1`
-- SD宽数据包
-
-
-##### 3. SD使用的9个数据线(引脚):
+SD协议使用9条数据线:
 
 | 引脚名           | 方向     | 功能                 |
 | ------------- | ------ | ------------------ |
 | **CLK**       | 主机 → 卡 | 时钟线                |
 | **CMD**       | 双向, 半双工 		| 命令/响应线             |
-| **DAT0~3**    | 双向, 单工但方向可变(这严格称为**时分双向**)     | 数据线                |
-| **VDD**       | -      | 电源（通常 3.3V）        |
-| **VSS (GND)** | -      | 地线                 |
+| **DAT0~3**    | **4根并行数据线**. 双向, 单工但方向可变(这严格称为**时分双向**)     | 数据线                |
+| **VDD, VSS (GND)**      | -      | 电源（通常 3.3V）和地        |
 | **CD/DAT3**   | 双用     | 卡检测/CD 线（低电平表示卡插入）(DAT3也可复用为卡检测输入) |
+
+
+
+* 刚上电时, 因为除了VDD和VSS, 只用DAT0进行主机和SD卡之间的交互. 所以交互是1bit位宽.
+
+* 主机通过 **CMD0 → CMD8 → ACMD41** 等初始化流程确认卡类型（SD1.0/SD2.0/SDHC...）后, 可以通过 **CMD55 + ACMD6** 来告诉 SD 卡切换到 **4-bit 模式**, 使用DAT0~3四条线.
+
+
+* 使用4bit模式时，每根数据线都必须有**起始位**、**终止位**以及**CRC位**，CRC位每根数据线都要分别检查，并把检查结果汇总然后在数据传输完后通过D0线反馈给主机。
+
+* SD卡数据包有两种格式，一种是常规数据(8bit宽)，它先发低字节再发高字节，而每个字节则是先发高位再发低位，4线传输示意如下图：
+
+![alt text](image-163.png)
+
+![alt text](image-102.png)
+  - 起始位: 4根线同时传输一个`0`
+  - 终止位: 4根线同时传输一个`1`
+- SD宽数据包
+
+
+#### 9.4.3 SD协议 使用的9个数据线(引脚):
+
+前面已经介绍了SD协议的九条数据线:
+
+CLK, CMD, DAT0~3, VDD&GND, CD, 复用DAT3
+
+
 
 
 ![引脚](image-99.png)
@@ -2567,6 +2739,7 @@ ATFS 是一个轻量级的 FAT 文件系统库，专门用于在嵌入式系统�
 ## 10 SPI Flash
 
 ### 10.0 SPI协议
+
 SPI可以看作USART的改进:
 
 UART传输速度慢而且不稳定, 因为即使约定好了传输速率, 双方的实际波特也会有浮动. 一般只能在使用同一个系统时钟两个挨得很近的双方使用. 
@@ -2803,18 +2976,21 @@ __weak DWORD get_fattime(void) {
 
 
 
-### 14.6 利用DAP(Debug Access Port)进行调试
+### 14.6 利用DAP(Debug Access Port)进行烧录/调试
 
+
+#### .6.0 DAP接口
 DAP 是 ARM Cortex-M 系列微控制器中用于调试和编程的一种接口机制. 它可以接受来自外部调试器（比如 ST-Link、J-Link、CMSIS-DAP）的访问请求，通过支持不同协议与外界通信。
 
 野火DAP下载器:
-1、遵循ARM公司的CMSIS-DAP标准,支持所有基于Cortex-M内核的单片机
-2、属于HID设备,跟鼠标键盘-样，无需安装驱动
-3、支持XP/WIN7/WIN8/WIN10 这四个操作系统
-4、支持JTAG和SW下载模式,可在线调试和硬件仿真
-注意:高速版支持JTAG和SW模式,全速版只有SW模式.
+1. 遵循ARM公司的CMSIS-DAP标准,支持所有基于Cortex-M内核的单片机
+2. 属于**HID设备**,跟鼠标键盘-样，无需安装驱动
+3. 支持XP/WIN7/WIN8/WIN10 这四个操作系统
+4. 支持JTAG和SW下载模式,可在线调试和硬件仿真
 
-* SW(SWD, serial wire debug)
+注意: 高速版DAP下载器支持JTAG和SW模式,全速版只有SW模式.
+
+* **SW(SWD, serial wire debug)**
   -   是 ARM 推出的替代 JTAG 的简化版调试接口。
   -   **只需两根线（SWDIO+SWCLK）**，适合引脚紧张的 MCU。 
   -   用于断点调试、寄存器查看、烧录程序等。
@@ -2830,7 +3006,7 @@ DAP 是 ARM Cortex-M 系列微控制器中用于调试和编程的一种接口�
 | （可选）**nRESET** | 系统复位引脚，用于远程复位（可选） |
 
 
-* JTAG(joint test action group)
+* **JTAG(joint test action group)**
   -   是一种更通用的、**4~5线的调试接口**（TDI/TDO/TCK/TMS/\[TRST\]）。 
   -   支持多芯片级联调试。   
   -   功能比 SWD 更复杂，但在 STM32 上你不一定需要这么多。
@@ -2849,6 +3025,9 @@ DAP 是 ARM Cortex-M 系列微控制器中用于调试和编程的一种接口�
 
 * **SWJ(SWD JTAG Switching)**
 
+也就是JTAG+SWD功能.
+
+
 大多数 Cortex-M 系列 MCU（比如 STM32）在芯片启动时会默认启用 SWJ 全部功能，也就是JTAG + SWD 都打开。
 通过设置特定寄存器（一般是 AFIO_MAPR 或 SYSCFG->CFGRx，视芯片而定）可以关闭 JTAG，仅保留 SWD，以节省引脚资源。
 
@@ -2860,9 +3039,13 @@ MCU 与电脑通过这个虚拟串口进行 日志输出、命令输入、调试
   -   用来实现 **USB转串口** 的调试输出。
   -   比如你插上一个 DAPLink 调试器后，电脑上出现一个 COM 口，就是 V-UART 提供的，通常被用来做 `printf` 输出调试。
 
+
+####  .6.1**keil中用DAP烧录/调试**
+------------
 使用SWD或JTAG连接好DAP调试器后, 在keil中选择debugger为CMSIS-DAP Debugger:
 
-![alt text](RVW5O}S8$HDI{63F4UC0]C1_tmb.jpg)
+![alt text](image-164.png)
+
 
 记得utilities勾选启用debugger
 
@@ -2895,6 +3078,15 @@ Reset选项:
 记得勾选eraser sector(擦除全片有点慢), 还有reset and run(软件烧录后自动reset+run, 就和硬件reset一样的)
 ![alt text](image-158.png)
 
+#### .6.2 ST-LINK
+
+使用CUBE_IDE的工程不能直接使用DAP下载器, 必须使用ST-LINK下载器...
+
+
+
+
+
+### 14.7 使用ST-LINK烧录/调试
 
 
 
@@ -2908,7 +3100,26 @@ Reset选项:
 
 
 
+### 14.7 跨芯片移植程序
 
+
+流程大概是:
+Project → Options → device, 更改芯片选型.
+
+确定`CMSIS/stm32f10x.h`中那堆芯片选型的#ifdef只选中了一个. 如果多个芯片选型的#ifdef被命中, 会拼接出错误的语法.
+
+Project → Options → C/C++ → Defines, 这里是**家族宏**. `,`分隔的字符串, 每个字符串`str`都被当作在当前所有文件开头`#define str`. 查看家族宏有没有问题. 
+
+比如f103VET6->F103C8T6时, 家族宏里`STM32F10X_HD`要改成`STM32F10X_MD`.
+
+然后修改一个个bsp_xxx
+
+
+
+
+
+
+##
 
 ##
 

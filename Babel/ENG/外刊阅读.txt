@@ -1,0 +1,97 @@
+
+//9.20
+How does racewalking stack up against running in terms of positives (fitness and health) and negatives (injuries)?
+
+A
+Race walking shares many fitness benefits with running, research shows, while most likely contributing to fewer injuries. It does, however, have something of an image problem.
+
+Race walkers can be superbly conditioned athletes. The longest track and field event at the Summer Olympics is the 50-kilometer race walk, which is about five miles longer than the marathon. (There is also a 20-kilometer Olympic race walk.)
+
+But in action, race walkers to some extent resemble caffeinated storks. The sport’s rules mandate that a race walker’s knees must stay straight through most of the leg swing and one foot remain in contact with the ground at all times.
+
+It’s these oddities of form that make race walking such a beguiling activity, however, says Jaclyn Norberg, an assistant professor of exercise science at Salem State University in Salem, Mass., who wrote her dissertation about race walking.
+
+Like running, race walking is physically strenuous, she says. According to most estimates, race walkers moving at a pace of six miles per hour (reasonable for a recreational racer) would burn about 800 calories per hour, which is approximately twice as many as they would burn walking, although fewer than running, which would probably incinerate about 1,000 or more calories per hour.
+
+However, race walking does not pound the body as much as running does, Dr. Norberg says. According to her research, runners hit the ground with as much as four times their body weight per stride, whereas race walkers, who do not leave the ground, generate only about 1.4 times their body weight with each step.
+
+Consequently, she says, some of the injuries associated with running, such as shin splints and runner’s knee, are uncommon among race walkers.
+
+But the sport’s peculiar form does place considerable stress on the ankles and hips, she says, so people with a history of injuries or soreness in those joints might want to proceed cautiously in adopting the sport.
+
+In fact, anyone wishing to try race walking should probably first consult a coach or experienced racer to learn proper technique, she says. “It takes some practice” and perhaps a tolerance for gentle ribbing from your training partner or spouse.
+
+guile				n.狡猾, 欺诈. 词源同wile, n&v欺诈.
+strenuous			紧张的, 艰苦费力的. 来自PIE*ster, 坚硬. 词源同stark(荒凉的;完全的;突出的;刻板的); stiff(僵硬); stear(凝视.) stubborn(固执的) stolid(迟钝的不易激动的. )
+stuck up against	和xxx相比...stuck up堆叠->把两边的筹码堆起来比较高低.
+splint				夹板,薄木条/金属片, v.用夹板固定. 来自split, 分开劈开.
+shin				胫骨. v.爬.
+-sul				带来. result, consult.
+spouse				配偶. 词源同sponsor.
+
+
+***
+
+
+The connection between people and plants has long been the subject of scientific interest. Recent studies have found positive effects.
+
+
+
+A study conducted in Youngstown, Ohio, for example, discovered that greener areas of the city experienced less crime. In another, employees were shown to be 15% more productive when their sparse workplaces were decorated with houseplants.
+
+The engineers at the Massachusetts Institute of Technology (MIT) have taken it a step further – tinkering with the actual composition of plants in order to get them to perform diverse, even outlandish functions.
+
+These include plants that have sensors printed onto their leaves to show when they’re short of water; one that can record and transmit 3D images of its surroundings; and even a plant that can detect chemicals used in explosives in groundwater.
+
+The prototypes fall into the nascent discipline of “plant nanobionics,” a research area – and term – devised by MIT’s Strano Research Group.
+
+The term combines two concepts – “bionic” which means to give a living thing an artificial capability (like a bionic arm), and “nano” which refers to particles smaller than 100 nanometres that can be used to imbue the living thing with its new capability.
+
+“We’re thinking about how we can engineer plants to replace functions of the devices that we encounter every day,” explained Michael Strano, a professor of chemical engineering at MIT, in a phone interview. “The things that we make out of plastic and circuit boards – can we replace those with a living plant?”
+
+Leaves that glow: 
+
+One of his latest projects has been to make plants glow in experiments using kale, watercress, rocket and spinach. By embedding nanoparticles into watercress leaves, Strano’s team found that they could create a faint light for three-and-a-half hours.
+
+
+In the study, the leaves were first immersed in a solution of nanoparticles and then exposed to high pressure, which induced the particles to enter the leaves through pores called stomata.
+
+Once inside, the nanoparticles released luciferin, a light-emitting compound, and luciferase, an enzyme that works on luciferin to make it glow. In this way, the light was powered by the metabolism of the plant itself.
+
+“Plants harvest energy from the sun and stores it as sugar inside the plant,” said Strano. “What we’re doing is taking some of that stored chemical energy and diverting it into illumination.”
+
+The light, about one-thousandth of the amount needed to read by, is just a start. The technology, Strano said, could one day be used to light interiors or even to turn trees into self-powered street lamps.
+
+In the future, the lab hopes to develop a version of the technology that can be sprayed onto plant leaves or saplings in a one-off treatment that would last the plant’s lifetime. The engineers are also trying to develop an on and off “switch” where the glow would dim when exposed to daylight.
+
+Lighting accounts for about 7% of the total electricity consumed in the US. Since lighting is often far removed from the power source – such as the distance from a power plant to street lamps on a remote highway – a lot of energy is lost during transmission. Glowing plants could reduce this distance and therefore help save energy.
+
+But the primary motivation, Strano said, is not saving the planet one illuminated leaf at a time, but rather, aesthetics. “I want to make them, first and foremost, because they’re beautiful.”
+
+
+
+
+sparce			稀疏. 来自spar/sper 撒/散开. 词源同saparate; sprinckle, spead, intersperse(点缀), disperse(散开)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
