@@ -1,7 +1,7 @@
-## 9 STM32CubeMX
+# 9 STM32CubeMX
 
 
-### 9.0 简单入门示例
+## 9.0 简单入门示例
 
 我们使用型号:野火指南者. 它使用的MCU是
 `stm32f103vet6`
@@ -166,7 +166,7 @@ AHB和APB1分频. 分频的结果必须保证不超过该时钟线允许的最�
 
 
 
-### 9.1 HAL库的中断实现:
+## 9.1 HAL库的中断实现:
 
 在MX图形化配置界面->NVIC配置, 在这里可以勾选你想要用的中断.
 
@@ -267,7 +267,7 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
 ```
 
 
-### 9.2 HAL库FATFS读取SD卡的实现
+## 9.2 HAL库FATFS读取SD卡的实现
 
 
 图形化界面开启FATFS后, 产生了很多文件:
@@ -299,6 +299,23 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
     这是示例应用层（how to use FatFs）。通常不需要动它，除非你要改变 mount/路径/行为。
 
 
+## 9.9 MX开发细节...
+
+### 9.9.1 printf&scanf浮点数
+
+
+默认情况下, MX工程使用`newlib-nano`标准库进行C编译.
+**newlib-nano**是一个为嵌入式系统特别优化的标准C库的简化版本, 节省Flash和RAM空间.
+
+它对printf等函数做了极端精简, 只支持证书格式(`%d`, `%s`, `%x`...)等, 不支持浮点数(`%f`, `%lf`, `%.2f`...).
+
+如果需要使用printf浮点数, 需要设置:
+
+-   **右键项目** → `Properties`   
+-   展开 `C/C++ Build` → 选择 `Settings`   
+-   在 `Tool Settings` 选项卡中：   
+    -   点击 `MCU/MPU Settings`      
+    -   找到 **"Use float with printf from newlib-nano (-u\_printf\_float)", 勾选.**
 
 
 
@@ -308,8 +325,11 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
 
 
 
+![alt text](image-165.png)
 
-## 0 上版流程 & STM32项目结构:
+
+
+# 0 上版流程 & STM32项目结构:
 
 ### 0.1 上板流程
 
@@ -441,7 +461,7 @@ azazel@DESKTOP-NJKSK6O:/mnt/f/aza/WOKWOK/STM32/my_projects/ADC_DMA_TIM_interrupt
 └── readme.md
 ```
 
-## 1 各种外设
+# 1 各种外设
 
 * STM32硬件资源描述图
 
@@ -451,7 +471,7 @@ azazel@DESKTOP-NJKSK6O:/mnt/f/aza/WOKWOK/STM32/my_projects/ADC_DMA_TIM_interrupt
 
 ![stm32f10系列引脚分类](image.png)
 
-### 1.1 GPIO:
+## 1.1 GPIO:
 
 通用输入输出端口的简称. 也就是软件可以控制的引脚.
 这个外设在APB2总线连接. 使用时复位和时钟信号要去APB2总线的对应控制寄存器打开.
@@ -459,13 +479,13 @@ azazel@DESKTOP-NJKSK6O:/mnt/f/aza/WOKWOK/STM32/my_projects/ADC_DMA_TIM_interrupt
 
 
 
-#### 1.1.1 GPIO结构的发展史
+### 1.1.1 GPIO结构的发展史
 GPIO在发展中, 支持的模式也在发展.
 
 ![alt text](image-130.png)
 
 
-#### 1.1.2 (old) GPIO的标准双向输入输出模式
+### 1.1.2 (old) GPIO的标准双向输入输出模式
 
 GPIO从最早期的版本是**标准双向输入输出模式**:
 
@@ -480,13 +500,13 @@ GPIO从最早期的版本是**标准双向输入输出模式**:
 ![alt text](image-132.png)
 
 
-#### 1.1.3 STM32的GPIO结构
+### 1.1.3 STM32的GPIO结构
 
 STM的GPIO结构如图所示. 它分为输入电路和输出电路两部分.
 
 ![alt text](image-137.png)
 
-##### 1.1.3.1 GPIO的输入电路:
+#### 1.1.3.1 GPIO的输入电路:
 
 
 
@@ -507,7 +527,7 @@ STM32的输入电路结构提供了4种输入模式:
   * ![alt text](image-149.png)
 
 
-##### 1.1.3.2GPIO的输出电路:
+#### 1.1.3.2GPIO的输出电路:
 
 ![alt text](image-150.png)
 
@@ -548,7 +568,7 @@ STM32的输入电路结构提供了4种输入模式:
 * **复用推挽输出**
 * **复用开漏输出**
 
-#### 1.1.4 STM控制GPIO的寄存器
+### 1.1.4 STM控制GPIO的寄存器
 
 GPIO的完整结构可以看成**寄存器-控制(驱动)器-针脚**. 前面讲的输入/输出电路图结构, 也成为**输入/输出驱动器**. 而前面的寄存器控制这套电路哪里断开哪里闭合. 用户通过软件设置这些寄存器.
 
@@ -567,7 +587,7 @@ GPIO的完整结构可以看成**寄存器-控制(驱动)器-针脚**. 前面讲
 | `LCKR` | 锁存寄存器（Lock Register），用来锁住引脚配置，防止修改。              |
 
 
-##### 1.1.4.1 CRL和CRH
+#### 1.1.4.1 CRL和CRH
 
 其中**CRL**和**CRH**配置了GPIO的模式.
 GPIO引脚的**模式**通过 
@@ -594,12 +614,12 @@ GPIO引脚的**模式**通过
 | `01/10/11`  | `10`       | 复用推挽输出（AF Output PP）       | 输出    | 比如 SPI/USART/PWM 用 |
 | `01/10/11`  | `11`       | 复用开漏输出（AF Output OD）       | 输出    | 比如 I2C 等需开漏输出的复用场景 |
 
-##### 1.1.4.2 APB2总线 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
+#### 1.1.4.2 APB2总线 外设时钟使能寄存器(RCC_APB2ENR); APB2 外设复位寄存器 (RCC_APB2RSTR)
 在AHB总线上. 地址为`0x4002 1000 - 0x4002 13FF`
 首先是使能和复位信号. 如果想使用GPIO端口(在总线APB2连接), 则需要开启复位和时钟控制RCC. 外设的时钟和使能信号默认是关闭的.
 当外设时钟没有启用时，软件不能读出外设寄存器的数值，返回的数值始终是0x0。
 
-##### 1.1.4.3 IDR (input data reg)输入数据寄存器.
+#### 1.1.4.3 IDR (input data reg)输入数据寄存器.
 
 它是一个32bit寄存器. 高16位预留为0没用. 低16位保存端口0~端口15的实际物理电平, 0为低电平.
 
@@ -608,7 +628,7 @@ GPIO引脚的**模式**通过
 它的值用库函数
 `GPIO_ReadInputDataBit()`来读取.
 
-##### 1.1.4.4 ODR (output data reg)输出数据寄存器.
+#### 1.1.4.4 ODR (output data reg)输出数据寄存器.
 
 它是一个32bit寄存器. 高16位预留为0没用. 低16位控制端口0~端口15的输出电平, 0为低电平.
 
@@ -625,7 +645,7 @@ ODR寄存器只有**推挽输出模式**时有用. 当推挽驱动时, IDR被驱
 
 
 
-#### 1.1.5 GPIO的配置写法
+### 1.1.5 GPIO的配置写法
 
 比如要配置3个gpio为**推挽输出**模式, 来用于控制三个`LED外设`, 规范的做法:
 
@@ -712,7 +732,7 @@ void LED_GPIO_Config(void)
 
 
 
-### 1.2 时钟和RCC(reset and clock control)
+## 1.2 时钟和RCC(reset and clock control)
 
 STM32F103 的时钟系统使用 时钟树 进行管理，所有外设（GPIO、USART、ADC 等）都需要时钟才能工作。
 
@@ -739,13 +759,13 @@ RCC是stm32的一个外设,  负责系统复位和时钟管理.
 
 
 
-### 1.4 接口的重映射
+## 1.4 接口的重映射
 ![alt text](image-39.png)
 例如`USART2_TX`, 当控制重映射的寄存器USART2_REMAP=0时, 它被分配到默认物理引脚PA2.
 当USART2_REMAP=1时, 它被分配到物理引脚PD5.
 
 
-### 1.5 DMA (data memory access) 直接存储器访问
+## 1.5 DMA (data memory access) 直接存储器访问
 
 功能: 在两处搬运数据, 不占用cpu.
 比如串口输入时, 我们把sram中的字符串数据arr先搬运到cpu暂存reg, 然后搬运到USART的DR, 然后发送.
@@ -762,11 +782,11 @@ M:
 
 注意:ADC2没有DMA功能. 可以用ADC1或ADC3.
 
-### 1.6 TIM(timer)定时器
+## 1.6 TIM(timer)定时器
 
 ![定时器分类](image-53.png)
 
-#### 1.6.1 基本定时器
+### 1.6.1 基本定时器
 
 ![基本定时器](image-54.png)
 
@@ -810,7 +830,7 @@ uint8_t TIM_ClockDivision;
 } TIM_TimeBaseInitTypeDef
 ```
 
-#### 1.6.2 高级定时器 TIM1, TIM8
+### 1.6.2 高级定时器 TIM1, TIM8
 
 三个功能:
 * 定时
@@ -827,7 +847,7 @@ uint8_t TIM_ClockDivision;
 
 
 
-### 1.7 LED
+## 1.7 LED
 
 指南者板子有三色led. 它们通过**灌电流**的方式连接到GPIO口. 灌电流即意味着LED先直接连接高电平, 然后接入GPIO口, 当GPIO口以**pull模式**(即内部只存在gpio-MOS-GND通路: )运行时
 
@@ -859,7 +879,7 @@ void REDLED_GPIO_Config(void)
 ```
 
 
-### 1.8 晶振
+## 1.8 晶振
 
 ![晶振图](image-83.png)
 
@@ -872,7 +892,7 @@ void REDLED_GPIO_Config(void)
   * `HSI`. 在MCU内部. 8MHz. 和焊接的HSE(PLL倍频之前)一样, 但是精度要差得多.
   * `LSI`. 在MCU内部. 40kHz, 精度差.
 
-### 1.9 key开关
+## 1.9 key开关
 
 查看原理图:
 ![KEY](image-123.png)
@@ -883,7 +903,7 @@ void REDLED_GPIO_Config(void)
 
 使用的四点式key按键模块有四个点触引脚, 实际上可以一个按键同时控制两个开关. 这里板子上的电路是把12和34端接在一起了. 这样就是一个简单的单刀单掷开关了.
 
-## 2 几个例程:
+# 2 几个例程:
 
 ### 指南者板子硬件设计:
 从原理图查到:
@@ -893,7 +913,7 @@ void REDLED_GPIO_Config(void)
 
 
 
-### 2.1 ADC实验
+## 2.1 ADC实验
 整个原理图:
 ![ADC原理图](image-3.png)
 ### 理论部分 
@@ -1014,7 +1034,7 @@ JSWSTART寄存器,控制注入通道可以开始转换了.
 在User目录新建一个adc文件夹存放驱动.
 在其中新建`bsp_adc.c`和`bsp_adc.h`板级支持包文件.
 
-##### 1.编写bsp_adc.c和bsp_adc.h
+#### 1.编写bsp_adc.c和bsp_adc.h
 在啊keil中指定头文件路径: 魔术棒->c/c++->include paths->new(insert), 选择adc文件夹, 于是添加这个路径到头文件寻找中.
 
 写`bsp_adc.h`. 我们要在里面写条件编译. 可以从项目的bsp_usart.h中粘贴修改.
@@ -1167,12 +1187,12 @@ void ADCx_Init(void){
 ```
 
 
-##### 2.编写中断服务函数.
+#### 2.编写中断服务函数.
 在USER目录中编辑文件`stm32f10x_it.c`(it即interrupt. stm32官方库默认中断处理函数都定义在这个文件.)
 因为这个例子里我们的项目文件是拷贝的USART接发, 所以该文件写入了串口终端服务函数. 注释掉, 写上我们要用的adc中断服务函数.
 记得包含头文件`bsp_adc.h`
 
-##### 3.编写main函数.
+#### 3.编写main函数.
 在USER目录中编辑文件`main.c`.
 
 
@@ -1182,7 +1202,7 @@ void ADCx_Init(void){
 
 
 
-## 3 中断, NVIC模块, EXTI模块
+# 3 中断, NVIC模块, EXTI模块
 
 stm32使用模块`NVIC`(nested vectored interrupt controller,内嵌向量中断控制器)管理中断.
 ![中断系统](image-40.png)
@@ -1233,9 +1253,9 @@ void  BASIC_TIM_IRQHandler (void)
 }
 ```
 
-## 5. 标准库...编程经验
+# 5. 标准库...编程经验
 
-### 5.1 头文件
+## 5.1 头文件
 ---
 根据我们的经验, 头文件大致结构为:
 1. 定义初始化结构体;
@@ -1255,7 +1275,7 @@ void  BASIC_TIM_IRQHandler (void)
 
 
 
-### 5.3 标准库...初始化结构体, 以USART为例
+## 5.3 标准库...初始化结构体, 以USART为例
 有两个结构体. 它们在固件库FWLB的stm32f10x_usart.c中
 
 ```c
@@ -1300,7 +1320,7 @@ uint16_t USART_LastBit; // 最尾位时钟脉冲(当 STM32 的 USART 处于 同�
 
 ```
 
-### 5.4 固件库函数, 以USART为例
+## 5.4 固件库函数, 以USART为例
 它们在固件库FWLB的stm32f10x_usart.c中
 ```c
 void USART_DeInit(USART_TypeDef* USARTx);//default init. 就是把某个usart硬件`USARTx`初始化为默认值.
@@ -1345,7 +1365,7 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 ```
 
 
-### 5.5 编程任务和流程
+## 5.5 编程任务和流程
 * 01-初始化串口需要用到的GPIO
 * 02-初始化串口, USART _InitTypeDef
 * 03-中断配置(接收中断,中断优先级)
@@ -1357,13 +1377,13 @@ void USART_ClearITPendingBit(USART_TypeDef* USARTx, uint16_t USART_IT);//清除 
 
 
 
-### 5.6 程序移植: 如何复用自己写的外设bsp?
+## 5.6 程序移植: 如何复用自己写的外设bsp?
 
 1. 复制USER的外设文件夹(一般包含`bsp_外设.c`, `bsp_外设.h`), 并在keil项目中添加这些文件到1.项目和2.链接器中
 2. 在项目的`stm32f10x_conf.h`中将对应的外设的库文件头文件包含(取消注释)
 3. 在main.c中包含`bsp_外设.h`, 即可开始在main.c中使用该外设了.
 
-### 5.7 delay 延时
+## 5.7 delay 延时
 
 
 
@@ -1377,7 +1397,7 @@ void Delay(__IO uint32_t nCount)
 `Delay(0x400000);`大概会在72MHz的STM32上延时1s左右.
 
 
-### 5.8 两种检测方式: 轮询扫描&设置中断
+## 5.8 两种检测方式: 轮询扫描&设置中断
 
 
 
@@ -1390,7 +1410,7 @@ void Delay(__IO uint32_t nCount)
 | 代码复杂度     | 低，易于上手              | 高，需要配置 `EXTI` + NVIC 中断 |
 | 去抖动方式     | 可在 while 里等待稳定      | 通常需加软件延时或定时器过滤          |
 
-#### 1.轮询扫描
+### 1.轮询扫描
 比如设置按钮key1的轮询扫描来检测按钮:
 
 在main的无限循环中调用一个自定义`Key_Scan`函数:
@@ -1424,7 +1444,7 @@ uint8_t Key_Scan(GPIO_TypeDef* GPIOx,uint16_t GPIO_Pin)
 然后我们记得配置key为
 
 
-## 6.电源管理
+# 6.电源管理
 
 stm32芯片的电源模块:
 ![alt text](image-65.png)
@@ -1433,7 +1453,7 @@ stm32芯片的电源模块:
 ![alt text](image-66.png)
 
 
-### 6.1 三种模式
+## 6.1 三种模式
 
 模式名称	        | CPU状态	      | 时钟状态				 | 电流典型值（@72 MHz） | 说明
 |------------------|--------------|--------------------|-----------------------|------|
@@ -1442,7 +1462,7 @@ stm32芯片的电源模块:
 停止模式（Stop）    | CPU停止          | 主时钟关闭，仅低速时钟保留 | 10～100 µA | RAM 保持，唤醒稍慢，可通过 RTC 唤醒
 待机模式（Standby） | 全部停止         | 所有时钟关闭 | 1～10 µA | RAM丢失，需复位唤醒，功耗最低
 
-#### 1.睡眠模式(sleep)
+### 1.睡眠模式(sleep)
 
 通过调用_WFI()或_WFE()进入睡眠.
 
@@ -1450,20 +1470,20 @@ stm32芯片的电源模块:
 
 ![alt text](image-67.png)
 
-#### 2.停止模式(stop)
+### 2.停止模式(stop)
 
 ![alt text](image-68.png)
 ![alt text](image-69.png)
 
 
-#### 3.待机模式(standby关机)
+### 3.待机模式(standby关机)
 
 ![alt text](image-71.png)
 
 
 注意: 如果有备份供电(纽扣电池), `备份域`内的RTC都可以正常运行, 寄存器都可以被正常保存.
 
-### 6.2 电源控制(POWER CONTROL, PWR)的寄存器(PWR_CR)和库函数
+## 6.2 电源控制(POWER CONTROL, PWR)的寄存器(PWR_CR)和库函数
 
 它们是arm cc编译器支持的一些指令, 是最底层的指令了. 我们不能再进一步跳转...
 ![alt text](image-74.png)
@@ -1478,7 +1498,7 @@ stm32芯片的电源模块:
 #### WFI和WFE命令  
 
 ![alt text](image-73.png)
-### 6.3 低功耗实验
+## 6.3 低功耗实验
 
 我们通过软件使寄存器:
 * SLEEPDEEP = 1
@@ -1791,7 +1811,7 @@ int main(void)
 
 ### 8.3. 通信协议
 
-#### 3.0 通信协议的电平标准
+### 3.0 通信协议的电平标准
 
 | 电平标准                                          | 典型电压范围                 | 逻辑0电平     | 逻辑1电平     | 常见使用场景/协议                   |
 | --------------------------------------------- | ---------------------- | --------- | --------- | --------------------------- |
@@ -1825,9 +1845,9 @@ RS-232长这样子:(九根针)
 rxd(收端)和txd(发端)
 
 ![alt text](image-22.png)
-#### 3.1 UART串口通信
+### 3.1 UART串口通信
 
-##### 3.1.0 UART概述
+#### 3.1.0 UART概述
 **串口**（Serial Port），通常指的是 UART（Universal Asynchronous Receiver/Transmitter，通用异步收发器），它是一种数据传输协议。
 
 实现起来超级简单, 就是两根线, 约定一个传输速度然后一根发送一根接收.
@@ -1840,7 +1860,7 @@ rxd(收端)和txd(发端)
 
 
 
-##### 3.1.1 USART的硬件部分:
+#### 3.1.1 USART的硬件部分:
 
 **在 STM32 和大多数单片机上，UART 通信默认使用 TTL(0v 5v) 电平.**
 
@@ -1895,7 +1915,7 @@ TTL转usb电平的芯片常有`ch340`.
 
 
 
-##### 3.1.2 UART的软件部分:
+#### 3.1.2 UART的软件部分:
 ![alt text](image-28.png)
 ![alt text](image-29.png)
 ![alt text](image-30.png)
@@ -1906,7 +1926,7 @@ TTL转usb电平的芯片常有`ch340`.
 
 #####  3.1.3 UART串口通信-功能框图
 
-###### 1.引脚部分
+##### 1.引脚部分
 ![alt text](image-34.png)
 
 每个USART串口有五个常用引脚(IRDA_OUT和IRDA_IN是红外功能, 很少用):
@@ -1929,7 +1949,7 @@ LQFP144指的是144脚的芯片,
 
 * 前三个是`USART`, 即通用同步/异步收发器. 后两个是`UART`,即通用异步收发器. 少了`SCLK`, `CTS`, `RTS`三个引脚.
 
-###### 2.数据寄存器部分
+##### 2.数据寄存器部分
 这部分自己看寄存器文档即可.
 
 `USART_DR`. 9位有效. 
@@ -1964,10 +1984,10 @@ LQFP144指的是144脚的芯片,
 
 ![alt text](image-48.png)
 
-###### 3.1.4 USART编程
+##### 3.1.4 USART编程
 stm32f10x_usart.h.
 
-#### 3.2 I2C协议
+### 3.2 I2C协议
 
 
 就像SPI解决了UART因为没有CLK线传输导致不稳定和很慢的问题一样,
@@ -1986,7 +2006,7 @@ UART无法一对多通信. 每个外设都需要占用MCU一个UART接口.
 
 * 串行通信的意思: 实际数据是一位一位地串行传输. UART, I2C, SPI都是串行通信. 虽然I2C的总线结构从电路上来说, 从机是"并联"在SLK和SDA上的.
 
-#### 3.3 SWD(serial wire debug)
+### 3.3 SWD(serial wire debug)
 
 SWD是arm公司开发的专门为**调试**和**烧录** MCU 设计的 通信协议.
 
@@ -2736,9 +2756,9 @@ ATFS 是一个轻量级的 FAT 文件系统库，专门用于在嵌入式系统�
 
 
 
-## 10 SPI Flash
+# 10 SPI Flash
 
-### 10.0 SPI协议
+## 10.0 SPI协议
 
 SPI可以看作USART的改进:
 
@@ -2777,7 +2797,7 @@ W25Q64: 一款常见的NOR Flash存储器芯片, 使用SPI接口.
 
 
 
-## 12 OLED
+# 12 OLED
 
 一般用作调试显示屏, 方便我们调试程序.
 
@@ -2798,17 +2818,17 @@ W25Q64: 一款常见的NOR Flash存储器芯片, 使用SPI接口.
 
 ##
 
-## 13 文件系统
+# 13 文件系统
 
 FarFS(FAT(File Allocation Table) File System), 文件分配表-文件系统.
 
 
 
 ##
-## 14 常见问题(bug log)
+# 14 常见问题(bug log)
 
 
-### 14.1 库函数未声明(this func is decleared implicit)
+## 14.1 库函数未声明(this func is decleared implicit)
 
 检查:
 * 1.有没有include头文件
@@ -2824,10 +2844,10 @@ FarFS(FAT(File Allocation Table) File System), 文件分配表-文件系统.
   * 比如因为复制来的项目导致的文件夹叫做`xxx-副本`
 
 
-### 14.2 C项目的.c和.h; 
+## 14.2 C项目的.c和.h; 
 
 
-#### 14.2.1 预处理阶段和编译阶段
+### 14.2.1 预处理阶段和编译阶段
 
 在编译之前首先是预处理阶段. 这个阶段, 预处理器会分别处理**project list**的每个.c文件. 预处理器开始阅读这个.c代码, 并且将所有`#`命令进行代码替换. 当遇到`#include`时, 预处理器在`including path`中寻找该文件, 然后将该文件的所有代码插入到此处.
 
@@ -2857,7 +2877,7 @@ FarFS(FAT(File Allocation Table) File System), 文件分配表-文件系统.
     * 只有变量需要extern, 函数的声明默认是`extern`的，所以通常我们写函数声明时不需要显式加上`extern`。但是，如果你希望强调它是外部链接，也可以加上。
   * **链接阶段**：链接器会收集所有目标文件.i，然后解析这些未解决的引用。如果链接器在所有目标文件中都找不到这个符号的定义，就会报“未定义的符号”错误.
 
-#### 14.2.2 link阶段的编译错误: .o文件中未定义符号/
+### 14.2.2 link阶段的编译错误: .o文件中未定义符号/
 
 在keil5中编译SD的fatfs项目时3, 因为在ffconf.h中配置了
 ```c
@@ -2889,7 +2909,7 @@ Target not created.
  * 类似的link阶段报错还有symbol重复定义. 这是由于所有参与link的.o文件中, 存在重复的函数定义. 这一般是由于你在项目的project中含有两个同名函数的.c文件参与编译, 或者.h文件
 
 
-#### 14.2.3 IDE的**project list**和**including path**
+### 14.2.3 IDE的**project list**和**including path**
 
 包括keil的IDE有两个列表:
 * project list: 在这个虚拟路径下的所有.c文件会参与预处理和编译, **.h文件则被忽略.**
@@ -2898,13 +2918,13 @@ Target not created.
 
 keil的话, 点击魔术棒(options)选项-> C/C++ -> include paths, 选择添加要include的头文件的路径. 注意路径没有包含关系, 必须是同级目录.
 
-#### 14.2.4 官方的头文件怎麽也报错"xxx not decleared/ implicit declearation"?
+### 14.2.4 官方的头文件怎麽也报错"xxx not decleared/ implicit declearation"?
 
 因为官方头文件可能并不是被设计用来单独使用的. 
 比如CMSIS的"core_cm3.h". 这个头文件直接使用了很多变量/枚举类型, 比如`IQR_Type`, 直接包含它, 会在编译的时候因为没有定义`IQR_Type`而报错. 事实上, "core_cm3.h"期望它被一个具体的MCU头文件给包含, 而前者已经定义好了具体的
 `IQR_Type`等变量/宏 作为一款具体型号的MCU的接口.
 
-#### 14.2.5 CMSIS和stm32f10x标准库
+### 14.2.5 CMSIS和stm32f10x标准库
 
 **CMSIS（Cortex Microcontroller Software Interface Standard）**是 ARM 官方为所有 Cortex-M 系列 MCU 提供的**底层标准接口/核心库**. 包括所有的stm32的MCU都是Cortex-Mx(x=3,4,7)架构的.
 
@@ -2917,7 +2937,7 @@ keil的话, 点击魔术棒(options)选项-> C/C++ -> include paths, 选择添�
 
 
 
-### 14.3 中断函数怎麽写好?
+## 14.3 中断函数怎麽写好?
 
 关于一些中断函数写在哪里? 它们用的全局变量呢? 经验:
 | 方式                                       | 说明          | 是否推荐           |
@@ -2927,7 +2947,7 @@ keil的话, 点击魔术棒(options)选项-> C/C++ -> include paths, 选择添�
 | 中断函数内部「转发」到对应外设模块处理                      | 解耦、利于大型项目扩展 | ✅✅ 强烈推荐（中大型项目） |
 
 
-### 14.4 F12找不到定义跳转?
+## 14.4 F12找不到定义跳转?
 
 如果当前没有报错或警告, 可能是你还没有编译. 编译一下再F12.
 
@@ -2941,7 +2961,7 @@ __weak DWORD get_fattime(void) {
 ```
 
 
-### 14.5 添加新的bsp文件步骤:
+## 14.5 添加新的bsp文件步骤:
 
 可以自己去USER新建, 也可以在keil界面直接选择USER文件夹然后add a new file...但是记得改一下路径, 看一眼你创建在哪里了. 记得维持清爽的USER文件夹下面各种外设文件夹的结构! 不然还得花时间维护include path设置
 
@@ -2976,7 +2996,7 @@ __weak DWORD get_fattime(void) {
 
 
 
-### 14.6 利用DAP(Debug Access Port)进行烧录/调试
+## 14.6 利用DAP(Debug Access Port)进行烧录/调试
 
 
 #### .6.0 DAP接口
@@ -3086,7 +3106,7 @@ Reset选项:
 
 
 
-### 14.7 使用ST-LINK烧录/调试
+## 14.7 使用ST-LINK烧录/调试
 
 
 
@@ -3100,7 +3120,7 @@ Reset选项:
 
 
 
-### 14.7 跨芯片移植程序
+## 14.7 跨芯片移植程序
 
 
 流程大概是:
@@ -3136,15 +3156,7 @@ Project → Options → C/C++ → Defines, 这里是**家族宏**. `,`分隔的�
 
 
 
-## 16. 汇编语言(Assembly)
-
-
-
-
-
-
-
-
+# 16. 汇编语言(Assembly)
 
 
 
@@ -3179,7 +3191,7 @@ https://www.bilibili.com/video/BV1KG411T77D/?spm_id_from=333.337.search-card.all
 
 
 
-### 1. ASM的vscode插件
+## 1. ASM的vscode插件
 
 在vscode里用这个插件写汇编.
 
@@ -3205,7 +3217,7 @@ msdos pleayer: 直接在终端运行
 
 
 
-#### 1.1 调试ASM code
+### 1.1 调试ASM code
 ![alt text](image-162.png)
 
 指令:
@@ -3215,7 +3227,7 @@ msdos pleayer: 直接在终端运行
 * `D [addr]`: 查看内存中的内容. 如D
 
 
-### 2. 基础指令&通用寄存器 (intel 8086架构)
+## 2. 基础指令&通用寄存器 (intel 8086架构)
 
 * 通用寄存器（General Purpose Registers）
 这些寄存器可以用于算术运算、存储临时变量、函数调用参数等。它们也可以细分为高8位和低8位，例如 AX 可以拆成 AH（高）和 AL（低）。
