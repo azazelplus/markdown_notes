@@ -290,13 +290,16 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
 **这些目录/文件的角色...先看懂再改.**
 
 -   `Middlewares/Third_Party/FatFs/src/`  
-    这是 FatFs 的**上层中间件实现**（核心库文件：`ff.c`、`ff.h`、以及一个通用的 `diskio.c` ）。通常 `diskio.c` 是 FatFs 和硬件驱动之间的“接口层”模板（有时里面会调用你在 Target 下实现的低层函数）。不要盲改核心库，除非你知道在做什么。
+    这是 FatFs 的**上层中间件实现**（核心库文件：`ff.c`、`ff.h`、以及一个通用的 `diskio.c` ）。通常 `diskio.c` 是 FatFs 和硬件驱动之间的“接口层”模板（有时里面会调用你在 Target 下实现的低层函数）。**不要盲改核心库**，除非你知道在做什么。
     
--   `./FATFS/Target/`（或 `App/FATFS/Target`）  
+-   `./FATFS/Target/`  
     这个目录通常是放**板级/目标平台的实现**（低层磁盘驱动、GPIO/CS 具体实现）的地方，CubeMX 有时会生成 `user_diskio.c` 在这里，目的是让你把具体的硬件实现放这里以避免改动中间件。优先在这里实现 SPI 版本的磁盘驱动。
     
 -   `./FATFS/App`（fatfs.c/h）  
     这是示例应用层（how to use FatFs）。通常不需要动它，除非你要改变 mount/路径/行为。
+
+
+
 
 
 ## 9.9 MX开发细节...
@@ -317,15 +320,55 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
     -   点击 `MCU/MPU Settings`      
     -   找到 **"Use float with printf from newlib-nano (-u\_printf\_float)", 勾选.**
 
-
-
-
-
-
-
-
-
 ![alt text](image-165.png)
+
+### 9.9.2 IDE的项目树结构
+
+**CubeIDE的项目结构直接就是文件系统映射!**
+***
+在 **STM32CubeIDE (基于 Eclipse CDT)** 里：
+-   左边的 _Project Explorer_ 本质上就是 IDE 里挂载的工作区目录，它直接映射到你硬盘上的真实目录结构。   
+-   你在文件管理器里新建/删除/移动文件，CubeIDE 里会同步更新（反之亦然）。   
+-   所以 `folder`、`source folder`、`file`、`source file` 本质就是告诉 IDE 怎么对待这个硬盘上的对象，并不是“单独维护一份虚拟工程结构”。
+    
+
+而 **Keil (MDK-ARM)** 是老一套设计：
+-   左边的 _Project Tree_ 完全是一个 **虚拟工程视图**，你得手动把文件加进去，不会自动跟随真实目录结构。    
+-   实际硬盘目录和工程树没啥绑定关系，所以容易乱、容易出“找不到文件”的坑。    
+-   这就是为啥很多人骂 Keil 傻逼. 它更像是 90 年代 VC6 那种手工管理项目.  
+
+***
+
+
+
+
+-   **Folder（普通文件夹）**  
+    -   就是物理文件夹。       
+    -   IDE 不会自动把里面的 `.c` / `.h` 当作编译输入，除非该文件夹被包含在工程的编译路径里。        
+    -   常用于存放文档、资源、或者临时文件。       
+-   **Source Folder（源文件夹）**    
+    -   这是 Eclipse/CDT 概念：标记为“源码目录”的文件夹会被自动加到 **Include Paths** 和编译器的搜索路径里。       
+    -   里面放的 `.c/.h` 会默认参与编译。       
+    -   如果你用 CubeIDE 创建 `Source Folder`，它会自动在项目设置里修改 **C Source folders**。
+-   Eclipse/CDT 里只有**被标记过的一级目录**才是 Source Folder。   
+-   它的子目录如果没有单独标记，就只是普通 Folder。    
+-   但编译器在扫 Source Folder 的时候，会递归进去编译 `.c` 文件，所以功能上没区别。
+
+
+
+
+
+
+
+
+项目树视图的文件夹如果有个斜线划掉, 意思是不参与编译. 右键->`Properties`->参与编译即可
+
+![alt text](image-166.png)
+
+
+**注意! 有时候IDE里的项目树和实际磁盘不同步. 这种情况必须尝试编译, 即可同步. 重启IDE或者徒劳地在IDE视窗更改是不行的.**
+
+
 
 
 
