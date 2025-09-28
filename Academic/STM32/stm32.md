@@ -302,6 +302,11 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
 
 
 
+## 9.3 配置USART
+
+
+
+
 ## 9.9 MX开发细节...
 
 ### 9.9.1 printf&scanf浮点数
@@ -367,6 +372,8 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
 
 
 **注意! 有时候IDE里的项目树和实际磁盘不同步. 这种情况必须尝试编译, 即可同步. 重启IDE或者徒劳地在IDE视窗更改是不行的.**
+
+
 
 
 
