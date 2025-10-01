@@ -166,7 +166,7 @@ AHB和APB1分频. 分频的结果必须保证不超过该时钟线允许的最�
 
 
 
-## 9.1 HAL库的中断实现:
+## 9.1 HAL库的NVIC中断实现:
 
 在MX图形化配置界面->NVIC配置, 在这里可以勾选你想要用的中断.
 
@@ -302,7 +302,111 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
 
 
 
-## 9.3 配置USART
+## 9.3 HAL库的USART
+
+
+CUBEMX配置USART这样就可以. 一般我们使用异步收发, 就是同时可以收发.
+
+![alt text](image-168.png)
+
+
+常用HAL库函数:
+
+首先, CUBEMX自动生成的usart.c中会声明一个USART外设句柄`huart1`或2/3如果你用USART2/3的话.
+
+
+```C
+
+//阻塞发送. 串口句柄: huart1
+//要发送的数据为(uint8_t *)"[数据字符串]"
+//数据长度为7(这个可以用strlen()函数)
+//阻塞超时时间. HAL_MAX_DELAY=0xFFFF FFFF U. 这里就是一直等待.
+HAL_UART_Transmit(&huart1, (uint8_t *)"Hello\r\n", 7, HAL_MAX_DELAY);
+
+```
+
+
+
+
+
+### 9.3.1 DEBUG: 回环测试
+
+这是调试小技巧. 当usart不工作时.
+
+首先是MCU自回环. 不连接CH340, 短接TX和RX, 运行下面的回环代码(思路就是发送数据, 然后接收数据, 看能否接收到.) 可以使用亮灯/OLED等手段查看return结果.
+
+如果MCU没问题, 继续排查ch340串口. 连接ch340串口设备, 在PC端回环查看能否打印信息.
+
+
+
+```C
+//串口测试
+#if 1
+//printf("usart test\r\n");
+
+
+  /* 简单 MCU loopback test (blocking) */
+  /* 先把 PA9 与 PA10 短接（物理） */
+  uint8_t tx[] = "LOOPTEST\r\n";
+  uint8_t rx;
+  HAL_StatusTypeDef st;
+
+  /* 发送一串 */
+  st = HAL_UART_Transmit(&huart1, tx, sizeof(tx)-1, 100);
+  if (st == HAL_OK) {
+      /* 读取 1 字节看看能否接到（阻塞 200ms） */
+      if (HAL_UART_Receive(&huart1, &rx, 1, 200) == HAL_OK) {
+          /* 收到后再发回 PC（如果 CH340 连接且工作，则PC会看到） */
+          HAL_UART_Transmit(&huart1, &rx, 1, HAL_MAX_DELAY);
+      } else {
+          /* 没收到：可以用LED或断点提示 */
+    	  sparckle_fast(20);
+      }
+  }
+  HAL_Delay(500);
+
+#endif
+```
+
+请不要犯USART的TX, RX连接到CH340的TX, RX的低级错误. 
+
+CH340的TX应该连USART的RX.
+
+
+## 9.4 分析.elf文件: 最後攻勢.
+
+在MX项目中, 选择生成.elf文件.
+Project → Properties → C/C++ Build → Settings → MCU GCC Linker → Miscellaneous
+
+其中有两个框可以提供命令行参数(用空格隔开.)
+
+* Other flages: 给链接器提供额外命令行参数.
+  * `-specs=rdimon.specs`: 启用**semihosting(半主机)**. 一种特殊调试模式, 它会捕获标准库函数的实现方式.
+  * `-specs=nosys.specs` 不要走调试主机.
+  * `-Wl,-Map=${ProjName}.map` 让linker输出一个`map`文件, 文件名为`${ProjName}.map`
+* Additional object files: 手工加入想参与link的.o/.a文件路径. 一般不用.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -378,6 +482,51 @@ void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc){
 
 
 
+### 9.9.3 特殊的PC13
+
+
+F103C8T6版本中, PC13引脚同时复用RTC TAMPER(防篡改)功能,
+
+**CUBEMX会生成错误的代码**:
+
+当启用RTC时, 即使没有选择output功能(RTC只用来计时和触发中断, 不对外输出)
+
+![alt text](image-167.png)
+
+PC13引脚仍然会被`MX_RTC_Init();`函数写入rtc的CR寄存器,  `hrtc.Init.OutPut` 写 `BKP->RTCCR`（把 alarm/second/calib 输出路由到 TAMPER 引脚）, 导致PC13强制拉低无法使用.
+
+解决方式: 在`MX_RTC_Init();`之后运行下面的代码, 强制清除 BKP->CR 的 TPE 位(Tamper 使能位)，把引脚恢复为普通用途。
+
+
+
+```C
+#if 1
+  /* ---------- 放在 MX_RTC_Init() 完成后 (USER CODE BEGIN RTC_Init 2) 或 main() 中 ---------- */
+  /* 确保包含 HAL 头文件： stm32f1xx_hal.h */
+  /* 1) 允许访问备份域并使能 BKP 时钟 */
+  __HAL_RCC_PWR_CLK_ENABLE();
+  HAL_PWR_EnableBkUpAccess();      // 允许访问 RTC/BKP 寄存器
+  __HAL_RCC_BKP_CLK_ENABLE();
+
+  /* 2) 关闭 RTC 输出到 TAMPER（PC13） —— 清除 RTCCR 的 CCO/ASOE/ASOS 位 */
+  BKP->RTCCR &= ~(BKP_RTCCR_CCO | BKP_RTCCR_ASOE | BKP_RTCCR_ASOS);
+
+  /* 3) 关闭 Tamper 功能（确保 TAMPER 引脚不再被当作 Tamper）*/
+  BKP->CR &= ~BKP_CR_TPE;
+
+
+
+  /* 4) 重新设置PC13普通GPIO: 示例为推挽输出reset拉高模式. */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  /* ---------- end ---------- */
+#endif
+```
 
 # 0 上版流程 & STM32项目结构:
 
