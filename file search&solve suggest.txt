@@ -1,0 +1,28 @@
+
+
+在整个文件夹所有文件里尝试查找字段"xxx"
+	法一: 如果安装了vscode, 直接用vscode打开当前目录, 然后左边栏搜索即可. 最棒的方式.
+	法2: wsl终端打开, 使用grep命令.
+		grep -rn --include="*.md" "搜索内容"
+		-r recuisive 递归搜索子目录.
+		-n line number 在输出显示行号.
+		--include="" 限定文件名. 不加则搜索所有文件.
+		注意搜索内容不要带`,$,\, 因为bash中它们是特殊符号
+		
+azazel@DESKTOP-NJKSK6O:/mnt/f/aza/notes_git$ grep -rn --include="*.md" "tar -xvzf systemc-2.3.3.tar.gz"
+Academic/Linux/linux_note.md:1051:`tar -xvzf systemc-2.3.3.tar.gz`	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
