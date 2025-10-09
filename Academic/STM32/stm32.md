@@ -373,9 +373,17 @@ HAL_UART_Transmit(&huart1, (uint8_t *)"Hello\r\n", 7, HAL_MAX_DELAY);
 CH340的TX应该连USART的RX.
 
 
-## 9.4 分析.elf文件: 最後攻勢.
+## 9.4 分析.elf文件: 最後攻勢
 
-在MX项目中, 选择生成.elf文件.
+我真的不知道为什麽printf()函数不能重定向成功.
+
+我现在必须找到它具体的实现过程了.
+
+项目编译后, 默认一般生成.elf文件, 位置在`./adc_v1.0/Debug/adc_v1.0.elf`
+
+如果没有, 看一下设置:
+***
+在MX项目中, 选择生成.elf文件. 
 Project → Properties → C/C++ Build → Settings → MCU GCC Linker → Miscellaneous
 
 其中有两个框可以提供命令行参数(用空格隔开.)
@@ -385,26 +393,183 @@ Project → Properties → C/C++ Build → Settings → MCU GCC Linker → Misce
   * `-specs=nosys.specs` 不要走调试主机.
   * `-Wl,-Map=${ProjName}.map` 让linker输出一个`map`文件, 文件名为`${ProjName}.map`
 * Additional object files: 手工加入想参与link的.o/.a文件路径. 一般不用.
+***
+
+
+
+使用`arm-none-eabi-nm`命令分析.elf文件.
+
+这是arm架构的nm(name manager), 会列出目标文件的所有符号`symbol`.
+
+eabi(embedded appplication binary interface), 嵌入式应用二进制接口
+
+
+先检索包含printf符号的指令部分.
+
+```bash
+azazel@DESKTOP-NJKSK6O:/mnt/f/aza/STM32CUBE_IDE_WORKSPACE/adc_v0.1/Debug$ arm-none-eabi-nm -C adc_v0.1.elf | grep printf
+08004a34 T _printf_common
+080045dc W _printf_float
+08004b18 T _printf_i
+08007c14 T _svfiprintf_r
+08007c14 T _svfprintf_r
+08007e5c T _vfiprintf_r
+08007e5c T _vfprintf_r
+20000238 B dbg_printf_count
+08008af4 T fiprintf
+08008af4 T fprintf
+080052ec T iprintf
+080052ec T printf
+0800537c T siprintf
+08005310 T sniprintf
+08005310 T snprintf
+0800537c T sprintf
+```
+
+发现`printf`和`iprintf`同一地址: 
+```
+080052ec T iprintf
+080052ec T printf
+```
+这意味着printf被定义为iprintf的弱符号或别名. i即int, 是简化版的printf，专门用于嵌入式系统，不支持浮点数.
 
 
 
 
+现在根据这个`iprintf`地址`080052ec`反汇编附近的指令.
+
+```bash
+azazel@DESKTOP-NJKSK6O:/mnt/f/aza/STM32CUBE_IDE_WORKSPACE/adc_v0.1/Debug$ 
+arm-none-eabi-objdump -D adc_v0.1.elf --start-address=0x080052ec --stop-address=0x080055ec
+
+adc_v0.1.elf:     file format elf32-littlearm
+
+
+Disassembly of section .text:
+
+080052ec <iprintf>:
+ 80052ec:       b40f            push    {r0, r1, r2, r3}
+ 80052ee:       b507            push    {r0, r1, r2, lr}
+ 80052f0:       4906            ldr     r1, [pc, #24]   ; (800530c <iprintf+0x20>)
+ 80052f2:       ab04            add     r3, sp, #16
+ 80052f4:       6808            ldr     r0, [r1, #0]
+ 80052f6:       f853 2b04       ldr.w   r2, [r3], #4
+ 80052fa:       6881            ldr     r1, [r0, #8]
+ 80052fc:       9301            str     r3, [sp, #4]
+ 80052fe:       f002 fdad       bl      8007e5c <_vfiprintf_r>
+ 8005302:       b003            add     sp, #12
+ 8005304:       f85d eb04       ldr.w   lr, [sp], #4
+ 8005308:       b004            add     sp, #16
+ 800530a:       4770            bx      lr
+ 800530c:       20000030        andcs   r0, r0, r0, lsr r0
+
+08005310 <sniprintf>:
+...
+```
+
+我们发现`iprintf`的汇编实现跳转到了符号`_vfiprintf_r`. 需要进一步寻找.
+
+```bash
+080052ec <iprintf>:
+  ... 
+  bl      8007e5c <_vfiprintf_r>
+```
+
+我们来反汇编`_vfiprintf_r`这个符号附近的指令.
+
+
+```bash
+azazel@DESKTOP-NJKSK6O:/mnt/f/aza/STM32CUBE_IDE_WORKSPACE/adc_v0.1/Debug$ arm-none-eabi-objdump -D adc_v0.1.elf --start-address=0x08007e5c --stop-address=0x08007e7c
+
+adc_v0.1.elf:     file format elf32-littlearm
+
+
+Disassembly of section .text:
+
+08007e5c <_vfiprintf_r>:
+ 8007e5c:       e92d 4ff0       stmdb   sp!, {r4, r5, r6, r7, r8, r9, sl, fp, lr}
+ 8007e60:       460d            mov     r5, r1
+ 8007e62:       4614            mov     r4, r2
+ 8007e64:       4698            mov     r8, r3
+ 8007e66:       4606            mov     r6, r0
+ 8007e68:       b09d            sub     sp, #116        ; 0x74
+ 8007e6a:       b118            cbz     r0, 8007e74 <_vfiprintf_r+0x18>
+ 8007e6c:       6a03            ldr     r3, [r0, #32]
+ 8007e6e:       b90b            cbnz    r3, 8007e74 <_vfiprintf_r+0x18>
+ 8007e70:       f7fd fa06       bl      8005280 <__sinit>
+ 8007e74:       6e6b            ldr     r3, [r5, #100]  ; 0x64
+ 8007e76:       07d9            lsls    r1, r3, #31
+ 8007e78:       d405            bmi.n   8007e86 <_vfiprintf_r+0x2a>
+ 8007e7a:       89ab            ldrh    r3, [r5, #12]
+
+```
+
+似乎出现了一次bl:
+```bash
+ 8007e70:       f7fd fa06       bl      8005280 <__sinit>
+```
+但是这条汇编指令`__sinit`是newlib / newlib-nano 的标准 I/O 初始化函数. 初始化之后还会跳回来. 继续往下看.
+
+
+这样自己找`bl`指令太慢了. 使用grip, 把从`_vfiprintf_r`开始相当长的一段汇编中的`bl`抓出来:
+
+```bash
+azazel@DESKTOP-NJKSK6O:/mnt/f/aza/STM32CUBE_IDE_WORKSPACE/adc_v0.1/Debug$ arm-none-eabi-objdump -d adc_v0.1.elf --start-address=0x08007e5c --stop-address=0x08007fec \
+  | grep -E '\bbl\b|\bblx\b'
+ 8007e70:       f7fd fa06       bl      8005280 <__sinit>
+ 8007e82:       f7fd fbe0       bl      8005646 <__retarget_lock_acquire_recursive>
+ 8007e94:       f7fd fb16       bl      80054c4 <__swsetup_r>
+ 8007eb2:       f7fd fbc9       bl      8005648 <__retarget_lock_release_recursive>
+ 8007ef0:       f7ff ffa1       bl      8007e36 <__sfputs_r>
+ 8007f2c:       f7fd fb8d       bl      800564a <memchr>
+ 8007fbc:       f7fd fb45       bl      800564a <memchr>
+ 8007fde:       f7fd fb34       bl      800564a <memchr>
+
+```
+
+可以发现关键输出函数是`__sfputs_r`. 
+
+而在 newlib / newlib-nano 中，`__sfputs_r` 通常会调用  
+...→ `__swrite_r` → `_write_r` → `_write`（弱符号，可被用户重定义）.
 
 
 
 
+我们可以验证一下`__sfputs_r`是调用`_write_r`的, 继续反汇编抓取bl指令:
+```bash
+azazel@DESKTOP-NJKSK6O:/mnt/f/aza/STM32CUBE_IDE_WORKSPACE/adc_v0.1/Debug$ arm-none-eabi-nm -C adc_v0.1.elf | grep __sfputs_r
+08007e36 T __sfputs_r
+
+```
 
 
+越来越乱了...
 
 
+最终解决了重定向问题, 只留下
 
+```c
+int __io_putchar(int ch)
+{
+    uint8_t c = ch & 0xFF;
+    HAL_UART_Transmit(&huart1, &c, 1, HAL_MAX_DELAY);
+    return ch;
+}
+```
 
+bug的原因:
 
+写了太多重定向函数, 其中包括
+```c
+int _write_r(struct _reent *r, int file, char *ptr, int len)
+{
+    (void) r; /* unused */
+    return _write(file, ptr, len);
+}
+```
+这个不是弱符号, 和libc的符号应该冲突了.
 
-
-
-
-
+同时, 提供了错误/UB签名. `_write_r` 的签名/返回值有问题，函数栈/寄存器期望被破坏. 应该是...
 
 
 
@@ -527,6 +692,29 @@ PC13引脚仍然会被`MX_RTC_Init();`函数写入rtc的CR寄存器,  `hrtc.Init
   /* ---------- end ---------- */
 #endif
 ```
+
+### 9.9.4 无响应BUG
+
+有时候会发生无响应打不开软件.
+
+CUBEIDE的底层框架是Eclipse. 用这个框架的逻辑一点点排查.
+
+CUBEIDE每次打开一个WORKPLACE都会写日志: `工作区地址/metadata/.log`
+
+上一次失败查看日志, 发现是代理的问题. 似乎cubeide无法访问本地回环代理127.0.0.1:10809? 但是之前开着代理也没出问题呀.
+
+但是关掉代理也没用了.
+
+**重装**一次, 没用. (注意放在有中文字符路径会安装报错还不告诉你为啥)
+
+**重启电脑**, 解决.
+
+
+###
+
+
+###
+
 
 # 0 上版流程 & STM32项目结构:
 
