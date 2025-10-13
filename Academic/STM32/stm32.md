@@ -710,7 +710,272 @@ CUBEIDE每次打开一个WORKPLACE都会写日志: `工作区地址/metadata/.lo
 **重启电脑**, 解决.
 
 
-###
+### 9.9.5 SPI不工作
+
+
+**我们先补充一点SPI和SD的基本知识.**
+
+SPI是按字节传输的.  
+
+调用一次`HAL_SPI_TransmitReceive(&hspi1, &dummy, &resp, n, 200);`
+即传输n bit数据.
+
+在一次字节传输时, 主机发送8个SCK. 每个周期, 从机从`MISO`输出1bit, 主机从
+
+* 调用`HAL_SPI_TransmitReceive(&hspi1, &tx, &rx, 1, 200);` 意味着:
+  * 主机发送8个SCK. 
+  * 每个周期, 从机将应答缓冲区`SR_out`从`MISO`输出1bit到主机`rx`.
+  * 每个周期, 主机将`tx`从MOSI输入1bit到从机`SR_in`.
+* 调用`HLA_Transimit(&hspi1, &tx, 1, 200)` 意味着:
+  * 主机发送8个SCK. 
+  * 每个周期, 从机将应答缓冲区`SR_out`从`MISO`输出1bit到主机, **但主机丢弃**.
+  * 每个周期, 主机将`tx`从MOSI输入1bit到从机`SR_in`.
+* 调用`HLA_Receive(&hspi1, &rx, 1, 200)` 意味着:
+  * 主机发送8个SCK. 
+  * 每个周期, 从机将应答缓冲区`SR_out`从`MISO`输出1bit到主机`rx`.
+  * 每个周期, 主机将`0x1`从MOSI输入1bit到从机`SR_in`. 也即dummy字节, 8周期一共发送`FF`.
+  * 换句话说, 下面两个命令是等价的:
+    * `uint8 tx = 0xFF; HAL_SPI_TransmitReceive(&hspi1, &tx, &rx, n, 200);`
+    * `HAL_SPI_Receive(&hspi1, &rx, 1, 200);`
+
+* 一个遵守SPI从机协议的系统需要有一个**能接收SCK并发送数据的缓冲区**. 其实就是个**被动移位寄存器**. 主机打几下SCK, 从机吐几bit数据. 这就是SPI的全部内容了. 
+* 这也要求, 通过SPI协议工作的系统, 工作的最小周期为8个SCK(即使从机是很厉害的计算机可以在1SCK就做出很多事.)
+* SPI协议本身不定义回应的数据意味着什麽. 
+
+***
+***
+对于SD卡的情况:
+
+SD卡约定:
+
+没有准备好或者空闲时, 回应`0xFF`. 
+
+SD卡在一个SCK收到命令后, 需要接下来几个SCK来处理.
+
+SD 协议里**明确允许从机延迟响应**。
+> After a command has been sent, the card may respond with 0xFF for an arbitrary number of bytes (each byte = 8 clock cycles), until it becomes ready to send the valid response token.
+
+也就是说：
+-   卡在内部要解析命令、执行判断（是否进入 SPI 模式、是否空闲、是否忙）. 这一切工作以8个SCK周期为最小粒度.
+-   在这期间，**主机仍要持续发时钟**, SD卡因为没准备好, 发 `0xFF` 字节.     
+-   一旦内部准备完毕，从机下一次移出的字节就会变成响应码（如 `0x01`）。
+
+
+SD卡其他的MISO输出:
+
+-   在写操作期间，卡可能在 MISO 上持续输出 0x00（低电平）直到内部写完成；主机需循环读取直到读到 0xFF 表示卡空闲。
+
+
+
+
+
+问题解决log:
+
+总之成功了!!!!!!!换用淘宝的十块钱的模块就可以了.
+
+项目大概是这样的.
+
+连接好物理引脚VCC, GND, MISO, MOSI, SCK, CS.
+
+注意这个项目的CS用的是软件控制, 其实就是你自己配置个GPIO叫做SD_CS_PIN然后软件控制它高低.
+
+MX配置:
+
+启用FATFS;
+
+配置`SPI1`外设, 以及一个GPIO当作CS.
+
+注意点:
+SPI外设的NSS要disable, 因为我们是软件控制CS
+CPOL, CPHA要为Low, 1Edge.
+
+![alt text](image-169.png)
+
+
+你最头疼的代码配置:
+
+. 
+
+
+首先调用层级:
+
+```
+//SPI读写SD卡的调用关系:
+//data_logger.c->ff.c->diskio.c->SDdriver.c->HAL
+
+//ff.c(最高层文件系统)->
+//diskio.c/user_diskio(接口适配层)->
+//SDdriver.c(BSP层)->
+//HAL(底层)
+
+
+//BSP层。 它调用HAL库(HAL_GPIO_WritePin, HAL_SPI_TransmitReceive, HAL_Delay...), 直接操作SPI和GPIO.
+
+//它定义然后暴露这些函数, 供上层(diskio.c)调用.
+//uint8_t		 	SD_init(void);
+//void 				SD_CS(uint8_t p);
+//uint32_t  	SD_GetSectorCount(void);
+//uint8_t 		SD_GETCID (uint8_t *cid_data);
+//uint8_t 		SD_GETCSD(uint8_t *csd_data);
+//int 				MSD0_GetCardInfo(PMSD_CARDINFO SD0_CardInfo);
+//uint8_t			SD_ReceiveData(uint8_t *data, uint16_t len);
+//uint8_t 		SD_SendBlock(uint8_t*buf,uint8_t cmd);
+//uint8_t 		SD_ReadDisk(uint8_t*buf,uint32_t sector,uint8_t cnt);
+//uint8_t 		SD_WriteDisk(uint8_t*buf,uint32_t sector,uint8_t cnt);
+
+
+//void SPI_setspeed(uint8_t speed);
+//uint8_t spi_readwrite(uint8_t Txdata);
+
+```
+
+要直接移植的文件:
+
+* `项目/Middlewares`. 不要动. 好像这个是MX选择Fatfs后生成的, 其实都不用移植?
+* `项目/Fatfs`.  
+  * `项目/Fatfs/App`里的`fatfs.c, fatfs.h`别动.
+  * `项目/Fatfs/Target`里的`user_diskio.c` 也不需要改. 
+* `项目/Driver/SDdriver/SDdriver.c`是调用单片机的最底层. 它也定义了CS引脚的软件行为. 按理说也不需要改. 注意你需要在main.h中定义`#define SD_CS_Pin GPIO_PIN_4 #define SD_CS_GPIO_Port GPIOA`
+* main.c中记得
+```
+#include "logger.h"
+#include "SDdriver.h"
+```
+
+先确定SPI能正常工作:
+回环测试即可. (略)
+
+再确定SD卡可以正常SPI通信:
+
+```C
+ /* 简单 SPI / SD sanity test */
+  uint8_t tx[10];
+  uint8_t rx[10];
+  for (int i=0;i<10;i++) tx[i]=0xFF;
+
+  /* 拉高 CS, 片选[关]（假设 CS = GPIO_PIN_x, adjust accordingly） */
+  HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET);
+  HAL_Delay(1); /* 80 clocks will be sent below */
+
+  /* 用SPI往MOSI发送 10 字节 0xFF.  同时从MISO读取10字节. 如果SPI主机时钟跑起来了, 但从机无响应(SD卡空通信, 没SD卡/片选关了)会返回 0xFF , 表示SPI硬件在工作, 但从机没有回答.*/
+  HAL_StatusTypeDef st = HAL_SPI_TransmitReceive(&hspi1, tx, rx, 10, 200);
+  printf("SPI txrx ret=%d rx[0]=%02X rx[1]=%02X ...\r\n", st, rx[0], rx[1]);
+```
+
+测试结果:
+
+```
+SPI txrx ret=0 rx[0]=00 rx[1]=00 ...
+```
+
+这她妈根本意味着啥也没有. 你妈的.
+
+换了个spi-sd模块, 测试返回FF了.
+
+
+然后尝试发送cmd0给SD卡, 看看能不能正常进入SPI模式.
+
+```C
+#if 1
+   uint8_t resp;
+   HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_RESET);//CS拉低, 选中
+   uint8_t cmd0[] = {0x40,0x00,0x00,0x00,0x00,0x95};
+   HAL_SPI_Transmit(&hspi1, cmd0, sizeof(cmd0), 200);//发送cmd0给SD卡
+
+
+   // 连续读若干字节看有没有非0xFF
+   for (int i = 0; i < 10; i++) {
+       uint8_t dummy = 0xFF;
+       HAL_SPI_TransmitReceive(&hspi1, &dummy, &resp, 1, 200);
+       printf("resp[%d]=%02X\r\n", i, resp);
+   }
+   HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_SET);
+
+#endif
+```
+
+测试结果:
+```
+resp[0]=FF
+resp[1]=01
+resp[2]=FF
+resp[3]=FF
+resp[4]=FF
+resp[5]=FF
+resp[6]=FF
+resp[7]=FF
+resp[8]=FF
+resp[9]=FF
+```
+说明SD卡成功花了1字节时间(8SCK)处理了cmd0并且返回了`01`正常返回值.
+
+到这里一般就十拿九稳了.
+
+现在做SD卡读写测试
+
+```C
+#if 1
+  //SD test begin
+  printf("SD Card test start.\r\n");
+
+  // FatFs 需要的对象
+  FATFS fs;
+  FIL file;
+  FRESULT res;
+  UINT bytes_written;
+  printf("fatfs obj created.\r\n");
+
+  // 挂载文件系统
+  res = f_mount(&fs, "0:", 1);
+  if (res != FR_OK) {
+      printf("f_mount failed: %d\r\n", res);
+      Error_Handler();
+  }
+  printf("f_mount ok\r\n");
+
+  // 打开（如果不存在则创建）文件 test.txt
+  res = f_open(&file, "0:test.txt", FA_CREATE_ALWAYS | FA_WRITE);
+  if (res != FR_OK) {
+      printf("f_open failed: %d\r\n", res);
+      Error_Handler();
+  }
+  printf("f_open ok\r\n");
+
+  // 写入 "123\n"
+  const char *text = "123\n";
+  res = f_write(&file, text, strlen(text), &bytes_written);
+  if (res != FR_OK || bytes_written == 0) {
+      printf("f_write failed: %d\r\n", res);
+      Error_Handler();
+  }
+  printf("f_write ok (%u bytes)\r\n", bytes_written);
+
+  // 关闭文件
+  f_close(&file);
+#endif
+```
+
+测试结果:
+```
+SD Card test start.
+fatfs obj created.
+f_mount ok
+f_open ok
+f_write ok (4 bytes)
+```
+
+把卡拔了放进读卡器, 看到确实有文件`TEST.TXT`, 里面是123.
+
+SD卡成功SPI读写.
+
+现在你可以用我自己写的datalogger进行你想要的读写操作了.
+
+
+
+
+
+
+
 
 
 ###
