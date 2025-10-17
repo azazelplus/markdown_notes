@@ -168,9 +168,79 @@ AHB和APB1分频. 分频的结果必须保证不超过该时钟线允许的最�
 
 ## 9.1 HAL库的NVIC中断实现:
 
+HAL框架下多了一层调用结构, 完整的函数调用链:
+
+```
+RTC Alarm 硬件中断触发
+        ↓
+RTC_Alarm_IRQHandler()            ← 在 stm32f1xx_it.c 中
+        ↓
+HAL_RTC_AlarmIRQHandler(&hrtc);   ← 即RTC_Alarm_IRQHandler() 内的内容. HAL 层统一入口
+        ↓
+HAL_RTC_AlarmAEventCallback()     ← 你的用户代码钩子
+```
+
+在HAL库配置中断:
+
 在MX图形化配置界面->NVIC配置, 在这里可以勾选你想要用的中断.
 
-勾选的外设中断会导致在`stm32f1xx_it.h`中自动生成对应的中断函数. 它们都会调用一个很复杂的中断处理函数, 其中有非常多的弱定义. 根据你的实际中断类型, 在某个地方(main.c 或者对应外设.c)实现你的业务逻辑.
+勾选的外设中断会导致在`stm32f1xx_it.h`中自动生成对应的中断函数. 它们都会调用一个很复杂的中断处理函数, 其中有非常多的弱定义. 根据你的实际中断类型, 在某个地方(main.c 或者对应外设.c)实现你的业务逻辑. 
+你不需要修改`stm32f1xx_it.c`, 只需要在随便一个.c的USER CODE全局区写好你的对应名称的钩子函数. 参考下表.
+
+| 外设类别                 | 回调函数名                                                         | 触发时机 / 功能           |
+| -------------------- | ------------------------------------------------------------- | ------------------- |
+| **系统级 (SysTick)**    | `HAL_SYSTICK_Callback(void)`                                  | 每次 SysTick 定时器中断时调用 |
+| **定时器 (TIM)**        | `HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)`      | 定时器溢出中断             |
+|                      | `HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)`    | 输出比较事件              |
+|                      | `HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)`  | PWM脉冲结束             |
+|                      | `HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)`         | 输入捕获事件              |
+|                      | `HAL_TIM_TriggerCallback(TIM_HandleTypeDef *htim)`            | 触发事件（从模式）           |
+|                      | `HAL_TIM_ErrorCallback(TIM_HandleTypeDef *htim)`              | 定时器错误中断             |
+| **RTC 实时时钟**         | `HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)`        | 闹钟A事件触发             |
+|                      | `HAL_RTCEx_AlarmBEventCallback(RTC_HandleTypeDef *hrtc)`      | 闹钟B事件触发（有B的系列）      |
+|                      | `HAL_RTCEx_RTCEventCallback(RTC_HandleTypeDef *hrtc)`         | 秒中断或唤醒事件            |
+| **GPIO 外部中断 (EXTI)** | `HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)`                   | 外部引脚中断触发            |
+| **ADC 模数转换**         | `HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)`           | 一次转换完成              |
+|                      | `HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef *hadc)`       | DMA传输完成一半           |
+|                      | `HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef *hadc)`   | 模拟看门狗超限             |
+|                      | `HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)`              | ADC 错误              |
+| **UART 串口**          | `HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)`          | 发送完成                |
+|                      | `HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)`      | DMA发送半完成            |
+|                      | `HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)`          | 接收完成                |
+|                      | `HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)`      | DMA接收半完成            |
+|                      | `HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)`           | 错误（帧错误、溢出等）         |
+|                      | `HAL_UART_AbortCpltCallback(UART_HandleTypeDef *huart)`       | 异常中止完成              |
+| **DMA 直接存储器访问**      | `HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma)`           | DMA传输完成             |
+|                      | `HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)`       | DMA传输半完成            |
+|                      | `HAL_DMA_ErrorCallback(DMA_HandleTypeDef *hdma)`              | DMA错误               |
+| **I2C 总线**           | `HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)`       | 主机发送完成              |
+|                      | `HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)`       | 主机接收完成              |
+|                      | `HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef *hi2c)`        | 从机发送完成              |
+|                      | `HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef *hi2c)`        | 从机接收完成              |
+|                      | `HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef *hi2c)`         | 从机监听结束              |
+|                      | `HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)`              | 错误                  |
+| **SPI 总线**           | `HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)`             | SPI发送完成             |
+|                      | `HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)`             | SPI接收完成             |
+|                      | `HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)`           | SPI收发完成             |
+|                      | `HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)`              | SPI错误               |
+| **CAN 总线**           | `HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan)` | 邮箱0发送完成             |
+|                      | `HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)`  | FIFO0有消息            |
+|                      | `HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)`              | CAN错误               |
+| **USB / CDC**        | `HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)`              | USB复位事件             |
+|                      | `HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd)`            | USB挂起事件             |
+|                      | `HAL_PCD_ResumeCallback(PCD_HandleTypeDef *hpcd)`             | USB恢复事件             |
+| **FLASH 编程**         | `HAL_FLASH_EndOfOperationCallback(uint32_t ReturnValue)`      | 一次擦写完成              |
+|                      | `HAL_FLASH_OperationErrorCallback(uint32_t ReturnValue)`      | 写入错误                |
+| **PWR 电源管理**         | `HAL_PWR_PVDCallback(void)`                                   | 电压监测器中断             |
+|                      | `HAL_PWREx_WKUP1Callback(void)`                               | 唤醒引脚1中断             |
+
+
+***
+***
+***
+***
+***
+***
 
 举个例子.
 
@@ -204,10 +274,22 @@ __weak void HAL_RTCEx_Tamper1EventCallback(RTC_HandleTypeDef *hrtc)
 -   **RTC Alarm** → `HAL_RTC_AlarmAEventCallback`   
 -   **UART 接收完成** → `HAL_UART_RxCpltCallback`
 
-我们这个例子要用RTC触发alarm中断, 所以要实现的回调函数是:
+
+
+我们这个例子要用RTC触发alarm中断. 这对应两个函数:
+* `void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)`
+* `void HAL_RTC_AlarmBEventCallback(RTC_HandleTypeDef *hrtc)`
+
+因为F1系列只有Alarm A, 不支持Alarm B, 所以:
+
+
+所以要实现的回调函数是:
 ```c
 void HAL_RTC_AlarmAEventCallback(RTC_HandleTypeDef *hrtc)
 ```
+
+
+
 
 下面我们去`rtc.c`, 找个地方实现这个函数, 里面就是我们的中断逻辑.
 
@@ -971,10 +1053,20 @@ SD卡成功SPI读写.
 现在你可以用我自己写的datalogger进行你想要的读写操作了.
 
 
+ISR中不要调用fatfs的文件I/O操作(f_write, ...)
 
+事实上, 各种外设调用都不推荐在ISR中使用.
 
-
-
+因为fatfs使用一组全局变量堆栈运行:
+```
+FATFS fs;													/* FatFs文件系统对象 */
+FIL log_file;													/* 文件对象 */
+FRESULT res_state;                /* 文件操作结果 */
+UINT fnum;            					  /* 文件成功读写数量 */
+BYTE ReadBuffer[1024]={0};        /* 读缓冲区 */
+float data_buffer[BUFFER_SIZE];   /* 写缓冲区*/
+```
+它是**不可重入**的. 如果在ISR之外, 主程序正在运行`f_write()`, 此时触发中断, 中断服务函数里也有一个`f_write()`, 此时全局变量堆栈被操作到一半, 又被另一个f_write操作, 会乱套.
 
 
 
