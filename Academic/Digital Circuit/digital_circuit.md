@@ -832,7 +832,7 @@ V'CC延RC-T24-GND形成回路(有了RC, 电流不会过大), 得到高电平Y=1.
 
 
 
-  ### 2.3.2 TSL  门(three-state logic) TTL三态门
+  ### 2.3.2 三态门TSL 门(three-state logic) TTL三态门
 
    #### 2.3.2.1 TSL电路分析
    * 事实上很多种门都有其三态形式, 大多是在原电路上添加一部分.
