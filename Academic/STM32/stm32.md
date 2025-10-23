@@ -657,6 +657,149 @@ int _write_r(struct _reent *r, int file, char *ptr, int len)
 
 
 
+## 9.5 DMA配置
+
+
+![alt text](image-170.png)
+
+参数解释:
+
+### 1\. Direction（方向）
+
+-   **Peripheral To Memory**：从外设（ADC）到内存
+    
+-   **Memory To Peripheral**：从内存到外设（如UART发送）
+    
+-   **Memory To Memory**：内存间搬运
+    
+
+### 2\. Mode（模式）
+
+-   **Normal（普通模式）**：传输指定数量数据后停止，需要重新启动
+    
+-   **Circular（循环模式）**：传输完最后一个数据后，自动回到开头重新开始，形成循环缓冲区
+    
+
+### 3\. Increment Address（地址递增）
+
+-   **Peripheral**：外设地址是否递增
+    
+    -   `No`：ADC数据寄存器地址固定，不递增
+        
+-   **Memory**：内存地址是否递增
+    
+    -   `No`：始终写入同一个变量
+        
+    -   `Yes`：写入数组的不同位置
+        
+
+### 4\. Data Width（数据宽度）
+
+-   **Half Word**：16位（STM32的ADC是12位，用16位变量存储）
+    
+-   **Word**：32位
+    
+-   **Byte**：8位
+
+
+### 5. priority
+
+
+**DMA优先级的选择取决于你的系统需求**.
+
+- **Low** - 低优先级
+- **Medium** - 中等优先级  
+- **High** - 高优先级
+- **Very High** - 最高优先级
+
+
+
+**推荐选择：High(大多数情况)**
+
+对于ADC DMA传输，**建议选择 High**，原因：
+
+1. **数据实时性要求**：ADC数据需要及时搬运，避免数据丢失
+2. **与其他DMA通道的协调**：如果有多个DMA通道同时工作，ADC应该获得较高优先级
+3. **对系统影响小**：ADC数据量通常不大，高优先级不会显著影响系统性能
+
+**各种优先级的使用场景：**
+
+| 优先级 | 适用场景 | 例子 |
+|--------|----------|------|
+| **Very High** | 绝对不能丢失数据的场景 | 音频流、视频采集 |
+| **High** | **ADC采集（推荐）**、高速通信 | SPI/I2C数据收发 |
+| **Medium** | 普通数据传输 | SD卡读写、普通内存拷贝 |
+| **Low** | 后台任务，可以延迟的处理 | 数据备份、日志记录 |
+
+**具体对应代码:**
+```c
+// 在你的DMA配置中：
+hdma_adc.Init.Priority = DMA_PRIORITY_HIGH;  // 推荐选择
+```
+
+
+
+当启用连续转换模式+DMA时，ADC会持续产生数据，DMA会持续搬运数据，形成一个"数据流水线"，CPU完全不需要干预。
+
+
+
+## 9.6 adc配置界面
+
+**参数解释:**
+
+### 1\. Scan Conversion Mode（扫描转换模式）
+
+-   **Disabled**：单通道模式，只转换一个通道
+    
+-   **Enabled**：多通道扫描模式，按顺序转换多个通道
+    
+
+### 2\. Data Alignment（数据对齐）
+
+-   **Right alignment**：右对齐，数据在寄存器的低12位
+    
+-   **Left alignment**：左对齐，数据在寄存器的高12位
+    
+
+### 3\. External Trigger Conversion（外部触发转换）
+
+-   **Software start**：软件触发（调用`HAL_ADC_Start`）
+    
+-   **Timer trigger**：定时器自动触发（用于精确采样率）
+    
+
+### 4\. Sampling Time（采样时间）
+
+-   **1.5 Cycles** ~ **239.5 Cycles**：采样保持时间
+    
+-   **原则**：
+    
+    -   信号源阻抗高 → 选择更长采样时间
+        
+    -   需要高转换速度 → 选择较短采样时间
+
+
+
+
+
+## 9.7 RTC
+
+
+![alt text](image-171.png)
+
+
+注意Alarm A在MX中只有勾选OUTPUT才会出现, 但是事实上我们不一定需要Alarm A中断对外输出, 可能只是想要内部中断.
+
+此时只能自己写代码配置了.
+
+注意SetAlarm函数的标准库实现和HAL库实现有比较大的区别:
+
+
+
+
+
+
+## 9.8
 
 ## 9.9 MX开发细节...
 
