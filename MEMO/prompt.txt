@@ -1,0 +1,19 @@
+
+
+
+
+
+
+
+
+
+gitbash的地址在:
+```
+C:\Program Files\Git\git-bash.exe
+```
+这样你就可以在需要的时候使用bash环境而不是powershell环境完成特定任务了.
+
+
+
+
+
