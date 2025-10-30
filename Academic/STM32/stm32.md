@@ -1195,7 +1195,30 @@ SD卡成功SPI读写.
 
 现在你可以用我自己写的datalogger进行你想要的读写操作了.
 
+***
+***
+***
 
+10.24 新问题. test1通过的情况下test2不通过.
+
+测试结果:
+```
+SD Card test start.
+fatfs obj created.
+...
+```
+
+```C
+//死在了这个循环
+
+  do
+	{
+		r1=spi_readwrite(0xFF);
+	}while(r1&0X80);
+```
+***
+***
+***
 ISR中不要调用fatfs的文件I/O操作(f_write, ...)
 
 事实上, 各种外设调用都不推荐在ISR中使用.
