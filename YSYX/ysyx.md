@@ -1,5 +1,5 @@
 
-## 0. 常用命令&环境变量
+# 0. 常用命令&环境变量
 
 
 
@@ -14,11 +14,11 @@
 
 
 
-## 1.小工具
+# 1.小工具
 
-### 1.1 nano
-**
-nano 的设计哲学：**
+## 1.1 nano
+
+**nano 的设计哲学：**
 
 -   **所见即所得** - 直接输入文字
     
@@ -82,7 +82,7 @@ nano 的设计哲学：**
 
 
 
-### 1.2ccache
+## 1.2ccache
 
 ubuntu自装. 在`/usr/lib/ccache/`
 
@@ -118,10 +118,81 @@ ccache确实跳过了完全重复的编译过程, 发挥了加速的作用. 如�
 在开发项目的过程中, 有时确实会需要在清除编译结果后进行全新的编译(fresh build). 到了PA的后期, 你可能会多次编译一些包含数百个文件的库, 在这些场合下, ccache能够极大地节省编译的时间, 从而提高项目开发的效率.
 ```
 
-### 1.3 fceux-am
+## 1.3 fceux-am
 
 这是一个红白机模拟器项目...
 
+
+## 1.4 strace
+
+这是 Linux 下的一个系统调用跟踪工具，它能记录程序执行过程中所有的系统调用（比如 open、read、write、mmap、execve 等）。
+
+也就是说，它能看到程序“和内核之间都说了啥”。 
+
+例子:
+
+`strace -f -o strace.log make --debug=v`
+
+| 选项               | 含义                                              |
+| ---------------- | ----------------------------------------------- |
+| `-f`             | 跟踪所有由主进程创建的子进程（比如 `make` 会 fork 出许多编译子进程）       |
+| `-o strace.log`  | 把输出保存到 `strace.log` 文件中，而不是直接打印到终端              |
+| `make --debug=v` | 执行 `make` 命令，并启用 **verbose 模式**，显示 make 的详细调试输出 |
+
+
+# 3.系统调用 syscall
+
+操作系统内核掌控了所有硬件资源（文件、内存、网络、设备等）。  
+普通程序（比如 `make`、`gcc`）不能直接访问这些资源，必须通过**系统调用**来请求内核帮忙。
+
+例如`write`, 实际上是一段汇编指令:
+
+```asm
+write:
+    mov eax, 1        ; 系统调用号 1 对应 write
+    mov edi, 1        ; 第一个参数 fd=1
+    mov rsi, msg      ; 第二个参数 buffer
+    mov edx, 5        ; 第三个参数 length
+    syscall            ; 🚪 触发系统调用，进入内核
+    ret
+```
+
+在C语言中, 有关内核调用的函数都是一个**陷阱接口**(wrapper).
+
+
+
+
+| 调用名                                           | 作用                         | 举例说明                                                 |
+| :-------------------------------------------- | :------------------------- | :--------------------------------------------------- |
+| `read(fd, buf, count)`                        | 从文件描述符 `fd` 里读数据到缓冲区 `buf` | 比如从文件或终端输入读取内容                                       |
+| `write(fd, buf, count)`                       | 向文件描述符 `fd` 写数据            | 比如向屏幕（stdout=1）打印输出                                  |
+| `close(fd)`                                   | 关闭文件描述符                    | 类似 C 语言里的 `fclose()`                                 |
+| `openat(dirfd, path, flags, mode)`            | 打开文件（新版的 open）             | 比如 `openat(AT_FDCWD, "main.c", O_RDONLY)` 打开当前目录下的文件 |
+| `newfstatat(dirfd, path, statbuf, flags)`     | 获取文件的元信息（大小、时间戳、权限等）       | `make` 用它来判断「文件是否比目标新」                               |
+| `brk(addr)`                                   | 改变进程的堆（heap）边界，用来申请或释放堆内存  | 类似 `malloc()` 在底层调用的东西                               |
+| `mmap(addr, length, prot, flags, fd, offset)` | 申请一段内存映射区域                 | 比如加载共享库或大块文件                                         |
+| `fcntl(fd, cmd, arg)`                         | 操作文件描述符的属性（比如非阻塞模式、锁）      | `gcc` 或 shell 常用它控制文件句柄                              |
+| `execve(path, argv, envp)`                    | 执行一个新程序                    | `make` 用它启动 `gcc` 或其他命令                              |
+| `clone()` / `fork()`                          | 创建子进程                      | make 会用来并行执行多个任务                                     |
+| `exit_group(code)`                            | 结束整个进程组                    | 程序正常退出时调用的系统调用                                       |
+
+
+
+
+
+
+
+
+
+# 4. 思想
+
+## 4.1
+![alt text](image.png)
+
+
+## 4.2
+
+![alt text](image-1.png)
 
 # 2 nemu
 
@@ -166,10 +237,10 @@ nemu
 ├── README.md
 ├── resource                   # 一些辅助资源
 ├── scripts                    # Makefile构建脚本
-│   ├── build.mk
+│   ├── build.mk   #编译规则. 包含源文件和头文件的依赖关系. 由gcc的-MMD选项生成, 通过fixdep工具处理.
 │   ├── config.mk
 │   ├── git.mk                 # git版本控制相关
-│   └── native.mk
+│   └── native.mk   # 一些用于运行和清除编译结果的.PHONY目标
 ├── src                        # 源文件
 │   ├── cpu
 │   │   └── cpu-exec.c         # 指令执行的主循环
@@ -261,6 +332,31 @@ NEMU中的配置系统位于`nemu/tools/kconfig`, 它来源于GNU/Linux项目中
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 2.1 开始阅读代码: main
+
+main在哪里? 
+
+在nemu/src/nemu-main.c
+
+
+//如何找一个项目的main? 最好的方法: gdb在main符号处打断点
+
+![alt text](image-2.png)
 
 
 

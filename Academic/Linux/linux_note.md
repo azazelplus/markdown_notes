@@ -7,8 +7,24 @@ linux中输入的命令行即为bash命令。每个bash命令是一个可执行�
 ## 1.2 常用bash命令
 
 ### 1.1 man 
+
 想要搜索的外部命令名可以跳转到该命令的man界面. 如果想查看bash内部命令, 比如cd, pwd, 使用help即可.
 man -k <keyword>可以输出所有简介中包含关键字的man条目供你选择, 而不是直接进入某个具体的man条目.
+
+***
+***
+| 章节号 | 内容类型                                                          |
+| :-: | :------------------------------------------------------------ |
+|  1  | 用户命令（例如 `ls`, `cp`, `make`）                                   |
+|  2  | **系统调用（syscalls）**，即进入内核的接口，如 `open`, `read`, `write`, `stat` |
+|  3  | C 库函数（libc functions），比如 `printf`, `malloc`, `fopen`          |
+|  4  | 设备文件和特殊文件说明（如 `/dev/null`）                                    |
+|  5  | 文件格式、配置文件格式（如 `/etc/passwd`）                                  |
+|  6  | 游戏或演示程序（早期 Unix 留下的）                                          |
+|  7  | 协议、抽象概念（如 `man 7 socket`）                                     |
+|  8  | 系统管理命令（root 用的命令，如 `mount`, `ifconfig`）                       |
+
+
 
  
 ### 1.2 find
@@ -301,7 +317,63 @@ MY_EOF_SIGNAL
 
 
 
-##
+## sed(streaming edit)工具
+
+对文本做查找/替换/插入/删除， 一个sed即可。
+
+
+最常见格式:
+
+```
+sed 's/原内容/新内容/[可选选项]'
+```
+
+其中的分隔符`/`可以被换为: `+`, `|`, `#`, `@`. 这样设计是考虑到原内容和新内容可能包含某个分隔符, 故冗余设计.
+
+常用可选选项:
+* g: global. 不加的话, 每一行只替换一次就不管了.
+
+
+| 选项            | 作用                           | 举例                                          |                       |
+| ------------- | ---------------------------- | ------------------------------------------- | --------------------- |
+| `-e 'script'` | 执行一段 `sed` 脚本（可以多次出现）        | `sed -e 's/cat/dog/' -e 's/mew/purr/' file` |                       |
+| `-f file`     | 从指定文件读取 `sed` 命令             | `sed -f rules.sed input.txt`                |                       |
+| `-n`          | **不自动打印输出**，只有用 `p` 命令的行才会输出 | `sed -n 's/foo/bar/p' file`                 |                       |
+| `-i[SUFFIX]`  | **直接修改原文件（in-place）**，可加备份后缀 | `sed -i.bak 's/foo/bar/g' file`             |                       |
+| `-r` 或 `-E`   | 使用扩展正则表达式（ERE）               | `sed -E 's/(ab)+/X/' file`                  |                       |
+| `-u`          | 不缓存输出（适合实时处理管道数据）            | `tail -f log                                | sed -u 's/error/⚠️/'` |
+
+
+| 命令           | 功能        | 示例                               |
+| ------------ | --------- | -------------------------------- |
+| `s/旧/新/g`    | 替换文本      | `sed 's/cat/dog/g'`              |
+| `p`          | 打印匹配行     | `sed -n '/hello/p'`              |
+| `d`          | 删除匹配行     | `sed '/^#/d'`（删掉注释）              |
+| `a\text`     | 在匹配行后追加一行 | `sed '/pattern/a\new line'`      |
+| `i\text`     | 在匹配行前插入一行 | `sed '/pattern/i\before this'`   |
+| `c\text`     | 替换整行      | `sed '/pattern/c\replaced line'` |
+| `y/abc/ABC/` | 单字符替换     | `sed 'y/abc/ABC/'`（类似 `tr`）      |
+| `q`          | 提前退出      | `sed '5q'`（只处理前5行）               |
+| `=`          | 打印行号      | `sed '=' file`                   |
+
+| 命令                               | 说明                |        |
+| -------------------------------- | ----------------- | ------ |
+| `sed -n 's/foo/bar/p' file`      | 只打印替换成功的行         |        |
+| `sed -i 's/foo/bar/g' file`      | 原地替换文件中所有 foo→bar |        |
+| `sed -E 's/(cat                  | dog)/pet/g' file` | 使用扩展正则 |
+| `sed '/^$/d' file`               | 删除空行              |        |
+| `sed -e '/^#/d' -e '/^$/d' file` | 删除注释和空行           |        |
+
+
+-   `-i` **危险但常用**：会直接修改文件内容；
+    
+    -   `-i.bak` 会先生成一个 `file.bak` 备份。
+        
+-   `-n` 一般配合 `p`，否则 `sed` 默认会打印每行。
+    
+-   `-E` 比 `-r` 更现代（GNU、BSD 都支持），推荐用 `-E`。
+
+
 
 ##
 
@@ -312,7 +384,6 @@ MY_EOF_SIGNAL
 如果你不想写好一个c文件然后`gcc yourcode.c`(如果你的yourcode.c要包含其他文件, 要让它们在同目录下.)
 
 抑或是写好一个cpp然后`g++ yourcode.cpp`(如果你的yourcode.c要包含其他文件, 要让它们在同目录下.)
-
 
 那麽使用make吧.
 
@@ -447,16 +518,40 @@ make -j -C obj_dir -f Vour.mk Vour
 ```
 * `-j` 多线程并行编译
 * `-C [路径]` 切换到[路径]再运行make
-* `-f Vour.mk` 使用指定的Makeifle文件来编译
+* `-f Vour.mk` **使用指定的Makeifle文件`Vour.mk`来编译**
 * `Vour` 编译的目标名. 
 
 
 
+***
+***
+***
+***
+***
+其他常用make选项:
+
+* --debug: 执行make命令的同时打印调试信息. 可以带参数. 如果不带参数, 则效果同-d
+  * `make --debug=[FLAGS]`
+  * | 参数  | 含义                               |
+    | --- | -------------------------------- |
+    | `a` | 所有调试信息（相当于 `-d`）                 |
+    | `b` | 只显示与目标更新（build）相关的信息             |
+    | `v` | 显示变量赋值（variable assignments）相关信息 |
+    | `i` | 显示隐式规则（implicit rules）推导信息       |
+    | `j` | 显示并行执行（jobs）相关信息                 |
+    | `m` | 显示 `make` 的内部文件读入信息              |
+    | `n` | 显示数据库状态（类似于 `make -p`）           |
+* -d: 打印所有详细调试信息.
+* `-n` : print the commands that would be executed. **只打印命令, 不执行, 适合调试!**
+* `---trace`: 输出目标被构建的原因 + 执行的命令.
+* `-B`: 重新构建所有目标.
+* `-nB`: 调试经常用. 看看make如何从0开始构建整个目标.
 
 
-## 2.2 编写Makefile的简单例子
 
-### 2.2.1 Makefile 简述
+
+## 2.2 Makefile 语法概述
+
 如果要使用make, 需要编写**Makefile**.
 
 * Makefile
@@ -481,7 +576,7 @@ make -j -C obj_dir -f Vour.mk Vour
 - **先决条件/依赖(dependencies/Prerequisites)**：目标所依赖的文件。如果这些文件中的任何一个发生更改，目标将被重建。
 - **Recipe** : make 将执行的命令来创建或更新目标。这些命令必须使用`Tab`缩进。
 
-**格式**:
+**格式**: 这是一个**目标文件为`target`, 依赖文件为`dependencies`, 执行命令为`recipe`的规则.**
 ```Makefile
 target: dependencies
   recipe
@@ -495,7 +590,17 @@ clean:
   rm -f ex3
 ```
 
-### 2.2.2 例子1
+
+
+
+**make的行为:**
+
+* 当其他地方需要依赖`target`, 或显式运行命令`make target`时, make会开始执行`target`这条规则.
+* make首先寻找依赖`dependencies`文件是否存在. 如果不存在, 则去寻找目标文件为`dependencies`的规则. 
+* 如果依赖`dependencies`文件存在, 则运行指令`recipe`. 运行完后, 查看此时`target`是否存在. **如果存在, 结束, return 0. 如果不存在, 构建失败, return -1.**
+
+
+## 2.3 编写Makefile例子1
 * 例子1: 将当前文件夹内的hello.c编译为hello.
 
 
@@ -575,7 +680,7 @@ all:$(patsubst %.c, %, $(wildcard ex[0-9]*.c))
         $(CC) $(CFLAGS)  -o $@ $<
 ```
 
-## 2.3 **编写Makefile, 用make进行编译 的一个综合例子**
+## 2.4 编写Makefile, 用make进行编译 的一个综合例子**
 
 ### 2.3.1 例程内容
 现在有一个简单的项目: main.c主程序, 以及一个`math_utils`模块, 包括math_utils.h和math_utils.c两个文件.
@@ -705,6 +810,154 @@ CFLAGS "-Wall" make ex1
 
 
 
+## 2.5 Makefile 杂项
+
+### 1. make的内置函数
+
+语法:
+`$(fun arg)`
+
+常用的有shell, dir等
+
+
+查表!
+
+
+**🏗️ 文件路径类**
+| 函数                           | 作用         | 示例                             | 结果                  |
+| ---------------------------- | ---------- | ------------------------------ | ------------------- |
+| `$(dir file)`                | 取路径部分      | `$(dir src/foo.c)`             | `src/`              |
+| `$(notdir file)`             | 去掉路径，只取文件名 | `$(notdir src/foo.c)`          | `foo.c`             |
+| `$(basename file)`           | 去掉扩展名      | `$(basename foo.c)`            | `foo`               |
+| `$(addsuffix suffix, names)` | 给每个元素加后缀   | `$(addsuffix .o, a b)`         | `a.o b.o`           |
+| `$(addprefix prefix, names)` | 给每个元素加前缀   | `$(addprefix src/, main util)` | `src/main src/util` |
+| `$(join list1, list2)`       | 将两个列表逐一连接  | `$(join a b, .o .c)`           | `a.o b.c`           |
+
+*******************************
+**🧩 字符串处理类**
+| 函数                                     | 作用      | 示例                                | 结果            |
+| -------------------------------------- | ------- | --------------------------------- | ------------- |
+| `$(subst from,to,text)`                | 简单替换    | `$(subst .c,.o,foo.c bar.c)`      | `foo.o bar.o` |
+| `$(patsubst pattern,replacement,text)` | 模式替换    | `$(patsubst %.c,%.o,foo.c bar.c)` | `foo.o bar.o` |
+| `$(filter pattern,text)`               | 保留匹配的单词 | `$(filter %.c, a.c b.o c.c)`      | `a.c c.c`     |
+| `$(filter-out pattern,text)`           | 去掉匹配的单词 | `$(filter-out %.o, a.c b.o c.c)`  | `a.c c.c`     |
+| `$(sort list)`                         | 去重并排序   | `$(sort b a a c)`                 | `a b c`       |
+
+*******************************
+**🧮 控制流类**
+| 函数                            | 作用              | 示例                          | 说明                      |
+| ----------------------------- | --------------- | --------------------------- | ----------------------- |
+| `$(if condition,then[,else])` | 条件判断            | `$(if $(VAR),yes,no)`       | 若 `VAR` 非空则输出 yes，否则 no |
+| `$(foreach var,list,text)`    | 循环              | `$(foreach x,a b,c_$(x))`   | 结果：`c_a c_b`            |
+| `$(call func,args...)`        | 调用自定义函数         | `$(call myfunc,arg1,arg2)`  | 调用通过 `define` 定义的函数     |
+| `$(shell command)`            | **执行 Shell 命令** | `$(shell pwd)`              | 输出当前目录                  |
+| `$(error text)`               | 报错并停止           | `$(error Something wrong!)` | ——                      |
+| `$(warning text)`             | 打印警告但继续执行       | `$(warning Not found!)`     | ——                      |
+
+### 2. make的字符串替换语法
+
+和内置函数语法很像, 也是`$()`结构.
+
+
+```
+$(var:pattern=replacement)
+
+```
+
+
+### 3. makefile和bash的括号()区别
+
+bash中加括号和不加括号含义不同.
+
+| 写法           | 含义                         |
+| ------------ | -------------------------- |
+| `$VAR`       | 取变量的值（例如 `$HOME`）          |
+| `$(command)` | 执行命令并返回输出结果（命令替换）          |
+| `${VAR}`     | 明确界定变量边界（和 `$VAR` 类似，但更安全） |
+
+
+
+| 写法             | 含义                                    |
+| -------------- | ------------------------------------- |
+| `$@`           | 自动变量（表示“目标文件名”）                       |
+| `$<`           | 自动变量（表示“第一个依赖文件”）                     |
+| `$(VAR)`       | 取 Makefile 中定义的变量值                    |
+| `$(shell cmd)` | ✅ 想执行命令要用这个特殊函数！它才等价于 Bash 的 `$(cmd)` |
+| `$VAR`       | 仅仅表示字符串`$VAR`                    |
+
+
+
+### 4. $(shell)和$(wildcard)的区别
+
+想要找当前目录所有`.c`文件, $(shell ls *.c)和`$(wildcard *.c)`都可以完成这件事.
+
+
+
+| 对比项      | `$(wildcard *.c)`   | `$(shell ls *.c)`         |
+| :------- | :------------------ | :------------------------ |
+| 类型       | **Make 内置函数**       | **调用外部 shell 命令**         |
+| 执行环境     | 在 Make 自己内部解析       | 在系统 Shell（如 `/bin/sh`）中运行 |
+| 是否依赖外部命令 | ❌ 不依赖（更快、更安全）       | ✅ 依赖 `ls` 命令（可能出错）        |
+| 错误行为     | 如果找不到匹配，返回空字符串      | 如果找不到匹配，`ls` 会报错          |
+| 性能       | ✅ 快（纯 Make 内部操作）    | ❌ 慢（要启动一个 shell 进程）       |
+| 跨平台兼容性   | ✅ 高（GNU make 自己实现的） | ❌ 低（不同系统 `ls` 输出格式不同）     |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 5. 单目标有多个规则?
+
+连接`target`和`dependencies`可以用`:`也可以用`::`
+| 用法       | 含义                     |
+| -------- | ---------------------- |
+| 单冒号 `:`  | 同一目标只能有一个规则，后面定义的会覆盖前面 |
+| 双冒号 `::` | 可以为同一目标定义多个独立规则，彼此不冲突.  |
+
+如果用`::`, 让同一个目标有两个规则:
+
+```Makefile
+foo:: a.txt
+	echo "rule 1: build foo from a.txt" > foo
+
+foo:: b.txt
+	echo "rule 2: postprocess foo" >> foo
+```
+
+现在我们运行`make foo`, 则会先执行第一个`foo:: a.txt`规则. 然后第二个规则会因为foo存在且比依赖b.txt更新而被忽略掉.
+
+这种场合下`::`似乎显得很奇怪用不到.
+
+一般`::`用在这样的场合:
+
+主mk有一个总伪目标make run, 其中有一些要构建的东西;
+
+而这个项目基于不同的参数, 会在不同场合include不同的子mk. 
+
+于是不同的子mk也有一个run规则, 此时主mk和子mk的run规则都`::`.
+
+**伪目标无论如何都会执行. 只要某个目标被标记为 .PHONY，GNU Make 就会认为它永远是“过期的”(out-of-date).**
+
+
+**多个同名`::`的伪目标全都会依次执行.**
+
 # 3 linux的用户(组)管理
 linux的权限管理包括用户和用户组, 两者权限系统互相独立, 一个用户可以存在在多个用户组中， 但必须至少存在在一个用户组中。
 
@@ -833,8 +1086,14 @@ Bash中的万用字符(wildcards)(*通配符就是一种万用字符.)
 
 ## 4.3 正则表达式
 
-正则表达式是一种比bash的万用字符更复杂的模式匹配工具("增强版通配符")，通常用于文本处理。正则表达式在Bash中主要用于工具如 grep、sed 和 awk 中。它提供了更多的匹配功能.\
+直接在这里练一遍即可
+
+https://regexlearn.com/zh-cn
+
 *正则表达式在线测试工具：https://regex101.com/
+
+
+**ERE（扩展正则）就是把 ? + | () {} 这五种符号从“普通字符”升级成“元字符”，不再需要反斜杠。其他所有字符的规则都一样.**
 
 
 ### 正则表达式- 限定符(quantifiers)
