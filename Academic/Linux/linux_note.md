@@ -1321,7 +1321,7 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 
 
-# 5 程序调试: gdb 
+# 5 gdb 
 
 ## 5.1 🔹 启动 & 基本操作
 
@@ -1333,6 +1333,8 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 | `start`       | 从 `main` 开始执行并停在第一行    |
 | `starti`      | 从入口 `_start` 指令开始执行并停下 |
 | `quit`        | 退出 gdb                 |
+
+
 
 * 注意: 如果要运行的main函数需要传递参数, 必须使用`--args`.
   * 比如原来要运行`./yemu.out prog.bin`, 其中prog.bin是要传进main的argv[],
@@ -1346,10 +1348,20 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 
 ```
 
-## 🔹 源码级调试 (C/C++ 等)
 
+调试一般是这样的:
 
+```bash
 
+(gdb) b main        # 在main开头打断点
+(gdb) run           #启动程序
+(gdb) s           # step单步执行
+(gdb) n           # next单行执行
+(gdb) s           
+# ...
+```
+
+## 5.2🔹 源码调试 命令列表
 
 | 命令                          | 作用                |
 | --------------------------- | ----------------- |
@@ -1368,7 +1380,26 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 | `frame <n>`                 | 切换栈帧              |
 | `info locals`               | 查看局部变量            |
 
-## 🔹 汇编级调试
+
+常用命令分析:
+
+### 1.
+```
+(gdb) p/s optarg
+```
+打印全局变量 optarg 的内容,
+
+并把它解释为一个 C 字符串（char *）.
+
+/s表示打印选项为string.
+
+`optarg`是个调试常用的全局变量. C 语言程序中使用 `getopt()` 函数（处理命令行参数）时自动定义它.
+
+当 `getopt()`解析到一个带**参数**的**选项**时（例如 -f filename），optarg 就会指向那个**参数**的字符串 "filename"。
+
+### 2.
+
+## 5.3 汇编级调试 常用命令
 | 命令                             | 作用                                                 |
 | ------------------------------ | -------------------------------------------------- |
 | `disassemble` / `disas`        | 反汇编当前函数                                            |
@@ -1382,21 +1413,34 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 | `set $eax=5`                   | 修改寄存器值                                             |
 | `break *<addr>`                | 在某条指令地址处设置断点                                       |
 
-## 🔹 调试小技巧
+## 5.4🔹 杂项 调试小技巧
 
--   `layout asm` → 打开 TUI 界面显示汇编和寄存器
-    
+
 -   `layout src` → 打开源码视图
-    
 -   `info files` → 查看程序入口点 `_start` 地址
-    
 -   `x/20i $rip` → 查看从当前指令指针开始的 20 条指令
+
+
+## 5.5 TUI
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 # 6 git
 
-## 6.0 git的基础概念
+## 6.0 git 文件的四种状态
 
 ![alt text](image-5.png)
 

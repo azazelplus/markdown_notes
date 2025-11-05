@@ -359,10 +359,14 @@ main在哪里?
 ![alt text](image-2.png)
 
 
+开始读main吧!
 
 
+![alt text](image-3.png)
 
+注意这里, 以前遇到过这个bug, 不换行的话不能及时正常输出, 这是因为输出缓冲区. 具体参考`man setbuf`
 
+![alt text](image-4.png)
 
 
 
