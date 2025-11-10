@@ -40,8 +40,11 @@ ASIC 设计可以在**功耗**方面进行优化，特别适合对**能耗**敏�
 * 比特币挖矿：专为挖矿算法设计的 ASIC。
 * 网络设备：用于处理特定网络协议的 ASIC。
 * 消费电子：如智能手机中的图像处理器、视频编解码器等。
+
+
 #### SOPC
 system-on programable chip, 可编程片上系统, 其实就是FPGA(Field Programmable Gate Array,现场可编程门阵列.).
+
 #### APSoC
 All-Programable SoC, 全可编程片上系统, SOPC再加上类似arm盒来提供操作系统, 实现软件编程. 即ZYNQ.
 ![alt text](image-2.png)

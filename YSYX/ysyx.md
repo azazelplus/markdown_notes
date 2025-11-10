@@ -370,6 +370,112 @@ main在哪里?
 
 
 
+![alt text](image-5.png)
+
+
+![alt text](image-6.png)
+
+
+![alt text](image-7.png)
+
+![alt text](image-8.png)
+
+
+![alt text](image-9.png)
+
+
+## kconfig menuconfig工具链:
+
+用户层操作menuconfig面板->间接改变kconfig配置文件->Kconfig工具生成对应的文件被包含到项目的Makefile中->实现修改效果
+
+![alt text](image-12.png)
+
+![alt text](image-10.png)
+
+![alt text](image-11.png)
+
+
+
+
+![alt text](image-13.png)
+
+
+![alt text](image-14.png)
+
+
+
+
+
+fixdep工具:
+
+它在nemu/tools/fixdep
+
+![alt text](image-16.png)
+
+
+
+通过menuconfig图形化界面修改设置->等同于修改`nemu/include/generated/autoconf.h` 
+
+在`nemu/include/config/`内有很多小文件, 其中很多文件是空的. 它们是fixdep帮我们分解`nemu/include/generated/autoconf.h` 得到的.
+
+
+
+有了fixdep, 我们不在`common.h`(它几乎被所有.c包含.)中直接包含`nemu/include/generated/autoconf.h`, 而是包含`nemu/include/config/`下的多个小文件. 当我们通过menuconfig更改了`nemu/include/generated/autoconf.h`后, 不直接使用这个头文件, 而是依靠fixdep把它拆解成这些小文件, 然后被common.h包含. 
+
+于是, 这些小文件每次更改配置只有一部分会被改变
+
+```mermaid
+flowchart LR
+    A[ADC采样] --> B[存入缓冲区]
+    B --> C{缓冲区满?}
+    C -- 是 --> D[批量写入文件]
+    D --> E[继续采集]
+    C -- 否 --> F[重置缓冲区]
+    F --> E
+```
+
+
+
+
+
+
+**我现在要揭示C语言处理依赖的真理.**
+
+
+首先, `.d`是依赖文件. 依赖文件事实上就是Makefile的一部分.
+
+它通过gcc的-MMD选项生成, 通过fixdep工具处理. 
+
+它的内容核心就是目标文件的一个补充**空规则**: 空规则的作用是加入新的**依赖**.
+
+例如, 我们项目的`nemu-main.c`.
+
+它对应Makefile的构建规则在`build.mk`(它被包含在主`Makefile`)的模式规则给出:
+
+```makefile
+hello.o: hello.c
+    gcc -c hello.c -o hello.o
+```
+
+**但是一个编译单元总是会包含一些头文件. 当这些头文件被更改的时候, make并不能识别出来!** 
+
+在make的视角, 静态的依赖文件.c并没有发生改变.
+
+比如这个hello.c包含了头文件`myheader.h`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
