@@ -3487,10 +3487,46 @@ void myfun(){
 3.  定时器中断: 通过cpu内部定时器发送请求.
 
 
-# 5. 大规模集成电路设计 VLSI(very large scale intergration circuit)
 
 
-## 5.0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # 4. GPU
@@ -3665,6 +3701,24 @@ $$
 | 全 0      | 非 0      | 非正规数（denormalized number） |
 | 全 1      | 全 0      | ±∞（无穷大）                   |
 | 全 1      | 非 0      | NaN（不是一个数）                |
+
+
+
+
+# 11. embedded intelligent system and computer architecture
+
+essential of computer system
+
+Pengju Ren
+
+http://gr.xjtu.edu.cn/web/pengjuren
+
+
+AI三驾马车: 大数据, 算力, 算法
+
+
+
+
 
 
 
