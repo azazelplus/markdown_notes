@@ -1,4 +1,4 @@
-
+**
 # 0. 常用命令&环境变量
 
 
@@ -386,82 +386,123 @@ main在哪里?
 
 ## kconfig menuconfig工具链:
 
-用户层操作menuconfig面板->间接改变kconfig配置文件->Kconfig工具生成对应的文件被包含到项目的Makefile中->实现修改效果
+## Kconfig工具
 
-![alt text](image-12.png)
+Kconfig是一种领域特定语言 (DSL).
 
-![alt text](image-10.png)
+用于描述配置选项、依赖关系、默认值.
 
-![alt text](image-11.png)
+menuconfig是一个图形化界面工具, 它可以让用户方便地修改配置选项. 它的实现是是调用 `scripts/config.mk` 中定义的 `menuconfig` 伪目标:
 
+```Makefile
+# 伪目标menuconfig. 
+# $(Q) 让命令静默执行.
+# $(MCONF) → menuconfig菜单界面程序
+# $(CONF) → 配置同步程序
+# $(FIXDEP) → 依赖关系修复工具
+menuconfig: $(MCONF) $(CONF) $(FIXDEP)
+# 执行命令`mconf nemu/Kconfig`, 启动菜单配置界面
+	$(Q)$(MCONF) $(Kconfig)
+# 同步配置. 
+	$(Q)$(CONF) $(silent) --syncconfig $(Kconfig)
 
+savedefconfig: $(CONF)
+	$(Q)$< $(silent) --$@=configs/defconfig $(Kconfig)
 
-
-![alt text](image-13.png)
-
-
-![alt text](image-14.png)
-
-
-
-
-
-fixdep工具:
-
-它在nemu/tools/fixdep
-
-![alt text](image-16.png)
-
-
-
-通过menuconfig图形化界面修改设置->等同于修改`nemu/include/generated/autoconf.h` 
-
-在`nemu/include/config/`内有很多小文件, 其中很多文件是空的. 它们是fixdep帮我们分解`nemu/include/generated/autoconf.h` 得到的.
+%defconfig: $(CONF) $(FIXDEP)
+	$(Q)$< $(silent) --defconfig=configs/$@ $(Kconfig)
+	$(Q)$< $(silent) --syncconfig $(Kconfig)
 
 
-
-有了fixdep, 我们不在`common.h`(它几乎被所有.c包含.)中直接包含`nemu/include/generated/autoconf.h`, 而是包含`nemu/include/config/`下的多个小文件. 当我们通过menuconfig更改了`nemu/include/generated/autoconf.h`后, 不直接使用这个头文件, 而是依靠fixdep把它拆解成这些小文件, 然后被common.h包含. 
-
-于是, 这些小文件每次更改配置只有一部分会被改变
-
-```mermaid
-flowchart LR
-    A[ADC采样] --> B[存入缓冲区]
-    B --> C{缓冲区满?}
-    C -- 是 --> D[批量写入文件]
-    D --> E[继续采集]
-    C -- 否 --> F[重置缓冲区]
-    F --> E
+.PHONY: menuconfig savedefconfig defconfig
 ```
 
+**这是一个通过 Makefile 规则注入的入口点。**
+
+使用menuconfig的方式即输入`make menuconfig`, 运行这个make伪目标的.
+
+* **第一行命令**会运行可执行文件`nemu/tools/kconfig/build/mconf`, 同时传入参数`nemu/Kconfig`配置文件. 用户在GUI配置选项后, 会改变`nemu/.config`文件内容.
+  * `nemu/Kconfig`是**配置定义文件**. 它定义了NEMU项目中所有的配置选项, 以及它们之间的关系. 在Kconfig工作流中, 它只被读取, 不用来写入.
+  * `nemu/.config`是**配置存储文件**
+* **第二行命令**是可执行文件`nemu/tools/kconfig/build/conf`.
+  * `conf` 程序有多种运行模式:
+      ```
+      enum input_mode {
+          defconfig,        // 读取指定的 defconfig 文件
+          savedefconfig,    // 保存配置到指定文件
+          syncconfig,       // 同步配置（默认用 .config）
+          // ...
+      }
+      ```
+      此处使用的是`syncconfig`(同步配置)模式. 该模式选择配置文件(.config)的策略:
+      * 先检查环境变量`KCONFIG_CONFIG`是否存在. 存在就用这个路径.
+      * 如果不存在, 使用默认路径`./.config`. 此处就是`nemu/.config`.
+  * conf程序最终输出文件在./include目录下. 包括:
+    * `./include/config/auto.conf` - 给 Makefile 用的格式
+    * `./include/generated/autoconf.h` - 给 C 代码用的格式
+    * `./include/config/auto.conf.cmd` - 依赖追踪文件
+    * `./include/config/*.h` - 每个配置项的标记文件
+*******************
+*******************
+*******************
+**这些用户配置选项最终如何影响nemu行为?**
+
+* 主Makefile包含了上述`auto.conf`和`auto.conf.cmd`:
+
+```Makefile
+-include $(NEMU_HOME)/include/config/auto.conf
+-include $(NEMU_HOME)/include/config/auto.conf.cmd
+```
+
+执行make时:
+* `auto.conf`决定参与编译的文件SRCS;
+* `auto.conf.cmd`决定文件的依赖关系.
+
+最终, 编译进去的`autoconf.h`等头文件影响程序行为.
+
+`autoconf.h`中定义了一些形如`CONFIG_xxx`的宏, C代码中通过条件编译的功能对这些宏进行测试, 来判断是否编译某些代码.
+
+例如, 当CONFIG_DEVICE这个宏没有定义时, 设备相关的代码就无需进行编译.
 
 
 
+## fixdep工具
 
+**fixdep工具的作用: 根据配置选项的变化, 只重新编译受影响的文件, 避免不必要的全部重新编译.**
 
-**我现在要揭示C语言处理依赖的真理.**
+它在`nemu/tools/fixdep`
 
+背景: gcc编译时使用-MMD选项, 会产生`.d`依赖文件. 
+  * 我们以前简单的项目直接gcc 产生.o文件, 主要是因为我们不使用可能发生改变的头文件. 
+  * `.d`依赖文件的格式, 事实上就是Makefile.
+    * 它的内容核心就是**目标文件**的一个补充**空规则**: 空规则的作用是加入新的**依赖**.
 
-首先, `.d`是依赖文件. 依赖文件事实上就是Makefile的一部分.
+没有fixdep时, 如果用户通过menuconfig修改了配置, 如上述过程, `autoconf.h`会被conf程序重新生成. 于是, 所有包含`autoconf.h`的.c文件都会被重新编译. 整个项目几乎都要重新编译.
 
-它通过gcc的-MMD选项生成, 通过fixdep工具处理. 
+**depfix的工作流程:**
 
-它的内容核心就是目标文件的一个补充**空规则**: 空规则的作用是加入新的**依赖**.
-
-例如, 我们项目的`nemu-main.c`.
-
-它对应Makefile的构建规则在`build.mk`(它被包含在主`Makefile`)的模式规则给出:
+它的程序入口在`nemu/scripts/build.mk`的模式规则中. 我们记得, `build.mk`被主Makefile包含, 它的职责是定义.c文件的编译规则(通过模式规则方式):
 
 ```makefile
-hello.o: hello.c
-    gcc -c hello.c -o hello.o
+# scripts/build.mk 第 48-55 行
+$(OBJ_DIR)/%.o: %.c
+    @echo + CC $<
+    @mkdir -p $(dir $@)
+    @$(CC) $(CFLAGS) -c -o $@ $<
+    $(call call_fixdep, $(@:.o=.d), $@)  # ← 在这里!
+```
+在每次编译完一个.c文件后, 会调用fixdep工具, 它的作用是**修正该.c文件对应的.d依赖文件**. 经过这一步修改, 每个.c文件对应的.d文件内原本依赖`autoconf.h`, 会被替换成更细粒度的多个头文件依赖, 这些头文件位于`nemu/include/config/`目录下.
+
+```
+      ├─ 读取原始 nemu-main.d
+      ├─ 找出所有 CONFIG_* 的使用
+      ├─ 生成细粒度依赖 (config/*.h)
+      └─ 写回 nemu-main.d (覆盖)
 ```
 
-**但是一个编译单元总是会包含一些头文件. 当这些头文件被更改的时候, make并不能识别出来!** 
-
-在make的视角, 静态的依赖文件.c并没有发生改变.
-
-比如这个hello.c包含了头文件`myheader.h`.
+***
+***
+***
 
 
 
@@ -469,6 +510,147 @@ hello.o: hello.c
 
 
 
+
+## nemu的**寄存器初始化**和**内存**
+
+把寄存器结构体CPU_state的定义放在nemu/src/isa/$ISA/include/isa-def.h中, 
+
+并在nemu/src/cpu/cpu-exec.c中定义一个全局变量cpu. 
+
+初始化寄存器的一个重要工作就是设置cpu.pc的初值, 我们需要将它设置成刚才加载客户程序的内存位置`CONFIG_MBASE`.
+
+
+**nemu的物理内存是一个数组: `uint8_t pmem[CONFIG_MSIZE];` 在paddr.c中定义. 它模拟nemu的物理内存从`CONFIG_MBASE`直到`0xffffffff`.**
+
+**nemu的模拟内存基地址为`CONFIG_MBASE`(在`autoconf.h`中定义宏).**
+
+| 概念    | 含义         |
+| -------- | ----------- |
+| **guest 物理地址 (`paddr_t=`)**  | NEMU 模拟出来的“被模拟计算机”的物理内存地址，比如 0x80000000。对 NEMU 而言它只是个整数，不是真实内存位置。                 |
+| **host 内存指针 (`uint8_t *`)** | 这个“被模拟计算机”的内存实际上存放在你主机（WSL/Linux）的虚拟内存中，也就是一个普通的 `malloc()` 得到的地址，比如 `0x55ab...`。 |
+
+
+显然, 有数学关系: 
+
+* **nemu物理地址-`CONFIG_MBASE` = pmem数组的偏移量**
+
+* **pmem数组的偏移量 + pmem = 主机内存指针haddr**
+
+
+
+
+
+地址转换由这两个函数(in `paddr.c`)完成:
+
+注意:
+  * 按字节寻址的系统(所有现代架构), 指针显然是`uint8_t*`, 即`char*`类型.
+
+
+```C
+//从pmem出发, 加上offset, 得到对应主机内存指针.
+uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
+//
+paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
+```
+
+* guest_to_host函数接收一个nemu的物理地址`paddr`, 返回其对应的主机内存指针.
+  * guest_to_host返回一个`uint8_t*`类型指针. 返回值本身是64位.
+  * 举个例子. RISCV32对应的`CONFIG_MBASE`是`0x80000000`. 假设pmem=`0x1000_0000_0000_0000`(即nemu的物理内存是从wsl系统的pmem开始的一段数组). 对nemu的一个物理地址`0x80000010`, 此字节对应的主机内存指针haddr即为:
+```
+haddr = pmem + offset;
+      = pmem + (paddr - CONFIG_MBASE);
+      = 0x0000555555567000 + (0x80000010 - 0x80000000);
+      = 0x0000555555567010;
+```
+
+* 同理, host_to_guest函数接收一个主机内存指针`haddr`, 返回其对应的nemu物理地址.
+
+
+
+**物理内存的起始地址**
+
+x86的物理内存是从0开始编址的, 但对于一些ISA来说却不是这样.
+
+例如mips32和riscv32的物理地址均从`0x80000000`开始. 因此对于mips32和riscv32, 其`CONFIG_MBASE`将会被定义成`0x80000000`. 将来CPU访问内存时, 我们会将CPU将要访问的内存地址映射到`pmem`中的相应偏移位置, 这是通过`nemu/src/memory/paddr.c`中的`guest_to_host()`函数实现的. 例如如果mips32的CPU打算访问内存地址`0x80000000`, 我们会让它最终访问`pmem[0]`, 从而可以正确访问客户程序的第一条指令. 这种机制有一个专门的名字, 叫地址映射, 在后续的PA中我们还会再遇到它.
+
+
+
+## 3. 准备第一个客户程序
+
+
+Monitor读入客户程序并对寄存器进行初始化后, 这时内存的布局如下:
+
+
+```
+pmem:
+
+CONFIG_MBASE      RESET_VECTOR
+      |                 |
+      v                 v
+      -----------------------------------------------
+      |                 |                  |
+      |                 |    guest prog    |
+      |                 |                  |
+      -----------------------------------------------
+                        ^
+                        |
+                       pc
+```
+
+load_img()函数运行后, 会将一个有意义的客户程序从镜像文件读入到内存, 覆盖刚才的内置客户程序. 这个镜像文件是运行NEMU的一个可选参数, 在运行NEMU的命令中指定. 如果运行NEMU的时候没有给出这个参数, NEMU将会运行内置客户程序.
+
+Monitor的初始化工作结束后, `main()`函数会继续调用`engine_start()`函数 (在`nemu/src/engine/interpreter/init.c`中定义). 代码会进入简易调试器(Simple Debugger)的主循环`sdb_mainloop()` (在`nemu/src/monitor/sdb/sdb.c`中定义), 并输出NEMU的命令提示符:
+
+```
+(nemu)
+```
+
+nemu将RV32的`ebreak`指令来充当`nemu_trap`指令. 也就是说, NEMU作为模拟器, 没有忠实地模拟`ebreak`本来在RV32中被设计要做的事(产生调试异常), 而是在ID/EX时拦截它, 调用函数`NEMUTRAP(pc, R(10))`, 特殊处理. 总之就是,
+
+**当模拟器遇到这个已选定的RV32指令时，就把它当作“客户程序要告诉模拟器退出并带状态码”的信号来处理。**
+
+
+![alt text](image-17.png)
+
+
+这个选项在Kconfig中定义了. 名为**CC_DEBUG**, bool类型配置项, 默认为n(不启用).
+
+```Kconfig
+# nemu/Kconfig (第 118-119 行)
+config CC_DEBUG
+  bool "Enable debug information"
+  default n
+```
+
+当我们`make menuconfig`->打开该选项后,
+
+将会在`.config`中保存为`CONFIG_CC_DEBUG=y`.
+
+下次make时, conf程序重新生成的`autoconf.h`中会更改配置宏为1:
+```C
+// nemu/include/generated/autoconf.h
+#define CONFIG_CC_DEBUG 1
+```
+
+同时, conf程序重新生成的`autoconf`中会更改配置为y:
+```Makefile
+CONFIG_CC_DEBUG=y
+```
+
+`autoconf`被包含在主Makefile中, 影响编译选项CFLAGS_BUILD:
+
+```Makefile
+# nemu/Makefile (第 87 行)
+CFLAGS_BUILD += $(if $(CONFIG_CC_DEBUG),-Og -ggdb3,)
+```
+
+编译时, 多了选项:
+* `-Og`: 类似O1优化等级, 但更注重调试体验. 
+  * -O0  = 无优化,完全保留调试信息 (调试最容易,运行最慢)
+  * -Og  = 优化同时保持可调试        (默认推荐)
+  * -O2  = 中等优化,部分调试信息丢失 (运行快,难调试)
+  * -O3  = 最高优化,调试信息严重丢失 (运行最快,几乎无法调试)
+* `-ggdb3`, 为 GDB 调试器生成调试符号.
 
 
 
