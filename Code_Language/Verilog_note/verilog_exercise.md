@@ -7,11 +7,22 @@ https://hdlbits.01xz.net/wiki/Main_Page
 
 ## 2.3 modules:hierarchy
 
-### 2.3.4   3modules
 You are given a module my_dff with two inputs and one output (that implements a D flip-flop). Instantiate three of them, then chain them together to make a shift register of length 3. The clk port needs to be connected to all instances.
 
 The module provided to you is: module my_dff ( input clk, input d, output q );
 
+my_diff可能的实现:
+```verilog
+module my_dff(
+    input clk,
+    input d,
+    output reg q
+);
+    always @(posedge clk) begin
+        q <= d;
+    end
+endmodule
+```
 Note that to make the internal connections, you will need to declare some wires. Be careful about naming your wires and module instances: the names must be unique.
 
 ![module shift](image-1.png)
@@ -37,8 +48,6 @@ module top_module ( input clk, input d, output q );
         .q(q)
     );
 endmodule
-
-```
 
 ### 2.3.5 modules and vectors
 This exercise is an extension of module_shift. Instead of module ports being only single pins, we now have modules with vectors as ports, to which you will attach wire vectors instead of plain wires. Like everywhere else in Verilog, the vector length of the port does not have to match the wire connecting to it, but this will cause zero-padding or trucation of the vector. This exercise does not use connections with mismatched vector lengths.
@@ -785,6 +794,85 @@ module top_module(
     assign out = $countones(in);
 endmodule
 ```
+
+# 2.5 SystemVerilog features (系统Verilog特性)
+
+## 1. 更安全的always块
+
+```verilog
+always_ff @(posedge clk)   // 明确是触发器
+always_comb                 // 明确是组合逻辑
+always_latch               // 明确是锁存器
+```
+
+一个现代风格的dff写法:
+```verilog
+module my_dff(
+    input logic clk,
+    input logic d,
+    output logic q
+);
+    always_ff @(posedge clk) begin
+        q <= d;
+    end
+endmodule
+```
+
+## 2. `#()`参数化
+
+`#()`参数列表是 Sysetem V的新语法.
+
+模块参数化允许你在实例化模块时传递参数, 从而生成不同版本的模块实例. 
+
+```verilog
+// WIDTH是可变参数. 如果不指定, 默认值为4.
+module my_addr #(parameter WIDTH = 4) (
+    input logic [WIDTH-1:0] a,
+    input logic [WIDTH-1:0] b,
+    output logic [WIDTH-1:0] sum
+);
+
+    always_comb begin
+        sum = a + b;
+    end
+endmodule
+
+//进行一个16bit的addr和一个4bit的addr实例化.
+module top(
+    input  logic        clk,
+    input  logic [15:0] a_big,
+    input  logic [15:0] b_big, 
+    input  logic [3:0]  a_small,
+    input  logic [3:0]  b_small,
+    output logic [15:0] sum_big,
+    output logic [3:0]  sum_small
+);
+my_addr #(.WIDTH(16)) big_adder (
+    .a(a_big),
+    .b(b_big),
+    .sum(sum_big)
+);
+
+my_addr #(.WIDTH(4)) small_adder (
+    .a(a_small),
+    .b(b_small),
+    .sum(sum_small)
+);
+endmodule
+
+```
+
+
+##
+
+##
+
+
+
+
+
+##
+
 
 
 # 3 circuits 电路
