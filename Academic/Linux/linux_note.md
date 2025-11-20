@@ -1316,11 +1316,6 @@ time ./myprog < data.txt >/dev/null #希望测试myprog读取数据运行的时�
 -   `f`：file 后面接文件名
 
 
-
-##
-
-
-
 # 5 gdb 
 
 ## 5.1 🔹 启动 & 基本操作
