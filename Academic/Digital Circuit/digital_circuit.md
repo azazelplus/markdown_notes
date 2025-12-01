@@ -2645,9 +2645,11 @@ endmodule
 
 ## 4.10 shift register 移位寄存器
 
-### 4.10.0 移位寄存器概述
+
 
 ### 4.10.1 4-bit shift register (right shift) 四位右移寄存器
+
+最简单的移位寄存器就是**DFF串联**, 只能实现最简单的**逻辑右移**.
 
 构建一个 4 位移位寄存器（右移），具有异步复位、同步加载和使能功能。
 
@@ -2708,10 +2710,16 @@ endmodule
 ### 4.10.2 移位寄存器实现LUT
 
 In this question, you will design a circuit for an 8x1 memory, where writing to the memory is accomplished by shifting-in bits, and reading is "random access", as in a typical RAM. You will then use the circuit to realize a 3-input logic function.
+
 在本题中，您将为 8x1 存储器设计一个电路，其中写入存储器是通过移入位来完成的，读取是“随机访问”，就像在典型的 RAM 中一样。然后，您将使用该电路来实现 3 输入逻辑功能。
 
-First, create an 8-bit shift register with 8 D-type flip-flops. Label the flip-flop outputs from Q[0]...Q[7]. The shift register input should be called S, which feeds the input of Q[0] (MSB is shifted in first). The enable input controls whether to shift. Then, extend the circuit to have 3 additional inputs A,B,C and an output Z. The circuit's behaviour should be as follows: when ABC is 000, Z=Q[0], when ABC is 001, Z=Q[1], and so on. Your circuit should contain ONLY the 8-bit shift register, and multiplexers. (Aside: this circuit is called a 3-input look-up-table (LUT)).
-首先，创建一个带有 8 个 D 型触发器的 8 位移位寄存器。标记 Q[0]...Q[7] 的触发器输出。移位寄存器输入应称为S ，它馈入 Q[0] 的输入（MSB 首先移入）。使能输入控制是否移位。然后，扩展电路以具有 3 个附加输入A 、 B 、 C和一个输出Z 。电路的行为应如下：当 ABC 为 000 时，Z=Q[0]，当 ABC 为 001 时，Z=Q[1]，依此类推。您的电路应仅包含 8 位移位寄存器和多路复用器。 （旁白：该电路称为 3 输入查找表 (LUT)）。
+**First, create an 8-bit shift register with 8 D-type flip-flops.** Label the flip-flop outputs from Q[0]...Q[7]. The shift register input should be called S, which feeds the input of Q[0] (MSB is shifted in first). The enable input controls whether to shift. Then, extend the circuit to have 3 additional inputs A,B,C and an output Z. The circuit's behaviour should be as follows: when ABC is 000, Z=Q[0], when ABC is 001, Z=Q[1], and so on. Your circuit should contain ONLY the 8-bit shift register, and multiplexers. (Aside: this circuit is called a 3-input look-up-table (LUT)).
+
+**首先，创建一个带有 8 个 D 型触发器的 8 位移位寄存器**. 标记 Q[0]...Q[7] 的触发器输出。移位寄存器输入应称为S ，它馈入 Q[0] 的输入（MSB 首先移入）。使能输入控制是否移位。然后，扩展电路以具有 3 个附加输入A 、 B 、 C和一个输出Z 。电路的行为应如下：
+* 当 ABC 为 000 时，Z=Q[0]，
+* 当 ABC 为 001 时，Z=Q[1]，
+
+依此类推。您的电路应仅包含 8 位移位寄存器和多路复用器。 （旁白：该电路称为 3 输入查找表 (LUT)）。
 
 
 
@@ -2766,6 +2774,15 @@ endmodule
 
 ### 4.10.3 arithmetic_shift 算数移位寄存器
 
+右移分为**逻辑右移**, **算数右移**和**循环右移**.
+
+
+```
+Q <= {1'b0,Q[7:1]}; //逻辑右移
+Q <= {Q[0],Q[7:1]}; //循环右移
+Q <= {Q[7],Q[7:1]}; //算术右移
+```
+
 构建一个**算数**移位寄存器.
 算数移位寄存器处理**有符号数(signed)**, 或者说处理补码.  右移时, 最高位补符号位而不一定是`0`.  回忆:正负数补码的转换: 按位取反+1
   * 如负数最高位补`1`. `10110110` → `11011011`, 即`-74`->`-37`
@@ -2797,68 +2814,120 @@ module arithmetic_shift(
 endmodule
 ```
 
-### 4.10.4 linear feedback shift register, LFSR, 线性反馈移位寄存器
+### 4.10.4 桶形移位器
+
+它是**组合逻辑电路**. 直接利用MUX实现任意位的移位.
+
+在CPU中，我们往往需要对数据进行移位操作。
+
+但是传统的移位寄存器一个周期只能移动一位，当要进行多位移位时需要多个时钟周期，效率较低。 
+
+桶形移位器采用组合逻辑的方式来实现同时移动多位，在效率上优势极大。
+
+因此，桶形移位器常常被用在ALU中来实现移位。
+
+
+
+### 4.10.4 LFSR(linear feedback shift register), 线性反馈移位寄存器
 
 LFSR（Linear Feedback Shift Register，线性反馈移位寄存器）就是一种特殊的移位寄存器，用来产生伪随机序列或者实现编码/解码、CRC校验、加密等功能的。
 
 它的关键点在于：**寄存器的输入位（通常是最高位）不是直接外来的数据，而是若干寄存器输出位经过 线性反馈函数（通常是异或XOR） 运算之后得到的。**
 
-下面介绍两种等价的线性反馈SR实现形式:
-* 伽瓦罗寄存器
-* 斐波那契寄存器
+下面介绍两种线性反馈SR实现形式:
+
+* 斐波那契LFSR
+  * 移位寄存器的 **最左边MSB寄存器** 的输入, 是若干 其他寄存器 的输出, XOR 后馈入的. 那些被用来生成反馈信号的寄存器位置被称为**tap**.
+  * 如果精心选择tap位置，可以使LFSR达到“最大长度”: **一个n位的最大长度LFSR在重复之前会经历2^n - 1个状态**（全零状态永远不会出现）。
+* 伽瓦罗LFSR
+  * 移位寄存器最右边LSB寄存器移除的时候, 被用来改变某些其他寄存器的位. 
 
 
+### 4.10.6 斐波那契LFSR
   
-题目:
-线性反馈移位寄存器（LFSR）通常是一个带有一些XOR门的移位寄存器，用于生成寄存器的下一个状态。Galois LFSR是其中一种特定的排列方式，在这种方式中，带有“tap”（反馈点）的比特位置与输出比特进行XOR操作，以生成下一个值，而没有“tap”的比特位置则直接移位。如果精心选择tap位置，可以使LFSR达到“最大长度”。一个n位的最大长度LFSR在重复之前会经历2^n - 1个状态（全零状态永远不会出现）。
 
-以下图示展示了一个5位的最大长度Galois LFSR，其中tap位置在比特位置5和3（tap位置通常从1开始编号）。请注意，我将XOR门画在位置5以保持一致性，但其中一个XOR门的输入是0。Build this LFSR. The reset should reset the LFSR to 1.
-![5位伽瓦罗LFSR](image-20.png)
+
+
 
 具体举个LFSR例子:
 
 假设我们有一个 3 位的 LFSR（3 个寄存器），初始值是 `101`，生成规则是：
 
-- **反馈规则**：用寄存器的第 1 位和第 3 位做 XOR，结果填到第 1 位（空位）。
+- **反馈规则**：用寄存器的第 2 位和第 0 位做 XOR，结果馈入第 2 位（空位）。
 - 每次移位，右边最末的位就“掉出”了。
 
-- **过程演示**：
-初始值是 `101`，我们开始按规则移位：
+这个lfsr3的电路图:
+
+![alt text](lfsr3.png)
+
+
+我们开始按规则移位：
 
 1. 当前状态是 `101`。  
-   - 第 1 位和第 3 位：`1 XOR 1 = 0`。  
+   - 第 2 位和第 0 位：`1 XOR 1 = 0`。  
    - 新状态是 `010`（右移，左边空位填上 `0`）。
 
 2. 当前状态是 `010`。  
-   - 第 1 位和第 3 位：`0 XOR 0 = 0`。  
+   - 第 2 位和第 0 位：`0 XOR 0 = 0`。  
    - 新状态是 `001`。(右移，左边空位填上 `0`)
 
 3. 当前状态是 `001`。  
-   - 第 1 位和第 3 位：`0 XOR 1 = 1`。  
+   - 第 2 位和第 0 位：`0 XOR 1 = 1`。  
    - 新状态是 `100`。(右移，左边空位填上 `1`)
 
 4. 当前状态是 `100`。  
-   - 第 1 位和第 3 位：`1 XOR 0 = 1`。  
+   - 第 2 位和第 0 位：`1 XOR 0 = 1`。  
    - 新状态是 `110`。
 
 5. 当前状态是 `110`。  
-   - 第 1 位和第 3 位：`1 XOR 0 = 1`。  
+   - 第 2 位和第 0 位：`1 XOR 0 = 1`。  
    - 新状态是 `011`。
 
 6. 当前状态是 `011`。  
-   - 第 1 位和第 3 位：`0 XOR 1 = 1`。  
+   - 第 2 位和第 0 位：`0 XOR 1 = 1`。  
    - 新状态是 `101`。
  **循环出现了！**
 最终，序列变成了 `101 → 010 → 001 → 100 → 110 → 011 → 101`，它会不断重复这个循环，周期是 6（循环长度）。
-这是一个斐波那契LFSR.
+这是一个**斐波那契LFSR**.
+
+***************
+***************
+***************
 
 
-还有Galois LFSR, 伽瓦罗线性反馈移位寄存器:Galois LFSR 是一种特殊的移位寄存器(多个D触发器(通过导线或者门电路)首尾相连)，其中称为“抽头”的那些与输出位进行异或以产生其下一个值，而没有抽头移位的位位置。如果仔细选择抽头位置，则可以使 LFSR 成为“最大长度”。 n 位的最大长度 LFSR 在重复之前会循环经过 2 n -1 个状态（永远不会达到全零状态）。
+所以, 如何选择tap位置? 如果不选对位置，你的随机数序列可能跑几步就循环了.
+
+要让 LFSR 达到**最大长度 (Maximal Length)**，我们需要选择一个**本原多项式 (Primitive Polynomial)**. 
+
+本原多项式是一个**不可约多项式**, 同时还满足: 它的根root是整个有限域的生成元.
+
+具体略...
+
+
+对于 n=8 ，数学家们已经帮我们算好了所有 2^8-1 个本原多项式. 其中最经典、最常用的一组多项式是：
+
+$$P(x) = x^8 + x^4 + x^3 + x^2 + 1$$
+
+这个公式告诉我们需要从第 8, 4, 3, 2 级寄存器引出信号进行异或。
+
+
+
+***************
+***************
+***************
+
+
+
+一道题目:
+
 下图是一个5bit的[最大长度]`Galois LFSR`, 其`抽头`位设为第`5`位和第`3`个D触发器.(请注意，为了保持一致性，我在位置 5 处绘制了异或门，但异或门输入之一为 0。)
 
-![alt text](image-154.png)
+![5位伽瓦罗LFSR](LFSR5.png)
 
-构建这个 LFSR。这 reset 应将 LFSR 重置为` 5'b0_0001`。
+左边的5号DFF存储高位MSB. 最右边1号存储最低位LSB.
+
+
+构建这个 LFSR。这 reset 应将 LFSR 重置为` 5'b0_0001`.
 
 ```verilog
 //找着电路图连接即可. 一个<=语句实际上即为实例化一个dff.
@@ -2937,7 +3006,33 @@ module mydff(input clk, reset1, reset2, d, output reg q);
 endmodule
 ```
 
-### 4.10.5 rotater 旋转器/环形移位寄存器
+### 4.10.5 伽瓦罗 LFSR
+
+
+
+还有Galois LFSR, 伽瓦罗线性反馈移位寄存器:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### 4.10.6 rotater 旋转器/环形移位寄存器
 
 相比移位寄存器, 旋转器把最后一位放到第一位而不是丢弃, 形成一个环.
 
