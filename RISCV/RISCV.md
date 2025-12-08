@@ -62,7 +62,9 @@
 
 
 
-## 1.3 **ISA**/指令系统体系结构/体系结构/instruction set architecture/architecture/指令集架构
+## 1.3 **ISA**
+
+ISA/指令系统体系结构/体系结构/instruction set architecture/architecture/指令集架构
 
 它是一本协议手册. 是硬件和软件之间的接口, 或者说契约. 它包含了程序员写二进制机器语言所需要的全部信息. 
 
