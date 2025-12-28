@@ -756,11 +756,13 @@ D(D):
 
 
 
+## 4.4 是否要抽象流水线寄存器墙和它们的控制?
+
+![alt text](image-18.png)
 
 
 
-
-
+![alt text](image-19.png)
 
 
 
