@@ -1,26 +1,27 @@
 # 0.搭建简单的神经网络
-## 1.1一个简单的神经网络例子.
+
+## 1.1一个简单的神经网络例子: FFN层(前馈网络层)
 
 ### 简单神经网络例子：前向传播与反向传播
 
-假设我们有一个非常简单的两层神经网络：
+假设我们有一个非常简单的两层神经网络, 正要用一个样本(x, y)完成一次训练:
 
-- **输入层** $x = (x_1, x_2)$
+- **输入层** $x = (x_1, x_2)$, 其真实标签为 $y = 1$ . 
 - **第一层**：有两个神经元，权重为 $W_1 = \begin{pmatrix} w_{11} & w_{12} \\ w_{21} & w_{22} \end{pmatrix}$，偏置为 $b_1 = (b_{11}, b_{12})$
-- **输出层**：有一个神经元，权重为 $W_2 = (w_{31}, w_{32})$，偏置为 $b_2$
+- **第二层(输出层)**：有一个神经元，权重为 $W_2 = (w_{31}, w_{32})$，偏置为 $b_2$
 
 损失函数 $L$ 是均方误差（MSE），假设真实标签是 $y$，我们要最小化损失 $L = \frac{1}{2} (\hat{y} - y)^2$，其中 $\hat{y}$ 是网络的预测值。
 
-### 1. 前向传播：
+### 1. 前向传播: 每一层的计算就是先 **线性变换** 得到加权输入(预激活值), 再来一次**非线性激活** 得到 输出(激活值).
 
-#### 输入层到第一层的计算：
+#### 1.1 输入层到第一层的计算：
 
 假设输入是 $x = (x_1, x_2) = (1, 2)$，权重为：
 $$
 W_1 = \begin{pmatrix} 0.5 & -0.5 \\ 0.3 & 0.8 \end{pmatrix}, \quad b_1 = (0.1, -0.2)
 $$
 
-第一层的计算是：
+**第一层加权输入(预激活值) $z_1$ 为:**
 $$
 z_1 = W_1 \cdot x + b_1 = \begin{pmatrix} 0.5 & -0.5 \\ 0.3 & 0.8 \end{pmatrix} \cdot \begin{pmatrix} 1 \\ 2 \end{pmatrix} + \begin{pmatrix} 0.1 \\ -0.2 \end{pmatrix}
 $$
@@ -28,14 +29,14 @@ $$
 z_1 = \begin{pmatrix} 0.5 \cdot 1 + (-0.5) \cdot 2 + 0.1 \\ 0.3 \cdot 1 + 0.8 \cdot 2 - 0.2 \end{pmatrix} = \begin{pmatrix} -0.9 \\ 1.7 \end{pmatrix}
 $$
 
-然后应用激活函数（例如 ReLU）：
+然后应用激活函数（例如 ReLU等. 这里用最简陋的MAX.）得到 **第一层的输出(激活值) $a_1$:**
 $$
 a_1 = \text{ReLU}(z_1) = \begin{pmatrix} \max(0, -0.9) \\ \max(0, 1.7) \end{pmatrix} = \begin{pmatrix} 0 \\ 1.7 \end{pmatrix}
 $$
 
-#### 第一层到输出层的计算：
+#### 1.2 第一层到输出层的计算：
 
-输出层的计算是：
+**第二层加权输入(预激活值) $z_2$ 为:**
 $$
 z_2 = W_2 \cdot a_1 + b_2 = (0.2, -0.4) \cdot \begin{pmatrix} 0 \\ 1.7 \end{pmatrix} + 0.5
 $$
@@ -43,7 +44,7 @@ $$
 z_2 = (0.2 \cdot 0 + (-0.4) \cdot 1.7) + 0.5 = -0.68 + 0.5 = -0.18
 $$
 
-然后应用激活函数（假设没有激活函数，即线性输出）：
+然后应用激活函数（假设没有激活函数，即线性输出）得到第二层(最终)输出:
 $$
 \hat{y} = -0.18
 $$
@@ -57,40 +58,73 @@ $$
 
 ### 2. 反向传播：
 
-现在我们需要计算损失函数 $L$ 对每个参数（如 $w_{11}, w_{12}, w_{31}$ 等）的偏导数。
+现在我们需要计算损失函数 $L$ 对每个**权重参数**（如 $w_{11}, w_{12}, w_{31}$ 等）的偏导数。
 
-#### 步骤1：计算输出层的梯度
+#### 步骤1：计算第二层(输出层)参数 {`W_2`, `b2`}的梯度. **$L = L(W_2, b_2)$**. a_1是第一层输出到第二层的, 此时看为常数/
 
 首先，计算损失函数 $L$ 对输出 $\hat{y}$ 的导数：
 $$
-\frac{\partial L}{\partial \hat{y}} = \hat{y} - y = -0.18 - 1 = -1.18
+\frac{\partial L(\hat{y})}{\partial \hat{y}} = \hat{y} - y = -0.18 - 1 = -1.18
 $$
 
-然后，计算损失对 $z_2$ 的导数（因为 $z_2$ 是计算 $\hat{y}$ 的输入）：
+然后，计算损失函数 $L$ 对 $z_2$ 的导数. 注意其中第二层激活函数 $f_2(x) = x$, 是恒等变换.
 $$
-\frac{\partial L}{\partial z_2} = \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z_2} = -1.18 \cdot 1 = -1.18
+\frac{\partial L(f_2(z_2))}{\partial z_2} = \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z_2} = -1.18 \cdot 1 = -1.18
 $$
 
-计算损失对权重 $W_2$ 的梯度：
+然后，计算损失函数 $L$ 对 权重 $W_2$ 的梯度: ($L$ 是$W_2, b_2$的函数)
 $$
-\frac{\partial L}{\partial W_2} = \frac{\partial L}{\partial z_2} \cdot a_1^T = -1.18 \cdot \begin{pmatrix} 0 \\ 1.7 \end{pmatrix} = \begin{pmatrix} 0 \\ -2.006 \end{pmatrix}
+\begin{aligned}
+
+\frac{\partial L(f_2(z_2(W_2, a_1, b_2)))}{\partial W_2} 
+
+&= \frac{\partial L( z_2)}{\partial z_2} \cdot \frac{\partial z_2(W_2)}{\partial W_2} \\
+
+&= \frac{\partial L( z_2)}{\partial z_2} \cdot \frac{\partial (W_2 \cdot a_1 + b_2)}{\partial W_2} \\
+
+&= \frac{\partial L}{\partial z_2} \cdot a_1^T (注意矩阵求导后要转置, 最终结果必须和被求导的矩阵(W_2: 2*1)形状相同!)\\
+&= -1.18 \cdot \begin{pmatrix} 0 \\ 1.7 \end{pmatrix} \\
+
+&= \begin{pmatrix} 0 \\ -2.006 \end{pmatrix}
+\end{aligned}
 $$
 
 计算损失对偏置 $b_2$ 的梯度：
 $$
-\frac{\partial L}{\partial b_2} = \frac{\partial L}{\partial z_2} = -1.18
+\begin{aligned}
+\frac{\partial L}{\partial b_2} 
+&= \frac{\partial L( z_2)}{\partial z_2} \cdot \frac{\partial z_2(b_2)}{\partial b_2} \\
+&= \frac{\partial L( z_2)}{\partial z_2} \cdot \frac{\partial (W_2 \cdot a_1 + b_2)}{\partial b_2} \\
+&= \frac{\partial L}{\partial z_2} \cdot 1\\
+&= -1.18
+\end{aligned}
 $$
 
-#### 步骤2：计算第一层的梯度
+#### 步骤2：计算第一层参数(`W_1`, `b_1`)的梯度. 此时 **$L = L(W_1, b_1)$**. a_1也是W1, b1的函数.
 
-我们需要计算第一层的梯度。首先，计算损失对 $a_1$ 的导数：
+首先，计算$L(a_1(W_1, b_1))$对 $a_1$ 的导数. 
+
+
 $$
-\frac{\partial L}{\partial a_1} = W_2^T \cdot \frac{\partial L}{\partial z_2} = \begin{pmatrix} 0.2 \\ -0.4 \end{pmatrix} \cdot (-1.18) = \begin{pmatrix} -0.236 \\ 0.472 \end{pmatrix}
+\begin{aligned}
+
+\frac{\partial L}{\partial a_1} 
+&= \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial a_1} \\
+&= \frac{\partial L}{\partial z_2} \cdot \frac{\partial W_2 \cdot a_1 + b_2}{\partial a_1} \\
+&= \frac{\partial L}{\partial z_2} \cdot  W_2^T\\
+&= \begin{pmatrix} 0.2 \\ -0.4 \end{pmatrix} \cdot (-1.18) \\
+&= \begin{pmatrix} -0.236 \\ 0.472 \end{pmatrix}
+
+\end{aligned}
 $$
 
-然后，计算损失对 $z_1$ 的导数（因为 $z_1$ 是 $a_1$ 的输入）：
+
+然后计算 $L$ 对 $z_1$ 的导数 ($a_1 = ReLU(z_1)$)
+
+
 $$
-\frac{\partial L}{\partial z_1} = \frac{\partial L}{\partial a_1} \cdot \frac{\partial a_1}{\partial z_1}
+\frac{\partial L}{\partial z_1} 
+= \frac{\partial L}{\partial a_1} \cdot \frac{\partial a_1}{\partial z_1}
 $$
 
 因为我们使用的是 ReLU 激活函数，$\frac{\partial a_1}{\partial z_1}$ 会是 1 或 0。对于 $a_1 = \begin{pmatrix} 0 \\ 1.7 \end{pmatrix}$，我们有：
@@ -98,7 +132,7 @@ $$
 \frac{\partial L}{\partial z_1} = \begin{pmatrix} 0 \\ 0.472 \end{pmatrix}
 $$
 
-计算损失对权重 $W_1$ 的梯度：
+计算 $L$ 对权重 $W_1$ 的梯度：
 $$
 \frac{\partial L}{\partial W_1} = \frac{\partial L}{\partial z_1} \cdot x^T
 $$
@@ -108,14 +142,14 @@ $$
 \frac{\partial L}{\partial W_1} = \begin{pmatrix} 0 \\ 0.472 \end{pmatrix} \cdot \begin{pmatrix} 1 & 2 \end{pmatrix} = \begin{pmatrix} 0 & 0 \\ 0.472 & 0.944 \end{pmatrix}
 $$
 
-计算损失对偏置 $b_1$ 的梯度：
+计算 $L$ 对偏置 $b_1$ 的梯度：
 $$
 \frac{\partial L}{\partial b_1} = \frac{\partial L}{\partial z_1} = \begin{pmatrix} 0 \\ 0.472 \end{pmatrix}
 $$
 
 ### 3. 更新参数：
 
-根据计算的梯度，可以使用梯度下降法来更新参数：
+根据计算的梯度，可以使用梯度下降法来更新参数{`W_1`, `W_2`, `b_1`, `b_2`}：
 $$
 W_1 \leftarrow W_1 - \alpha \cdot \frac{\partial L}{\partial W_1}, \quad W_2 \leftarrow W_2 - \alpha \cdot \frac{\partial L}{\partial W_2}, \quad b_1 \leftarrow b_1 - \alpha \cdot \frac{\partial L}{\partial b_1}, \quad b_2 \leftarrow b_2 - \alpha \cdot \frac{\partial L}{\partial b_2}
 $$
@@ -192,26 +226,37 @@ batch 主要用于：
 
 ##### **数学公式**
 
-给定某个 batch 的输入 xn,c,h,wx\_{n,c,h,w}xn,c,h,w​，它表示：
+给定某个 batch 的输入 $x_{n,c,h,w}$，它表示：
 
--   第 nnn 个样本（batch size 内）
--   第 ccc 个通道（如 RGB 的 R 通道）
--   高度 hhh，宽度 www
+-   第 $n$ 个样本（batch size 内）
+-   第 $c$ 个通道（如 RGB 的 R 通道）
+-   高度 $h$，宽度 $w$
 
 BN 计算公式：
 
 1.  **计算均值和标准差（在 batch 维度上计算）**
+
     $$
-    μc\=1N⋅H⋅W∑n\=1N∑h\=1H∑w\=1Wxn,c,h,w\\mu\_c = \\frac{1}{N \\cdot H \\cdot W} \\sum\_{n=1}^{N} \\sum\_{h=1}^{H} \\sum\_{w=1}^{W} x\_{n,c,h,w}μc​\=N⋅H⋅W1​n\=1∑N​h\=1∑H​w\=1∑W​xn,c,h,w​ σc2\=1N⋅H⋅W∑n\=1N∑h\=1H∑w\=1W(xn,c,h,w−μc)2\\sigma\_c^2 = \\frac{1}{N \\cdot H \\cdot W} \\sum\_{n=1}^{N} \\sum\_{h=1}^{H} \\sum\_{w=1}^{W} (x\_{n,c,h,w} - \\mu\_c)^2σc2​\=N⋅H⋅W1​n\=1∑N​h\=1∑H​w\=1∑W​(xn,c,h,w​−μc​)2
+    \mu_c = \frac{1}{N H W} \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} x_{n,c,h,w}
     $$
+
+    $$
+    \sigma_c^2 = \frac{1}{N H W} \sum_{n=1}^{N} \sum_{h=1}^{H} \sum_{w=1}^{W} \left(x_{n,c,h,w} - \mu_c\right)^2
+    $$
+
     -   **计算整个 batch 的某个通道的均值和方差**，让同一通道的所有样本归一化。
 2.  **归一化**
-    
-    x^n,c,h,w\=xn,c,h,w−μcσc2+ϵ\\hat{x}\_{n,c,h,w} = \\frac{x\_{n,c,h,w} - \\mu\_c}{\\sqrt{\\sigma\_c^2 + \\epsilon}}x^n,c,h,w​\=σc2​+ϵ​xn,c,h,w​−μc​​
+
+    $$
+    \hat{x}_{n,c,h,w} = \frac{x_{n,c,h,w} - \mu_c}{\sqrt{\sigma_c^2 + \epsilon}}
+    $$
 3.  **加入可训练参数**
-    
-    yn,c,h,w\=γcx^n,c,h,w+βcy\_{n,c,h,w} = \\gamma\_c \\hat{x}\_{n,c,h,w} + \\beta\_cyn,c,h,w​\=γc​x^n,c,h,w​+βc​
-    -   γc\\gamma\_cγc​ 和 βc\\beta\_cβc​ 是**可训练参数**，用于调整归一化后的数据。
+
+    $$
+    y_{n,c,h,w} = \gamma_c \hat{x}_{n,c,h,w} + \beta_c
+    $$
+
+    -   $\gamma_c$ 和 $\beta_c$ 是**可训练参数**，用于调整归一化后的数据。
 
 **特点**：
 
@@ -227,14 +272,24 @@ BN 计算公式：
 ##### **数学公式**
 
 1.  **计算均值和标准差（在单个样本内的单个通道计算）**
-    
-    μn,c\=1H⋅W∑h\=1H∑w\=1Wxn,c,h,w\\mu\_{n,c} = \\frac{1}{H \\cdot W} \\sum\_{h=1}^{H} \\sum\_{w=1}^{W} x\_{n,c,h,w}μn,c​\=H⋅W1​h\=1∑H​w\=1∑W​xn,c,h,w​ σn,c2\=1H⋅W∑h\=1H∑w\=1W(xn,c,h,w−μn,c)2\\sigma\_{n,c}^2 = \\frac{1}{H \\cdot W} \\sum\_{h=1}^{H} \\sum\_{w=1}^{W} (x\_{n,c,h,w} - \\mu\_{n,c})^2σn,c2​\=H⋅W1​h\=1∑H​w\=1∑W​(xn,c,h,w​−μn,c​)2
+
+    $$
+    \mu_{n,c} = \frac{1}{H W} \sum_{h=1}^{H} \sum_{w=1}^{W} x_{n,c,h,w}
+    $$
+
+    $$
+    \sigma_{n,c}^2 = \frac{1}{H W} \sum_{h=1}^{H} \sum_{w=1}^{W} \left(x_{n,c,h,w} - \mu_{n,c}\right)^2
+    $$
 2.  **归一化**
-    
-    x^n,c,h,w\=xn,c,h,w−μn,cσn,c2+ϵ\\hat{x}\_{n,c,h,w} = \\frac{x\_{n,c,h,w} - \\mu\_{n,c}}{\\sqrt{\\sigma\_{n,c}^2 + \\epsilon}}x^n,c,h,w​\=σn,c2​+ϵ​xn,c,h,w​−μn,c​​
+
+    $$
+    \hat{x}_{n,c,h,w} = \frac{x_{n,c,h,w} - \mu_{n,c}}{\sqrt{\sigma_{n,c}^2 + \epsilon}}
+    $$
 3.  **加入可训练参数**
-    
-    yn,c,h,w\=γcx^n,c,h,w+βcy\_{n,c,h,w} = \\gamma\_c \\hat{x}\_{n,c,h,w} + \\beta\_cyn,c,h,w​\=γc​x^n,c,h,w​+βc​
+
+    $$
+    y_{n,c,h,w} = \gamma_c \hat{x}_{n,c,h,w} + \beta_c
+    $$
 
 **特点**：
 
@@ -928,7 +983,7 @@ $$
 ##
 
 
-# 还没归纳的草稿:
+# 10. 还没归纳的草稿:
 
 ## 问题一, 隐变量一般是啥, 为啥p(z)是先验的, 一开始就认为规定它的分布?
 
@@ -1030,5 +1085,151 @@ zzz 是“文本编码” + 视觉噪声
 
 
 
+# 5. 常用函数&概念
 
-#
+
+softmax(): 归一化指数函数, 把任意实数向量映射到(0,1)区间, 且和为1的概率分布. 是常用的激活函数. 在**分类器**神经网络中很常见.
+
+![alt text](image-16.png)
+
+输入一个向量x后, 输出向量softmax(x)可以看成一个保证每个元素的相对大小地位, 整体和为1的向量, 可以当作概率分布用(如果x的某个分量很大意味着更强更容易被选择的话).
+
+
+# 9. transformer: CODEC(COmpressor-DECompressor, 编解码器) Assisted Matrix Condensing, 编解码器辅助的矩阵压缩。 这是专门让transformer模型更小更快的技术.
+
+
+# 8. transformer
+
+
+
+核心机制是自注意力机制.
+
+和上述的FNN例子模型, transformer模型:
+
+输入是一句话 -> 一个矩阵 $X \in \mathbb{R}^{n \times d}$, 其中 $n$ 是句子的长度 (Token 数量), $d$ 是每个词的特征维度.
+
+
+transformer的每一层有三个矩阵: 
+
+$$
+查询向量矩阵W^Q (query), 键向量矩阵W^K (key)  
+\in \mathbb{R}^{d \times d_k}, 通常d_k=d
+$$
+
+
+$$
+值向量矩阵W^V (value) 
+\in \mathbb{R}^{d \times d_V}, 通常d_V=d
+$$
+
+它们分别作用在X上, 得到三个矩阵**Q, K, V**:
+
+* $Q = X W^Q$ (查询: 我要找什么?)
+* $K = X W^K$ (键: 我这里有什么?)
+* $V = X W^V$ (值: 我实际的内容是什么?)
+
+可以把三个矩阵**Q, K, V**看作是 **把原始信息 $X$ 投射到了三个不同的空间里**.
+
+
+然后, 还要计算出**S, P, Z**三个矩阵:
+* $S = QK^T$. S为Scores, 相关性矩阵. 它表示词与词之间的两两关系.
+* $P = softmax(\frac{S}{\sqrt{d_k}})$. P是S的归一化. 其中 $d_k$ 是Dimension of Keys, 在最基础的transformer中, 我们只有一个注意力头, $d_k=d$.
+* 加权求和: $Z = P \cdot V$. 最终的输出 $Z$ 是用这些权重对内容 $V$ 进行加权平均. Z就是最后的输出矩阵.
+
+
+上述式子写成一步就是:
+
+$$
+输出Z = \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$
+
+这就是transformer的**一层注意力层**. **事实上transformer有encoder**+**decoder**两部分, 它们都包含多层上述的注意力层.
+
+
+
+transformer可以做预测/分类, 也可以做生成.
+* GPT(生成式): 根据前面的词预测下一个词.
+* BERT(理解式): 根据前面的词和后面的词, 预测中间被遮挡的词.
+
+transformer的损失通常是交叉熵.
+
+transformer的典型样本:
+
+是一个Pair, 由由“源序列”和“目标序列”组成。
+
+-   **源序列（Source Sequence）**：你想让模型理解的内容。 
+-   **目标序列（Target Sequence）**：你希望模型生成的内容。
+
+
+
+
+现在我们来看数学过程的意义.
+
+首先**注意力**就是**为了理解当前的词, 我应该对句子里的哪些词分配多少权重**.
+
+训练之前一开始, $W^Q, W_K, W_V$都是随机数. 通过标签训练的反向传播更新后, 这些矩阵会学到**如何根据当前词的含义, 找到句子里相关的词**.
+
+
+## encoder层:
+
+
+就是多个注意力子层.
+
+## decoder层:
+
+decoder的每个块包含两个不同的注意力层(掩码注意力层+交叉注意力层)+一个FFN层(前馈网络层).
+
+
+### 掩码注意力层:
+
+它是一个上述注意力层, 但做出改动:
+
+当接收上一层的输入X, 运算得到Q, K, V后,
+
+继续运算得到S = QK^T.
+
+然后, 对这个S做一个**掩码操作(masking)**:
+
+把未来词的分数设为$-∞$, 然后再做softmax归一化. 这样就保证了**当前词只能关注前面的词, 不能看到未来的词**. 这是生成模型必须的约束条件.
+
+
+假设我们的目标序列有 3 个词：$[t_1, t_2, t_3]$（对应 "I", "love", "cats"）。
+
+得到的 $S$ 矩阵是一个 $3 \times 3$ 的矩阵，代表词与词之间的相关性：
+
+|      | K1 (I) | K2 (love) | K3 (cats) |
+| ---  | ---    | ---       | ---       |
+| Q1 (I) | S11 | S12 | S13 |
+| Q2 (love) | S21 | S22 | S23 |
+| Q3 (cats) | S31 | S32 | S33 |
+
+
+然后是掩码操作:
+在进行 softmax 之前，我们会给这个矩阵叠加一个掩码矩阵。我们会把右上角（即当前词之后的词）的得分全部替换成 $-\infty$（负无穷）：
+
+|    | K1 | K2 | K3 |
+| --- | --- | --- | --- |
+| Q1 | S11 | $-\infty$ | $-\infty$ |
+| Q2 | S21 | S22 | $-\infty$ |
+| Q3 | S31 | S32 | S33 |
+
+做 softmax 时，$e^{-\infty}$ 会趋近于 0。
+
+### 交叉注意力层
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
