@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "LaTeX: build resume.pdf",
+      "type": "shell",
+      "command": "latexmk",
+      "args": [
+        "-pdfxe",
+        "-g",
+        "-f",
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "resume.tex"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "LaTeX: clean",
+      "type": "shell",
+      "command": "latexmk",
+      "args": [
+        "-c"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
