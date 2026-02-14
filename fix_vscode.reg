@@ -1,0 +1,25 @@
+Windows Registry Editor Version 5.00
+
+; --- 给文件添加右键菜单 ---
+[HKEY_CLASSES_ROOT\*\shell\VSCode]
+@="Open with Code"
+"Icon"="D:\\Microsoft VS Code\\Code.exe"
+
+[HKEY_CLASSES_ROOT\*\shell\VSCode\command]
+@="\"D:\\Microsoft VS Code\\Code.exe\" \"%1\""
+
+; --- 给文件夹添加右键菜单 ---
+[HKEY_CLASSES_ROOT\Directory\shell\VSCode]
+@="Open with Code"
+"Icon"="D:\\Microsoft VS Code\\Code.exe"
+
+[HKEY_CLASSES_ROOT\Directory\shell\VSCode\command]
+@="\"D:\\Microsoft VS Code\\Code.exe\" \"%V\""
+
+; --- 给文件夹背景(空白处)添加右键菜单 ---
+[HKEY_CLASSES_ROOT\Directory\Background\shell\VSCode]
+@="Open with Code"
+"Icon"="D:\\Microsoft VS Code\\Code.exe"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\VSCode\command]
+@="\"D:\\Microsoft VS Code\\Code.exe\" \"%V\""
