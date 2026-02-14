@@ -4,7 +4,7 @@
 
 #悄悄检测是否在git bash 下运行(command -v uname检查`uname`这个命令有没有被识别, 输出结果重定向到黑洞里丢弃掉, `2>&1`表示把标准错误(2)也重定向到标准输出(1), 从而不显示错误信息.
 if command -v uname >/dev/null 2>&1; then
-	echo "bash mode detected! ovo"
+	echo "bash mode detected! ꉂꉂ(ᵔᗜᵔ*)"
 	git add .
 	git commit -m "autosave"
 	git push
