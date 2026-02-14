@@ -272,14 +272,14 @@ NEMU中的配置系统位于`nemu/tools/kconfig`, 它来源于GNU/Linux项目中
 
 在NEMU项目中, "配置描述文件"的文件名都为`Kconfig`, 如`nemu/Kconfig`. 当你键入`make menuconfig`的时候, 背后其实发生了如下事件:
 
--   检查`nemu/tools/kconfig/build/mconf`程序是否存在, 若不存在, 则编译并生成`mconf`
--   检查`nemu/tools/kconfig/build/conf`程序是否存在, 若不存在, 则编译并生成`conf`
--   运行命令`mconf nemu/Kconfig`, 此时`mconf`将会解析`nemu/Kconfig`中的描述, 以菜单树的形式展示各种配置选项, 供开发者进行选择
--   退出菜单时, `mconf`会把开发者选择的结果记录到`nemu/.config`文件中
--   运行命令`conf --syncconfig nemu/Kconfig`, 此时`conf`将会解析`nemu/Kconfig`中的描述, 并读取选择结果`nemu/.config`, 结合两者来生成如下文件:
-    -   可以被包含到C代码中的宏定义(`nemu/include/generated/autoconf.h`), 这些宏的名称都是形如`CONFIG_xxx`的形式
-    -   可以被包含到Makefile中的变量定义(`nemu/include/config/auto.conf`)
-    -   可以被包含到Makefile中的, 和"配置描述文件"相关的依赖规则(`nemu/include/config/auto.conf.cmd`), 为了阅读代码, 我们可以不必关心它
+-   (用户无需在意)检查`nemu/tools/kconfig/build/mconf`程序是否存在, 若不存在, 则编译并生成`mconf`
+-   (用户无需在意)检查`nemu/tools/kconfig/build/conf`程序是否存在, 若不存在, 则编译并生成`conf`
+-   运行命令`mconf nemu/Kconfig`, 此时`mconf`将会解析`nemu/Kconfig`中的描述, **打开GUI让你设置**.
+-   退出菜单时, `mconf`会把开发者选择的**结果记录到`nemu/.config`文件中**
+-   运行命令`conf --syncconfig nemu/Kconfig`, 此时程序`conf`将会解析`nemu/Kconfig`中的描述, 并读取选择结果`nemu/.config`, 结合两者来**生成如下文件**:
+    -   **可以被包含到C代码中的宏定义**(`nemu/include/generated/autoconf.h`), 这些宏的名称都是形如`CONFIG_xxx`的形式
+    -   **可以被包含到Makefile中的变量定义**(`nemu/include/config/auto.conf`)
+    -   **可以被包含到Makefile中的, 和"配置描述文件"相关的依赖规则**(`nemu/include/config/auto.conf.cmd`), 为了阅读代码, 我们可以不必关心它
     -   通过时间戳来维护配置选项变化的目录树`nemu/include/config/`, 它会配合另一个工具`nemu/tools/fixdep`来使用, 用于在更新配置选项后节省不必要的文件编译, 为了阅读代码, 我们可以不必关心它
 
 
@@ -766,5 +766,16 @@ D(D):
 
 
 
+# 4.4 BUG调试思路
+
+![alt text](image-20.png)
+
+![alt text](image-21.png)
+
+![alt text](image-22.png)
+
+# 5. 异常处理
+
+![alt text](image-23.png)
 
 

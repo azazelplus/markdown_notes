@@ -1,11 +1,34 @@
 # 9 STM32CubeMX
 
 
-## 9.0 简单入门示例
+## 9.0 MX大致流程 + 简单入门示例
+
+### 9.0 MX的大致流程
+
+mx本身就是图形化生成代码, 而且不改动user区域的代码. 生成的代码可以用不同的ide处理.
+
+MX大致流程:
+* 首先芯片选型.
+* sys->debug要改成serial wire, 不然烧录后芯片自锁, 需要按reset才能再烧录, 不方便.
+* 时钟树配置: 根据版上外设晶振的大小填入input时钟源, 打开HSE选择crystal...(外设晶振), PLL选择来自HSE, HCLK选择最高可选, 回车. 总之初步配置时钟树的**目的就是让芯片满血跑(HCLK(cpu的主频)达到最高)**.
+
+### 9.0.0 MX的工具链选择
+
+***
+***
+***
+* 如果选择工具链为`cubeide`, MX就会在目标文件夹生成带有`.project`的诸多文件, 可以用cubeide打开这个项目.
+* 如果选择工具链为`CMake`, MX就会在目标文件夹生成带有`CMakeLists.txt`的诸多文件, 可以用vscode打开这个项目, 将会被STM插件识别为CMake项目.
+* ...
+
+
+
+
+
+
 
 我们使用型号:野火指南者. 它使用的MCU是
 `stm32f103vet6`
-
 
 
 | 类型       | 位置说明                        | 例子                                             |
@@ -16,7 +39,7 @@
 
 
 
-#### 9.0.1. 创建项目流程:
+### 9.0.1. 创建项目流程:
 使用三种方式创建新工程: 
 * 1.选择MCU
 * 2.选择板子
@@ -28,7 +51,7 @@
 
 至此创建了一个新的cube工程.
 
-#### 9.0.2. Pinouts&Configuration
+### 9.0.2. Pinouts&Configuration
 
 
 
@@ -53,7 +76,7 @@
 
 >可以方便看到PC14和PC15分别有一个`RCC_OSC32_IN`和`RCC_OSC32_OUT`. 这两个复用引脚用于连接`LSE`外部低速晶振的输入输出端. 启用LSE的时候, PC14和PC15会被占用. 所以一般PC14和PC15不经常用作其他用途了.
 
-#### 9.0.3 配置gpio
+### 9.0.3 配置gpio
 
 我们以配置PC13为gpio输出模式然后用来点灯为例.
 
@@ -70,7 +93,7 @@
 | **User Label**             | 你可以给这个引脚起个名字，生成代码时自动加宏 | 可选，如命名为 `LED1`                  |
 
 
-#### 9.0.4 配置RCC:
+### 9.0.4 配置RCC:
 
 在Pinout&Configuration -> System Core -> RCC 处配置.
 
@@ -92,7 +115,7 @@ HSE和LSE在这里配置, 选项都一样.
 
 
 
-#### 9.0.5 配置SYS(系统)
+### 9.0.5 配置SYS(系统)
 
 在Pinout&Configuration -> System Core -> SYS 处配置.
 
@@ -117,7 +140,7 @@ HSE和LSE在这里配置, 选项都一样.
 
 
 
-#### 9.0.6 配置其他各种外设
+### 9.0.6 配置其他各种外设
 
 在Pinout&Configuration->Analog(配置ADC和DAC); Timers(配置TIM)...
 
@@ -125,7 +148,7 @@ HSE和LSE在这里配置, 选项都一样.
 
 
 
-#### 9.0.7 Clock Configuration
+### 9.0.7 Clock Configuration
 
 
 Clock Configuration界面如下图, 其中采用了常用的配置.
@@ -801,7 +824,11 @@ hdma_adc.Init.Priority = DMA_PRIORITY_HIGH;  // 推荐选择
 
 ## 9.8
 
-## 9.9 MX开发细节...
+## 9.9 MX开发细节..
+
+
+
+
 
 ### 9.9.1 printf&scanf浮点数
 
@@ -947,7 +974,8 @@ SPI是按字节传输的.
 
 在一次字节传输时, 主机发送8个SCK. 每个周期, 从机从`MISO`输出1bit, 主机从
 
-* 调用`HAL_SPI_TransmitReceive(&hspi1, &tx, &rx, 1, 200);` 意味着:
+* 调用`HAL_
+* SPI_TransmitReceive(&hspi1, &tx, &rx, 1, 200);` 意味着:
   * 主机发送8个SCK. 
   * 每个周期, 从机将应答缓冲区`SR_out`从`MISO`输出1bit到主机`rx`.
   * 每个周期, 主机将`tx`从MOSI输入1bit到从机`SR_in`.
@@ -3735,6 +3763,7 @@ FarFS(FAT(File Allocation Table) File System), 文件分配表-文件系统.
 
 
 ##
+
 # 14 常见问题(bug log)
 
 
@@ -4017,6 +4046,7 @@ Reset选项:
 
 
 ## 14.7 使用ST-LINK烧录/调试
+
 
 
 
