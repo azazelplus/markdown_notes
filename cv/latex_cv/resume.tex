@@ -29,7 +29,7 @@
 %***********个人信息**************
 \MyName{王淙豫}
 \sepspace
-\SimpleEntry{西安交通大学~~大四}
+\SimpleEntry{西安交通大学~~研一}
 \SimpleEntry{email: azazelplusplusplus@gmail.com}
 \SimpleEntry{TEL: 13663801701}
 
@@ -52,39 +52,45 @@
 
 %***********过往经历**************
 \section{过往经历}
+\datedsubsection{\textbf{RISC-V处理器体系结构软硬件协同设计}，国科大“一生一芯”计划B阶段学生}{2025-至今}
+\Content
+{一生一芯”计划是软硬件协同设计基于RISC-V架构CPU的独立学习项目，要求学生独立实现从ISA微架构设计到软件栈建设，最终在自己设计并流片的处理器上跑linux系统，让一个学生可以带着自己设计的一颗处理器芯片毕业。}
+{基于RISC-V ISA实现五级流水线单核处理器，深入实现CSR寄存器、终端异常处理控制流，并通过difftest和trace工具，分析关键路径优化，使用verilator，vcs进行仿真验证。}
+{本人独立设计的处理器当前已经实现高效的五级流水线结构、cache设计、分支预测、指令前递，成功移植并运行RTT操作系统。正在继续深入改进自行设计的cpu架构。}
+\datedsubsection{\textbf{第七届全国大学生嵌入式芯片与系统设计竞赛 一等奖兼本届最佳创意奖}，FPGA}{2024}
+\Content
+{基于zynq7020主控芯片，基于I2S协议与麦克风通信，基于HDMI协议和串口协议与用户端通信。基于两条360MHz的高速全吞吐流水线，以纯电路的形式实现了波束形成算法。}
+{负责波束形成算法电路的RTL以及hdmi通信部分的设计与实现。}
+{该项目获得该年全国大学生嵌入式芯片与系统设计竞赛 国赛一等奖 和 本届最佳创意奖（全国共三名）。相关技术细节与实现经验已在 GitHub 开源（https://github.com/wzwyz/ZYNQ-based-acoustic-camera）}
 \datedsubsection{\textbf{基于机器学习的光伏电池板可视化红外温控研究}，异质结研究，机器学习，机器视觉}{2022-2023}
 \Content
 {基于红外热成像技术，利用机器学习算法，结合 Python 和 MATLAB 实现对电池板表面温度监测模型的精准构建。}
 {本人在项目中负责采用 Python 进行机器学习建模，分析角度、距离等因素对红外测温精度的影响，并优化算法。}
 {成果以共同作者身份发表论文：“Effect of errors in power output on reliability evaluation for photovoltaic modules,”Proceedings of the IEEE AEEES 2024, 2024.}
 
-\datedsubsection{\textbf{第七届全国大学生嵌入式芯片与系统设计竞赛 一等奖兼本届最佳创意奖}，FPGA}{2024}
-\Content
-{基于zynq7020主控芯片，基于I2S协议与麦克风通信，基于HDMI协议和串口协议与用户端通信。}
-{基于两条360MHz的高速全吞吐流水线，以纯电路的形式实现了波束形成算法。}
-{该项目获得该年全国大学生嵌入式芯片与系统设计竞赛 国赛一等奖 和 本届最佳创意奖。}
-
-\datedsubsection{\textbf{计算机视觉}，diffusion model， GAN，VAE}{2025-至今}
+\datedsubsection{\textbf{计算机视觉}，diffusion model， GAN，VAE}{2025-2026}
 \Content
 {利用组内算力平台，参与多项计算机视觉的科研工作。}
 {使用基于ControlNet指导diffusion生成图像增强仿真方法，从NCCT图像生成类CTA图像。}
 {比较以无指导\/人工位置标注指导\/基于CAM的权重图指导的生成效果，表现出ControlNet在该项工作上的优势。}
 
-\datedsubsection{\textbf{基于stm32的电压预警模块}，stm32开发}{2025}
+\datedsubsection{\textbf{南方电网项目-基于stm32的电压预警模块}，嵌入式开发}{2025}
 \Content
-{参与组内某南网传感器项目, 本人负责其中的[电压信号预警模块]的设计与开发。}
-{独立使用滤波电路和放大偏置电路, 预处理信号后接入stm32芯片;利用DMA寄存器实现快速的adc采样，同时使用TIM寄存器实现交流电压的有效识别。结果经过滤波后，输出实现实时波形监测和过压预警。}
+{参与组内南方电网项目-高性能压电材料研制及无铅化技术研究项目, 本人负责其中的电压信号预警模块的设计与开发。}
+{独立使用滤波电路和放大偏置电路, 预处理信号后接入stm32芯片; 利用DMA寄存器实现快速的adc采样，同时使用TIM寄存器实现交流电压的有效识别。结果经过滤波后，输出实现实时波形监测和过压预警。独立设计了PCB电路，实现了模块的集成。}
 {经测试，该模块成功地工作在传感器带宽（20~ \~ ~50KHz）下。已经投入使用，取得了良好的效果。}
 
 
-\datedsubsection{\textbf{国科大“一生一芯”计划}，D阶段学生}{2025}
-\Content
-{一生一芯”计划让一个学生可以带着自己设计的一颗处理器芯片毕业。}
-{在[预学习阶段]，完成cpu架构和系统的要求习题。结束预学习后，答辩通过后进入下一设计阶段。}
-{基本掌握了Linux系统、shell编程、c语言、硬件语言编程等技能。正在继续深入学习cpu架构。}
+
+%***********自我评价**************
+\section{自我评价}
+    \hspace*{2em} 本人深耕微电子与计算机体系结构交叉领域，立志从事 AI Infra 与体系结构设计工作。具备扎实的数字 IC 设计与软硬件协同开发能力，曾独立从零设计基于 RISC-V 的处理器（含Cache与分支预测等）并成功运行系统软件。在 FPGA 开发与硬件加速方面经验丰富，设计过 360MHz 高通量流水线计算架构并斩获国赛顶点奖项。同时，我具备扎实的机器学习与 CV 前沿算法研究背景，这使我能精准洞察 AI 模型的底层算力痛点，做到以算法需求驱动硬件架构优化。
+
+    \hspace*{2em} 此外, 我有独自负责南网项目的嵌入式工作经验, 拥有底层PCB设计布局和STM32及多款国产单片机的设计经验, 具备了从物理底层到驱动软件的纵向打通能力, 能够在复杂异构环境下实现高效的软硬协同与系统级交付, 技术栈全面，自我驱动力强，渴望在 AI 底层系统与算力芯片领域持续创造价值。
+
 
 \section{专业技能}
-\datedsubsection{\textbf{计算机方面}：c、c++、python、常用shell、MATLAB，Linux系统基本使用。matlab数值计算、multisim/spice电路仿真、Comsol\&solidworks仿真、Origin绘图、Latex}{}
+\datedsubsection{\textbf{计算机方面}：熟练使用Linux系统、shell、C\&Cpp、python、system verilog、chisel编程语言。matlab数值计算、multisim/spice电路仿真、verilator\&vcs电路仿真流程、Xlinx Vivado开发、Comsol\&solidworks复合场仿真、Origin绘图、Latex}{}
 \datedsubsection{\textbf{算法方面}：OpenCV图像处理与分析，机器学习、深度学习，计算机视觉（生成模型）}{}
 \datedsubsection{\textbf{硬件方面}：stm32开发，FPGA和赛灵思套件开发比赛经验，scala \& chisel编写verilog开发链；基于verilator \& gkdwave等工具的数字电路仿真}{}
 %\datedsubsection{\textbf{科研方面}：matlab数值计算、multisim/spice电路仿真、Comsol\&solidworks仿真、Origin绘图、Latex}{}
@@ -94,9 +100,10 @@
 \section{奖励荣誉}
 \datedsubsection{\textbf{竞赛获奖方面}:}{}
 \datedsubsection{参加第七届全国大学生嵌入式芯片与系统设计竞赛，获全国一等奖和最佳创意奖；}{2024}
-\datedsubsection{多次参加省级、国家级大创项目；}{2022-2023}
-\datedsubsection{获国家励志奖学金两次，校级奖学金一次。}{2021-2024}
+\datedsubsection{参加中国中车杯创新设计大赛决赛（奖项未出）}{2026}
+\datedsubsection{获国家励志奖学金两次，校级奖学金三次。}{2021-2024}
 \datedsubsection{\textbf{论文方面}：}{}
+\datedsubsection{以第二比赛作者身份向中文核心期刊《电子器件》投稿基于 ZYNQ 的声学相机论文一篇（在投）}{2026}
 \datedsubsection{以共同作者身份发表论文：“Effect of errors in power output on reliability evaluation for photovoltaic modules,”Proceedings of the IEEE AEEES 2024, 2024.}{2023}
 %\datedsubsection{\textbf{其它荣誉}：}{}
 \end{document}

@@ -1,0 +1,6 @@
+2026-03-22 09:10:50.4329-INFO Execute update subscription
+2026-03-22 09:10:51.7308-INFO Update subscription end. 更新订阅结束
+2026-03-22 23:22:00.4320-INFO Current_SessionEnding
+2026-03-22 23:22:00.4695-INFO AppExitAsync Begin
+2026-03-22 23:23:49.0482-INFO v2rayN start up | v2rayN - V7.17.5 - X64 | F:\aza\notes_git\YSYX\v2rayn\ | F:\aza\notes_git\YSYX\v2rayn\v2rayN.exe | Microsoft Windows NT 10.0.22621.0
+2026-03-22 23:23:53.1568-INFO Setup Scheduled Tasks

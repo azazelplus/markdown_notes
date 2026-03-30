@@ -1,4 +1,4 @@
-**
+
 # 0. 常用命令&环境变量
 
 
@@ -672,11 +672,11 @@ write:
 
 # 4. 思想
 
-## 4.1
+## 4.1 读源码和读踪迹
 ![alt text](image.png)
 
 
-## 4.2
+## 4.2 观察make执行的命令
 
 ![alt text](image-1.png)
 
@@ -777,5 +777,36 @@ D(D):
 # 5. 异常处理
 
 ![alt text](image-23.png)
+
+
+## 4.5 电路模块的状态机
+
+![alt text](image-25.png)
+
+![alt text](image-24.png)
+
+
+
+
+
+# DDR3
+
+
+
+
+
+
+MIG IP核:
+
+
+
+
+
+
+
+
+
+
+
 
 
