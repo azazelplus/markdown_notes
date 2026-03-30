@@ -1,2 +1,0 @@
-2026-03-27 07:59:48.7067-INFO Execute update subscription
-2026-03-27 07:59:50.4275-INFO Update subscription end. 更新订阅结束

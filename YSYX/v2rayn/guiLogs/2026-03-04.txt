@@ -1,2 +1,0 @@
-2026-03-04 04:02:08.5430-INFO Execute update subscription
-2026-03-04 04:02:11.4830-INFO Update subscription end. 更新订阅结束

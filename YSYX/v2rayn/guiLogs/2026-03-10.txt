@@ -1,2 +1,0 @@
-2026-03-10 08:39:57.2282-INFO Execute update subscription
-2026-03-10 08:40:10.6725-INFO Update subscription end. 更新订阅结束
