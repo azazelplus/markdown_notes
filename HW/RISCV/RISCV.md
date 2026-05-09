@@ -1314,7 +1314,8 @@ harvard arch哈佛架构:
   * 内存块大小
   * 缓存和内存交互的最小单位
   * 缓存行中data部分的大小
-缓存命中(cache hit)：被请求的数据在缓存中。
+
+* **缓存命中(cache hit)**：被请求的数据在缓存中。
 * **缓存未命中(cache miss)**：被请求的数据不在缓存中. 一般分为三种未命中:
   * 强制性未命中（compulsory miss）：
     * 也称为冷未命中（cold miss）, 发生在存储单元第一次被访问时, 缓存还是空的.
@@ -3584,36 +3585,9 @@ void myfun(){
 # 4. GPU
 
 
+AMD的CU(compute unit)对应NVDIA的SM(streaming multiprocessor); 包含多个ALU的计算单元.
 
-CU对应SM;
-对应GPC;
-
-# 6. SoC
-
-##
-
-
-## 6.4 SoC的低功耗设计
-
-
-
-##
-
-
-
-
-##
-
-
-
-
-###
-
-
-# 7. 蜂鸟E203实验
-
-
-
+GPC(graphics processing cluster) 包含多个SM, 以及一些共享资源(比如纹理单元).
 
 # 10. 异常响应机制 x86
 
@@ -3876,3 +3850,9 @@ AI三驾马车: 大数据, 算力, 算法
 
 
 
+#
+
+#
+
+
+#
