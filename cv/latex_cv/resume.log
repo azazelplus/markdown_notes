@@ -1,10 +1,10 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023) (preloaded format=xelatex 2024.3.9)  30 MAR 2026 10:59
+This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023) (preloaded format=xelatex 2024.3.9)  14 MAY 2026 12:09
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**resume
-(./resume.tex
+**f:/aza/notes_git/CV/latex_CV/resume
+(f:/aza/notes_git/CV/latex_CV/resume.tex
 LaTeX2e <2022-11-01> patch level 1
 L3 programming layer <2023-02-22> (./resume.cls
 Document Class: resume 2015/05/25 An elegant Résumé class
@@ -567,16 +567,22 @@ File: images/you.jpg Graphic file (type bmp)
  [1
 
 ] [2] (./resume.aux)
-Package rerunfilecheck Info: File `resume.out' has not changed.
-(rerunfilecheck)             Checksum: EAFD800DC7C70F526CFFAB0EB2070B6A;7007.
+
+Package rerunfilecheck Warning: File `resume.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `resume.out':
+(rerunfilecheck)             Before: 73B3B9C9447A6D7B2348B6F80120570D;7263
+(rerunfilecheck)             After:  CF2517FD64CF51174C3911AFD1B89C5B;7263.
  ) 
 Here is how much of TeX's memory you used:
- 15998 strings out of 476683
- 345848 string characters out of 5807576
+ 15999 strings out of 476683
+ 345933 string characters out of 5807576
  1914012 words of memory out of 5000000
  36021 multiletter control sequences out of 15000+600000
  514665 words of font info for 68 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 102i,5n,105p,1088b,324s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 102i,5n,105p,1117b,324s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
 Output written on resume.pdf (2 pages).

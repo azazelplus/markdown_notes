@@ -4,11 +4,8 @@
     {
       "label": "LaTeX: build resume.pdf",
       "type": "shell",
-      "command": "latexmk",
+      "command": "xelatex",
       "args": [
-        "-pdfxe",
-        "-g",
-        "-f",
         "-synctex=1",
         "-interaction=nonstopmode",
         "-file-line-error",

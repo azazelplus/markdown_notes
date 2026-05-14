@@ -4,12 +4,9 @@
 
   "latex-workshop.latex.tools": [
     {
-      "name": "latexmk (pdfxe)",
-      "command": "latexmk",
+      "name": "xelatex",
+      "command": "xelatex",
       "args": [
-        "-pdfxe",
-        "-g",
-        "-f",
         "-synctex=1",
         "-interaction=nonstopmode",
         "-file-line-error",
@@ -19,9 +16,9 @@
   ],
   "latex-workshop.latex.recipes": [
     {
-      "name": "latexmk (pdfxe)",
+      "name": "xelatex",
       "tools": [
-        "latexmk (pdfxe)"
+        "xelatex"
       ]
     }
   ]
