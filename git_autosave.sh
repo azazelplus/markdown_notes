@@ -3,20 +3,47 @@
 #在 Git Bash 的模拟环境里，`/bin/bash` 实际会映射到 Git Bash 安装目录里的 bash.exe，虽然物理路径不是 /bin/bash，但逻辑上是兼容的喵！还有如果在cmd/ps环境, shebang line不会被识别哦
 
 #悄悄检测是否在git bash 下运行(command -v uname检查`uname`这个命令有没有被识别, 输出结果重定向到黑洞里丢弃掉, `2>&1`表示把标准错误(2)也重定向到标准输出(1), 从而不显示错误信息.
+
 if command -v uname >/dev/null 2>&1; then
 	echo "bash mode detected! ꉂꉂ(ᵔᗜᵔ*)"
+	
 	git add .
+	if [ $? -ne 0 ]; then
+        echo "❌ git add 失败，已暂停"
+        read -p "按回车键退出..."
+        exit 1
+    fi
+	
 	git commit -m "autosave"
+    if [ $? -ne 0 ]; then
+        echo "❌ git commit 失败，已暂停"
+        read -p "按回车键退出..."
+        exit 1
+    fi	
+	
 	git push
+    if [ $? -ne 0 ]; then
+        echo "❌ git push 失败，已暂停"
+        read -p "按回车键退出..."
+        exit 1
+    fi
+	
 	echo "✅ operation complete，quiting in 10s..."
 	sleep 10
 else
 	# 关闭命令回显, 包括这条命令本身.
 	@echo off
 	echo "bash not detected. gonna try cmd mode."
+	
 	git add .
+	
+	
 	git commit -m "autosave"
+	
+	
 	git push
+
+	
 	echo "✅ operation complete，quiting in 5s"
 	timeout /T 20 >nul
 fi
