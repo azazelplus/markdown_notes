@@ -29,7 +29,7 @@ if command -v uname >/dev/null 2>&1; then
     fi
 	
 	echo "✅ operation complete，quiting in 10s..."
-	sleep 10
+	read -t 10 -p "ENTER to exit... "
 else
 	# 关闭命令回显, 包括这条命令本身.
 	@echo off
