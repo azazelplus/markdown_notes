@@ -1,10 +1,10 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023) (preloaded format=xelatex 2024.3.9)  21 MAY 2026 10:27
+This is XeTeX, Version 3.141592653-2.6-0.999995 (TeX Live 2023) (preloaded format=xelatex 2024.3.9)  1 JUN 2026 16:12
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**f:/aza/notes_git/CV/latex_CV/resume
-(f:/aza/notes_git/CV/latex_CV/resume.tex
+**resume
+(./resume.tex
 LaTeX2e <2022-11-01> patch level 1
 L3 programming layer <2023-02-22> (./resume.cls
 Document Class: resume 2015/05/25 An elegant Résumé class
@@ -579,15 +579,15 @@ Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 
 ] [2] (./resume.aux)
 Package rerunfilecheck Info: File `resume.out' has not changed.
-(rerunfilecheck)             Checksum: 7B91A310F5D27A2FEC10D2598E1FE2A9;7291.
+(rerunfilecheck)             Checksum: 7900CC7A30287CBF3B5C00BD6A3A9606;7311.
  ) 
 Here is how much of TeX's memory you used:
- 16001 strings out of 476683
- 346014 string characters out of 5807576
- 1922012 words of memory out of 5000000
- 36022 multiletter control sequences out of 15000+600000
- 514673 words of font info for 69 fonts, out of 8000000 for 9000
+ 16014 strings out of 476683
+ 346909 string characters out of 5807576
+ 1913012 words of memory out of 5000000
+ 36034 multiletter control sequences out of 15000+600000
+ 514689 words of font info for 71 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 102i,5n,105p,1117b,324s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 102i,5n,105p,1088b,324s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
 Output written on resume.pdf (2 pages).

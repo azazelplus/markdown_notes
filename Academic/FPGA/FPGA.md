@@ -11,7 +11,7 @@ PS网口的配置与普通的网络接口类似，可以通过常见的 Linux �
    #### PL（Programmable Logic）网口：
 在对比下，Zynq中的 PL网口 是指通过可编程逻辑部分实现的自定义网络接口，通常用于特殊需求的网络加速、定制通信协议等。与PS网口不同，它需要开发者通过硬件描述语言（如VHDL或Verilog）来定义和实现。
 
-PS和PL通过AXI协议(一种总线协议)互联.
+PS和PL通过AXI协议互联.
    #### PS网口
 指的是 Processing System（PS）的网络接口，这是在像 Xilinx Zynq SoC 这样的处理器架构中使用的术语。Zynq SoC 将可编程逻辑（PL，Programmable Logic）和处理系统（PS，Processing System）集成在同一块芯片上。
 
@@ -19,7 +19,7 @@ PS和PL通过AXI协议(一种总线协议)互联.
 
 ## 2. ZYNQ简介
 ![alt text](image.png)
-ZENC是基于arm硬盒(闭源,赛灵思的护城河)的SoC.
+ZYNQ是基于arm硬盒(闭源,赛灵思的护城河)的SoC.
 全可编程指的是拥有PS(硬件可编程)和PL(软件可编程).
   ### SoC 概述
 ![alt text](image-1.png)
