@@ -12,7 +12,7 @@
 8.22
 
 8.26
-![alt text](image.png)
+![alt text](读源码和踪迹.png)
 开始pa1.
 
 

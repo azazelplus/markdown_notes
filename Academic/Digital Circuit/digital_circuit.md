@@ -2367,7 +2367,7 @@ end
 * 双边检测
 * 
 
-见`notes_git/Code_Language/verilog_note/verilog_exercise.md`
+见`notes_git/YSYX学习笔记/Verilog/Verilog练习.md`
 
 ---
 ---
